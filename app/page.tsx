@@ -378,7 +378,7 @@ function Buildings({ openBuilding }: { openBuilding: (id: number) => void }) {
               const units = apartments.filter((a) => a.buildingId === b.id);
               const rented = units.filter((u) => u.status === "מושכר").length;
               const income = units.reduce((sum, u) => sum + (u.monthlyIncome || 0), 0);
-              const floors = [...new Set(units.map((u) => u.floor))].sort((a, z) => a - z).join(", ");
+              const floors = Array.from(new Set(units.map((u) => u.floor))).sort((a, z) => a - z).join(", ");
               return (
                 <tr key={b.id}>
                   <td style={{ fontWeight: 800 }}>{b.name}</td><td>{b.city}</td><td>{units.length}</td>
@@ -400,7 +400,7 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: numb
   const totalIncome = units.reduce((sum, u) => sum + (u.monthlyIncome || 0), 0);
   const rentedUnits = units.filter((u) => u.status === "מושכר").length;
   const vacantUnits = units.filter((u) => u.status === "פנוי").length;
-  const floors = [...new Set(units.map((u) => u.floor))].sort((a, b) => a - b);
+  const floors = Array.from(new Set(units.map((u) => u.floor))).sort((a, b) => a - b);
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
