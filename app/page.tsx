@@ -1749,32 +1749,7 @@ export default function Home() {
     if (userRole === "owner") {
       switch (activePage) {
         case "dashboard": return <OwnerDashboard userProfile={userProfile} />;
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-          );
-        })();
-        case "apartments": return <Apartments openApartment={openApartment} />;
-        case "apartmentDetails": return <ApartmentDetails apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} />;
-        case "leases": return (
-          <div className="card">
-            <h3 className="card-title">החוזים שלי</h3>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>דירה</th><th>דייר</th><th>תאריך סיום</th><th>שכירות</th><th>סטטוס</th></tr></thead>
-                <tbody>
-                  {ownerUnits.map(u => (
-                    <tr key={u.id}><td>{u.building} / {u.apartmentNumber}</td><td>{u.tenant}</td><td>{u.leaseEnd}</td><td>{currency(u.rentAmount)}</td><td><span className={badgeClass(u.status)}>{u.status}</span></td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-        default: return null;
+        default: return <OwnerDashboard userProfile={userProfile} />;
       }
     }
 
