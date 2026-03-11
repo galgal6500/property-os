@@ -1,5 +1,11 @@
 "use client";
 import { useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 // ─── Data ───────────────────────────────────────────────────────────────────
 
@@ -752,6 +758,22 @@ function Placeholder({ title, text }: { title: string; text: string }) {
 export default function Home() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [activePage, setActivePage] = useState("dashboard");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [email, setEmail] = useState("admin@property.com");
+  const [password, setPassword] = useState("123456");
+
+  async function handleLogin() {
+    setLoginLoading(true);
+    setLoginError("");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setLoginError("אימייל או סיסמה שגויים");
+    } else {
+      setLoggedIn(true);
+    }
+    setLoginLoading(false);
+  }
   const [selectedApartmentId, setSelectedApartmentId] = useState(1);
   const [selectedBuildingId, setSelectedBuildingId] = useState(1);
   const [selectedOwnerId, setSelectedOwnerId] = useState(1);
@@ -798,9 +820,10 @@ export default function Home() {
             <div className="login-card">
               <h1>כניסה למערכת</h1>
               <p>גרסת דמו מלאה למערכת ניהול הנכסים שלך.</p>
-              <div className="field"><label>אימייל</label><input className="input" defaultValue="admin@property.com" /></div>
-              <div className="field"><label>סיסמה</label><input className="input" type="password" defaultValue="123456" /></div>
-              <button className="btn btn-primary" style={{ width: "100%", height: 52 }} onClick={() => setLoggedIn(true)}>התחבר</button>
+              <div className="field"><label>אימייל</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} /></div>
+              <div className="field"><label>סיסמה</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} /></div>
+              {loginError && <div style={{color:"#dc2626", marginBottom:10, fontSize:14}}>{loginError}</div>}
+              <button className="btn btn-primary" style={{ width: "100%", height: 52 }} onClick={handleLogin} disabled={loginLoading}>{loginLoading ? "מתחבר..." : "התחבר"}</button>
               <div style={{ marginTop: 16, textAlign: "center" }}><button className="btn-link">שכחתי סיסמה</button></div>
             </div>
           </div>
