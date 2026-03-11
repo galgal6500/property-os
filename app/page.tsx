@@ -107,6 +107,7 @@ const navItems = [
   { key: "documents", label: "מסמכים" },
   { key: "tenantPortal", label: "פורטל דייר" },
   { key: "settings", label: "הגדרות" },
+  { key: "users", label: "משתמשים" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -547,6 +548,107 @@ function OwnerDetails({ ownerId, back }: { ownerId: number; back: () => void }) 
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function UsersManagement() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [apts, setApts] = useState<any[]>([]);
+
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase.from("profiles").select("*, apartments(apartment_number, buildings(name))").order("created_at", { ascending: false });
+    const { data: ap } = await supabase.from("apartments").select("id, apartment_number, buildings(name)");
+    setUsers(data || []);
+    setApts(ap || []);
+    setLoading(false);
+  }
+
+  useState(() => { load(); });
+
+  async function approveUser(id: string, role: string) {
+    await supabase.from("profiles").update({ status: "מאושר", role }).eq("id", id);
+    await load();
+  }
+
+  async function rejectUser(id: string) {
+    if (!confirm("לדחות את הבקשה?")) return;
+    await supabase.from("profiles").update({ status: "נדחה" }).eq("id", id);
+    await load();
+  }
+
+  async function assignApartment(id: string, apartment_id: string) {
+    await supabase.from("profiles").update({ apartment_id: apartment_id || null }).eq("id", id);
+    await load();
+  }
+
+  const pending = users.filter(u => u.status === "ממתין לאישור");
+  const approved = users.filter(u => u.status === "מאושר");
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      {pending.length > 0 && (
+        <div className="card">
+          <h3 className="card-title">⏳ בקשות ממתינות לאישור ({pending.length})</h3>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>שם</th><th>אימייל</th><th>טלפון</th><th>תפקיד מבוקש</th><th>תאריך</th><th>פעולות</th></tr></thead>
+              <tbody>
+                {pending.map(u => (
+                  <tr key={u.id} style={{ background: "#fffbeb" }}>
+                    <td style={{ fontWeight: 700 }}>{u.full_name}</td>
+                    <td>{u.id}</td>
+                    <td>{u.phone || "-"}</td>
+                    <td><Badge value={u.role === "tenant" ? "דייר" : u.role === "owner" ? "בעל נכס" : u.role} /></td>
+                    <td>{new Date(u.created_at).toLocaleDateString("he-IL")}</td>
+                    <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button className="btn btn-primary" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => approveUser(u.id, u.role)}>✅ אשר</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626" }} onClick={() => rejectUser(u.id)}>❌ דחה</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div className="card">
+        <h3 className="card-title">✅ משתמשים מאושרים ({approved.length})</h3>
+        {loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        ) : approved.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>אין משתמשים מאושרים עדיין</div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>דירה משויכת</th><th>פעולות</th></tr></thead>
+              <tbody>
+                {approved.map(u => (
+                  <tr key={u.id}>
+                    <td style={{ fontWeight: 700 }}>{u.full_name}</td>
+                    <td>{u.phone || "-"}</td>
+                    <td><Badge value={u.role === "tenant" ? "דייר" : u.role === "owner" ? "בעל נכס" : u.role} /></td>
+                    <td>
+                      <select style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
+                        value={u.apartment_id || ""}
+                        onChange={e => assignApartment(u.id, e.target.value)}>
+                        <option value="">לא משויך</option>
+                        {apts.map((a: any) => <option key={a.id} value={a.id}>{a.buildings?.name} / {a.apartment_number}</option>)}
+                      </select>
+                    </td>
+                    <td>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626" }} onClick={() => rejectUser(u.id)}>הסר</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1438,9 +1540,15 @@ export default function Home() {
   const [activePage, setActivePage] = useState("dashboard");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
-  const [email, setEmail] = useState("admin@property.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [userRole, setUserRole] = useState("admin");
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [regForm, setRegForm] = useState({ full_name: "", phone: "", role: "tenant" });
+  const [regError, setRegError] = useState("");
+  const [regSuccess, setRegSuccess] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   async function handleLogin() {
     setLoginLoading(true);
@@ -1448,17 +1556,54 @@ export default function Home() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoginError("אימייל או סיסמה שגויים");
-    } else {
-      // Determine role from email (can be replaced with DB lookup later)
-      const userEmail = data.user?.email || "";
-      let role = "admin";
-      if (userEmail.includes("tenant") || userEmail.includes("dayer")) role = "tenant";
-      else if (userEmail.includes("owner") || userEmail.includes("baal")) role = "owner";
-      setUserRole(role);
-      if (role === "tenant") setActivePage("tenantPortal");
-      else setActivePage("dashboard");
-      setLoggedIn(true);
+      setLoginLoading(false);
+      return;
     }
+    // Load profile
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
+    if (profile) {
+      if (profile.status === "ממתין לאישור") {
+        setPendingApproval(true);
+        await supabase.auth.signOut();
+        setLoginLoading(false);
+        return;
+      }
+      setUserProfile(profile);
+      setUserRole(profile.role || "admin");
+      if (profile.role === "tenant") setActivePage("tenantPortal");
+      else setActivePage("dashboard");
+    } else {
+      // Admin user - no profile needed
+      setUserRole("admin");
+      setActivePage("dashboard");
+    }
+    setLoggedIn(true);
+    setLoginLoading(false);
+  }
+
+  async function handleRegister() {
+    setRegError("");
+    if (!email || !password || !regForm.full_name) {
+      setRegError("יש למלא את כל השדות");
+      return;
+    }
+    setLoginLoading(true);
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      setRegError(error.message);
+      setLoginLoading(false);
+      return;
+    }
+    if (data.user) {
+      await supabase.from("profiles").insert({
+        id: data.user.id,
+        full_name: regForm.full_name,
+        phone: regForm.phone,
+        role: regForm.role,
+        status: "ממתין לאישור"
+      });
+    }
+    setRegSuccess(true);
     setLoginLoading(false);
   }
   const [selectedApartmentId, setSelectedApartmentId] = useState(1);
@@ -1630,6 +1775,7 @@ export default function Home() {
       case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר, הסכמי ניהול וכל מסמך שקשור לבעל נכס, דירה או חוזה." />;
       case "tenantPortal": return <TenantPortal />;
       case "settings": return <Placeholder title="הגדרות" text="כאן יהיו בהמשך פרטי העסק, סוגי תקלות, התראות, הרשאות משתמשים והגדרות מערכת נוספות." />;
+      case "users": return <UsersManagement />;
       default: return null;
     }
   }
@@ -1652,13 +1798,56 @@ export default function Home() {
           </div>
           <div className="login-right">
             <div className="login-card">
-              <h1>כניסה למערכת</h1>
-              <p>גרסת דמו מלאה למערכת ניהול הנכסים שלך.</p>
-              <div className="field"><label>אימייל</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} /></div>
-              <div className="field"><label>סיסמה</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} /></div>
-              {loginError && <div style={{color:"#dc2626", marginBottom:10, fontSize:14}}>{loginError}</div>}
-              <button className="btn btn-primary" style={{ width: "100%", height: 52 }} onClick={handleLogin} disabled={loginLoading}>{loginLoading ? "מתחבר..." : "התחבר"}</button>
-              <div style={{ marginTop: 16, textAlign: "center" }}><button className="btn-link">שכחתי סיסמה</button></div>
+              {pendingApproval ? (
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+                  <h2 style={{ marginBottom: 8 }}>ממתין לאישור</h2>
+                  <p style={{ color: "#64748b" }}>הבקשה שלך נשלחה למנהל המערכת. תקבל הודעה כשתאושר.</p>
+                  <button className="btn btn-outline" style={{ marginTop: 16 }} onClick={() => setPendingApproval(false)}>חזרה להתחברות</button>
+                </div>
+              ) : regSuccess ? (
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+                  <h2 style={{ marginBottom: 8 }}>הבקשה נשלחה!</h2>
+                  <p style={{ color: "#64748b" }}>המנהל יאשר את הבקשה שלך בקרוב.</p>
+                  <button className="btn btn-primary" style={{ marginTop: 16, width: "100%" }} onClick={() => { setRegSuccess(false); setAuthMode("login"); }}>חזרה להתחברות</button>
+                </div>
+              ) : authMode === "login" ? (
+                <>
+                  <h1>כניסה למערכת</h1>
+                  <p>התחבר עם האימייל והסיסמה שלך</p>
+                  <div className="field"><label>אימייל</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" /></div>
+                  <div className="field"><label>סיסמה</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" /></div>
+                  {loginError && <div style={{color:"#dc2626", marginBottom:10, fontSize:14}}>{loginError}</div>}
+                  <button className="btn btn-primary" style={{ width: "100%", height: 52 }} onClick={handleLogin} disabled={loginLoading}>{loginLoading ? "מתחבר..." : "התחבר"}</button>
+                  <div style={{ marginTop: 16, textAlign: "center", color: "#64748b", fontSize: 14 }}>
+                    אין לך חשבון?{" "}
+                    <button className="btn-link" onClick={() => setAuthMode("register")}>הירשם כאן</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h1>הרשמה למערכת</h1>
+                  <p>מלא את הפרטים ומנהל יאשר את הגישה שלך</p>
+                  <div className="field"><label>שם מלא *</label><input className="input" value={regForm.full_name} onChange={e => setRegForm({...regForm, full_name: e.target.value})} placeholder="ישראל ישראלי" /></div>
+                  <div className="field"><label>אימייל *</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" /></div>
+                  <div className="field"><label>סיסמה *</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="לפחות 6 תווים" /></div>
+                  <div className="field"><label>טלפון</label><input className="input" value={regForm.phone} onChange={e => setRegForm({...regForm, phone: e.target.value})} placeholder="052-1234567" /></div>
+                  <div className="field">
+                    <label>תפקיד</label>
+                    <select className="input" value={regForm.role} onChange={e => setRegForm({...regForm, role: e.target.value})}>
+                      <option value="tenant">דייר</option>
+                      <option value="owner">בעל נכס</option>
+                    </select>
+                  </div>
+                  {regError && <div style={{color:"#dc2626", marginBottom:10, fontSize:14}}>{regError}</div>}
+                  <button className="btn btn-primary" style={{ width: "100%", height: 52 }} onClick={handleRegister} disabled={loginLoading}>{loginLoading ? "שולח..." : "שלח בקשת הצטרפות"}</button>
+                  <div style={{ marginTop: 16, textAlign: "center", color: "#64748b", fontSize: 14 }}>
+                    יש לך כבר חשבון?{" "}
+                    <button className="btn-link" onClick={() => setAuthMode("login")}>התחבר כאן</button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
