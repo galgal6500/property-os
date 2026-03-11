@@ -1765,7 +1765,7 @@ export default function Home() {
       case "requests": return <ServiceRequests />;
       case "leases": return <Leases />;
       case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר, הסכמי ניהול וכל מסמך שקשור לבעל נכס, דירה או חוזה." />;
-      case "tenantPortal": return <TenantPortal />;
+      case "tenantPortal": return <TenantPortal userProfile={userProfile} />;
       case "settings": return <Placeholder title="הגדרות" text="כאן יהיו בהמשך פרטי העסק, סוגי תקלות, התראות, הרשאות משתמשים והגדרות מערכת נוספות." />;
       case "users": return <UsersManagement />;
       case "workcontracts": return <WorkContracts />;
