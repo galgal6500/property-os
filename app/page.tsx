@@ -1114,7 +1114,7 @@ function Buildings({ openBuilding }: { openBuilding: (id: any) => void }) {
   );
 }
 
-function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any; back: () => void; openApartment: (id: string) => void }) {
+function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any; back: () => void; openApartment: (id: any) => void }) {
   const building = buildings.find((b) => b.id === buildingId) || buildings[0];
   const units = apartments.filter((a) => a.buildingId === building.id);
   const totalIncome = units.reduce((sum, u) => sum + (u.monthlyIncome || 0), 0);
@@ -1201,7 +1201,7 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
   );
 }
 
-function Apartments({ openApartment }: { openApartment: (id: string) => void }) {
+function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
   const [filter, setFilter] = useState("הכל");
   const [query, setQuery] = useState("");
   const [dbApartments, setDbApartments] = useState<any[]>([]);
