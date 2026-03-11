@@ -426,6 +426,147 @@ function OwnerDetails({ ownerId, back }: { ownerId: number; back: () => void }) 
   );
 }
 
+function Leases() {
+  const [leases, setLeases] = useState<any[]>([]);
+  const [apts, setApts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [filter, setFilter] = useState("הכל");
+  const [form, setForm] = useState({
+    apartment_id: "", tenant_name: "", start_date: "", end_date: "",
+    rent_amount: "", deposit: "", status: "פעיל", notes: ""
+  });
+
+  async function load() {
+    setLoading(true);
+    const { data: ls } = await supabase.from("leases").select("*, apartments(apartment_number, buildings(name))").order("created_at", { ascending: false });
+    const { data: ap } = await supabase.from("apartments").select("id, apartment_number, buildings(name)");
+    setLeases(ls || []);
+    setApts(ap || []);
+    setLoading(false);
+  }
+
+  useState(() => { load(); });
+
+  async function addLease() {
+    if (!form.tenant_name) return;
+    setSaving(true);
+    await supabase.from("leases").insert({
+      apartment_id: form.apartment_id || null,
+      tenant_name: form.tenant_name,
+      start_date: form.start_date || null,
+      end_date: form.end_date || null,
+      rent_amount: parseFloat(form.rent_amount) || 0,
+      deposit: parseFloat(form.deposit) || 0,
+      status: form.status,
+      notes: form.notes
+    });
+    setForm({ apartment_id: "", tenant_name: "", start_date: "", end_date: "", rent_amount: "", deposit: "", status: "פעיל", notes: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function deleteLease(id: string) {
+    if (!confirm("למחוק את החוזה?")) return;
+    await supabase.from("leases").delete().eq("id", id);
+    await load();
+  }
+
+  const filtered = filter === "הכל" ? leases : leases.filter(l => l.status === filter);
+
+  function daysLeft(endDate: string) {
+    if (!endDate) return null;
+    const diff = Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return diff;
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div className="card">
+        <div className="section-top">
+          <div><h2 className="card-title">חוזים</h2><div className="muted">ניהול חוזי שכירות ותשלומים</div></div>
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ חוזה חדש</button>
+        </div>
+
+        {showForm && (
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>חוזה חדש</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="field">
+                <label>דירה</label>
+                <select className="input" value={form.apartment_id} onChange={e => setForm({...form, apartment_id: e.target.value})}>
+                  <option value="">בחר דירה</option>
+                  {apts.map((a: any) => <option key={a.id} value={a.id}>{a.buildings?.name} / {a.apartment_number}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>שם דייר</label><input className="input" value={form.tenant_name} onChange={e => setForm({...form, tenant_name: e.target.value})} placeholder="דני לוי" /></div>
+              <div className="field">
+                <label>סטטוס</label>
+                <select className="input" value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                  <option>פעיל</option><option>הסתיים</option><option>בוטל</option>
+                </select>
+              </div>
+              <div className="field"><label>תאריך התחלה</label><input className="input" type="date" value={form.start_date} onChange={e => setForm({...form, start_date: e.target.value})} /></div>
+              <div className="field"><label>תאריך סיום</label><input className="input" type="date" value={form.end_date} onChange={e => setForm({...form, end_date: e.target.value})} /></div>
+              <div className="field"><label>שכר דירה (₪)</label><input className="input" type="number" value={form.rent_amount} onChange={e => setForm({...form, rent_amount: e.target.value})} placeholder="5200" /></div>
+              <div className="field"><label>פיקדון (₪)</label><input className="input" type="number" value={form.deposit} onChange={e => setForm({...form, deposit: e.target.value})} placeholder="5200" /></div>
+              <div className="field" style={{ gridColumn: "span 2" }}><label>הערות</label><input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="הערות לחוזה..." /></div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-primary" onClick={addLease} disabled={saving}>{saving ? "שומר..." : "שמור חוזה"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+
+        <div className="chips" style={{ marginBottom: 16 }}>
+          {["הכל", "פעיל", "הסתיים", "בוטל"].map(f => (
+            <button key={f} className={`btn ${filter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setFilter(f)}>{f}</button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>אין חוזים עדיין</div>
+            <div>לחץ על "חוזה חדש" כדי להוסיף</div>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>דירה</th><th>דייר</th><th>התחלה</th><th>סיום</th><th>ימים נותרים</th><th>שכירות</th><th>פיקדון</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+              <tbody>
+                {filtered.map((l) => {
+                  const days = daysLeft(l.end_date);
+                  return (
+                    <tr key={l.id}>
+                      <td>{l.apartments?.buildings?.name} / {l.apartments?.apartment_number}</td>
+                      <td style={{ fontWeight: 700 }}>{l.tenant_name}</td>
+                      <td>{l.start_date ? new Date(l.start_date).toLocaleDateString("he-IL") : "-"}</td>
+                      <td>{l.end_date ? new Date(l.end_date).toLocaleDateString("he-IL") : "-"}</td>
+                      <td style={{ color: days !== null && days < 30 ? "#dc2626" : "#16a34a", fontWeight: 700 }}>
+                        {days !== null ? (days < 0 ? "פג תוקף" : days + " ימים") : "-"}
+                      </td>
+                      <td>{currency(l.rent_amount)}</td>
+                      <td>{currency(l.deposit)}</td>
+                      <td><Badge value={l.status} /></td>
+                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteLease(l.id)}>מחק</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ServiceRequests() {
   const [requests, setRequests] = useState<any[]>([]);
   const [apartments, setApartments] = useState<any[]>([]);
@@ -1359,7 +1500,7 @@ export default function Home() {
       case "apartments": return <Apartments openApartment={openApartment} />;
       case "apartmentDetails": return <ApartmentDetails apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} />;
       case "requests": return <ServiceRequests />;
-      case "leases": return <Placeholder title="חוזים" text="כאן ייכנס מסך ניהול החוזים, כולל תאריכי התחלה וסיום, קבצים, תזכורות על סיום חוזה, סכומי שכירות וגם ההכנסה שלך." />;
+      case "leases": return <Leases />;
       case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר, הסכמי ניהול וכל מסמך שקשור לבעל נכס, דירה או חוזה." />;
       case "tenantPortal": return <TenantPortal />;
       case "settings": return <Placeholder title="הגדרות" text="כאן יהיו בהמשך פרטי העסק, סוגי תקלות, התראות, הרשאות משתמשים והגדרות מערכת נוספות." />;
