@@ -553,42 +553,153 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: numb
 function Apartments({ openApartment }: { openApartment: (id: number) => void }) {
   const [filter, setFilter] = useState("הכל");
   const [query, setQuery] = useState("");
+  const [dbApartments, setDbApartments] = useState<any[]>([]);
+  const [dbBuildings, setDbBuildings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    building_id: "", apartment_number: "", floor: "0", rooms: "3",
+    status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "",
+    tenant_phone: "", lease_end: "", fee_type: "percent", fee_value: "8", notes: ""
+  });
 
-  const filtered = apartments.filter((item) => {
-    const q = !query || item.building.includes(query) || item.owner.includes(query) || item.tenant.includes(query) || item.apartmentNumber.includes(query);
-    const s = filter === "הכל" ? true : item.status === filter;
+  async function load() {
+    setLoading(true);
+    const { data: apts } = await supabase.from("apartments").select("*, buildings(name, city)").order("created_at", { ascending: false });
+    const { data: blds } = await supabase.from("buildings").select("*").order("name");
+    setDbApartments(apts || []);
+    setDbBuildings(blds || []);
+    setLoading(false);
+  }
+
+  useState(() => { load(); });
+
+  async function addApartment() {
+    if (!form.building_id || !form.apartment_number) return;
+    setSaving(true);
+    await supabase.from("apartments").insert({
+      building_id: form.building_id,
+      apartment_number: form.apartment_number,
+      floor: parseInt(form.floor),
+      rooms: parseFloat(form.rooms),
+      status: form.status,
+      rent_amount: parseFloat(form.rent_amount) || 0,
+      owner_name: form.owner_name,
+      tenant_name: form.tenant_name,
+      tenant_phone: form.tenant_phone,
+      lease_end: form.lease_end,
+      fee_type: form.fee_type,
+      fee_value: parseFloat(form.fee_value) || 8,
+      notes: form.notes
+    });
+    setShowForm(false);
+    setForm({ building_id: "", apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", tenant_phone: "", lease_end: "", fee_type: "percent", fee_value: "8", notes: "" });
+    await load();
+    setSaving(false);
+  }
+
+  async function deleteApartment(id: string) {
+    if (!confirm("למחוק את הדירה?")) return;
+    await supabase.from("apartments").delete().eq("id", id);
+    await load();
+  }
+
+  const filtered = dbApartments.filter(a => {
+    const q = !query || a.apartment_number?.includes(query) || a.owner_name?.includes(query) || a.tenant_name?.includes(query) || a.buildings?.name?.includes(query);
+    const s = filter === "הכל" ? true : a.status === filter;
     return q && s;
   });
 
   return (
-    <div className="card">
-      <div className="section-top">
-        <div><h2 className="card-title" style={{ marginBottom: 6 }}>דירות</h2><div className="muted">ניהול כל הדירות, הדיירים, החוזים וההכנסה שלך במקום אחד</div></div>
-        <button className="btn btn-primary">הוסף דירה</button>
-      </div>
-      <div className="filter-row">
-        <input className="search" style={{ width: "100%" }} placeholder="חיפוש לפי מבנה, דייר, בעל נכס או מספר דירה" value={query} onChange={(e) => setQuery(e.target.value)} />
-        <div className="chips">
-          {["הכל", "מושכר", "פנוי"].map((f) => (
-            <button key={f} className={`btn ${filter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setFilter(f)}>{f}</button>
-          ))}
+    <div style={{ display: "grid", gap: 18 }}>
+      <div className="card">
+        <div className="section-top">
+          <div><h2 className="card-title" style={{ marginBottom: 6 }}>דירות</h2><div className="muted">ניהול כל הדירות, הדיירים, החוזים וההכנסה שלך במקום אחד</div></div>
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף דירה</button>
         </div>
-      </div>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>מבנה</th><th>דירה</th><th>קומה</th><th>בעל נכס</th><th>דייר</th><th>טלפון</th><th>חוזה עד</th><th>הכנסה חודשית</th><th>סטטוס</th><th>פעולות</th></tr></thead>
-          <tbody>
-            {filtered.map((item) => (
-              <tr key={item.id}>
-                <td>{item.building}</td><td>{item.apartmentNumber}</td><td>{item.floor}</td>
-                <td>{item.owner}</td><td>{item.tenant}</td><td>{item.phone}</td>
-                <td>{item.leaseEnd}</td><td>{currency(item.monthlyIncome)}</td>
-                <td><Badge value={item.status} /></td>
-                <td><button className="btn btn-outline" onClick={() => openApartment(item.id)}>צפייה</button></td>
-              </tr>
+
+        {showForm && (
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 14 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>דירה חדשה</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="field">
+                <label>מבנה</label>
+                <select className="input" value={form.building_id} onChange={e => setForm({...form, building_id: e.target.value})}>
+                  <option value="">בחר מבנה</option>
+                  {dbBuildings.map(b => <option key={b.id} value={b.id}>{b.name}, {b.city}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>מספר דירה</label><input className="input" value={form.apartment_number} onChange={e => setForm({...form, apartment_number: e.target.value})} placeholder="3" /></div>
+              <div className="field"><label>קומה</label><input className="input" type="number" value={form.floor} onChange={e => setForm({...form, floor: e.target.value})} /></div>
+              <div className="field"><label>חדרים</label><input className="input" type="number" value={form.rooms} onChange={e => setForm({...form, rooms: e.target.value})} step="0.5" /></div>
+              <div className="field">
+                <label>סטטוס</label>
+                <select className="input" value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                  <option>פנוי</option><option>מושכר</option>
+                </select>
+              </div>
+              <div className="field"><label>שכר דירה</label><input className="input" type="number" value={form.rent_amount} onChange={e => setForm({...form, rent_amount: e.target.value})} placeholder="5200" /></div>
+              <div className="field"><label>בעל נכס</label><input className="input" value={form.owner_name} onChange={e => setForm({...form, owner_name: e.target.value})} placeholder="יוסי כהן" /></div>
+              <div className="field"><label>דייר</label><input className="input" value={form.tenant_name} onChange={e => setForm({...form, tenant_name: e.target.value})} placeholder="דני לוי" /></div>
+              <div className="field"><label>טלפון דייר</label><input className="input" value={form.tenant_phone} onChange={e => setForm({...form, tenant_phone: e.target.value})} placeholder="052-1234567" /></div>
+              <div className="field"><label>חוזה עד</label><input className="input" type="date" value={form.lease_end} onChange={e => setForm({...form, lease_end: e.target.value})} /></div>
+              <div className="field">
+                <label>סוג עמלה</label>
+                <select className="input" value={form.fee_type} onChange={e => setForm({...form, fee_type: e.target.value})}>
+                  <option value="percent">אחוז</option><option value="fixed">סכום קבוע</option>
+                </select>
+              </div>
+              <div className="field"><label>{form.fee_type === "percent" ? "אחוז עמלה" : "עמלה קבועה (₪)"}</label><input className="input" type="number" value={form.fee_value} onChange={e => setForm({...form, fee_value: e.target.value})} /></div>
+            </div>
+            <div className="field"><label>הערות</label><textarea className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="הערות על הדירה..." style={{ minHeight: 80, resize: "vertical" }} /></div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-primary" onClick={addApartment} disabled={saving}>{saving ? "שומר..." : "שמור דירה"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+
+        <div className="filter-row">
+          <input className="search" style={{ width: "100%" }} placeholder="חיפוש לפי מבנה, דייר, בעל נכס או מספר דירה" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <div className="chips">
+            {["הכל", "מושכר", "פנוי"].map((f) => (
+              <button key={f} className={`btn ${filter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setFilter(f)}>{f}</button>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>אין דירות עדיין</div>
+            <div>לחץ על "הוסף דירה" כדי להתחיל</div>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>מבנה</th><th>דירה</th><th>קומה</th><th>בעל נכס</th><th>דייר</th><th>טלפון</th><th>חוזה עד</th><th>שכירות</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+              <tbody>
+                {filtered.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.buildings?.name}</td>
+                    <td>{item.apartment_number}</td>
+                    <td>{item.floor}</td>
+                    <td>{item.owner_name || "-"}</td>
+                    <td>{item.tenant_name || "-"}</td>
+                    <td>{item.tenant_phone || "-"}</td>
+                    <td>{item.lease_end ? new Date(item.lease_end).toLocaleDateString("he-IL") : "-"}</td>
+                    <td>{item.rent_amount ? currency(item.rent_amount) : "-"}</td>
+                    <td><Badge value={item.status} /></td>
+                    <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteApartment(item.id)}>מחק</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
