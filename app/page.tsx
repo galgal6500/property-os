@@ -753,6 +753,31 @@ function Placeholder({ title, text }: { title: string; text: string }) {
   );
 }
 
+// ─── Role helpers ────────────────────────────────────────────────────────────
+
+function getNavItemsForRole(role: string) {
+  if (role === "tenant") {
+    return [
+      { key: "tenantPortal", label: "הבית שלי" },
+      { key: "requests", label: "קריאות שירות" },
+    ];
+  }
+  if (role === "owner") {
+    return [
+      { key: "dashboard", label: "סיכום" },
+      { key: "apartments", label: "הדירות שלי" },
+      { key: "leases", label: "חוזים" },
+    ];
+  }
+  return navItems;
+}
+
+function getRoleLabel(role: string) {
+  if (role === "tenant") return "דייר";
+  if (role === "owner") return "בעל נכס";
+  return "מנהל מערכת";
+}
+
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -762,14 +787,23 @@ export default function Home() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [email, setEmail] = useState("admin@property.com");
   const [password, setPassword] = useState("123456");
+  const [userRole, setUserRole] = useState("admin");
 
   async function handleLogin() {
     setLoginLoading(true);
     setLoginError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoginError("אימייל או סיסמה שגויים");
     } else {
+      // Determine role from email (can be replaced with DB lookup later)
+      const userEmail = data.user?.email || "";
+      let role = "admin";
+      if (userEmail.includes("tenant") || userEmail.includes("dayer")) role = "tenant";
+      else if (userEmail.includes("owner") || userEmail.includes("baal")) role = "owner";
+      setUserRole(role);
+      if (role === "tenant") setActivePage("tenantPortal");
+      else setActivePage("dashboard");
       setLoggedIn(true);
     }
     setLoginLoading(false);
@@ -783,6 +817,105 @@ export default function Home() {
   function openOwner(id: number) { setSelectedOwnerId(id); setActivePage("ownerDetails"); }
 
   function renderContent() {
+    // Tenant view
+    if (userRole === "tenant") {
+      switch (activePage) {
+        case "tenantPortal": return <TenantPortal />;
+        case "requests": return (
+          <div style={{ display: "grid", gap: 18 }}>
+            <div className="card">
+              <h3 className="card-title">הקריאות שלי</h3>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>תאריך</th><th>תקלה</th><th>סטטוס</th></tr></thead>
+                  <tbody>
+                    {serviceRequests.map(item => (
+                      <tr key={item.id}><td>{item.apartment}</td><td>{item.issue}</td><td><span className={badgeClass(item.status)}>{item.status}</span></td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="card">
+              <h3 className="card-title">פתיחת קריאה חדשה</h3>
+              <div style={{ display: "grid", gap: 12, maxWidth: 620 }}>
+                <input className="search" style={{ width: "100%" }} placeholder="נושא התקלה" />
+                <textarea placeholder="תיאור התקלה" style={{ width: "100%", minHeight: 120, border: "1px solid #dbe3ee", borderRadius: 16, padding: 14, resize: "vertical", fontFamily: "inherit" }} />
+                <button className="btn btn-primary" style={{ width: "fit-content" }}>שלח קריאה</button>
+              </div>
+            </div>
+          </div>
+        );
+        default: return <TenantPortal />;
+      }
+    }
+
+    // Owner view
+    if (userRole === "owner") {
+      const ownerName = "יוסי כהן"; // will be dynamic later
+      const ownerUnits = apartments.filter(a => a.owner === ownerName);
+      const endingSoon = leasesEndingSoon.filter(l => ownerUnits.some(u => l.apartment.includes(u.building)));
+
+      switch (activePage) {
+        case "dashboard": return (
+          <div style={{ display: "grid", gap: 18 }}>
+            <div className="kpi-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0,1fr))" }}>
+              <KPI title="הדירות שלי" value={String(ownerUnits.length)} subtitle="דירות משויכות" />
+              <KPI title="הכנסה חודשית" value={currency(ownerUnits.reduce((s,u) => s + u.rentAmount, 0))} subtitle="ברוטו" />
+              <KPI title="חוזים קרובים לסיום" value={String(endingSoon.length)} subtitle="30 יום קדימה" />
+            </div>
+            {endingSoon.length > 0 && (
+              <div className="card">
+                <h3 className="card-title">⚠️ חוזים שמסתיימים בקרוב</h3>
+                <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>דירה</th><th>דייר</th><th>תאריך סיום</th></tr></thead>
+                    <tbody>
+                      {endingSoon.map(item => (
+                        <tr key={item.id}><td>{item.apartment}</td><td>{item.tenant}</td><td style={{color:"#dc2626", fontWeight:800}}>{item.endDate}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            <div className="card">
+              <h3 className="card-title">הדירות שלי</h3>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>מבנה</th><th>דירה</th><th>דייר</th><th>שכירות</th><th>חוזה עד</th><th>סטטוס</th></tr></thead>
+                  <tbody>
+                    {ownerUnits.map(u => (
+                      <tr key={u.id}><td>{u.building}</td><td>{u.apartmentNumber}</td><td>{u.tenant}</td><td>{currency(u.rentAmount)}</td><td>{u.leaseEnd}</td><td><span className={badgeClass(u.status)}>{u.status}</span></td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+        case "apartments": return <Apartments openApartment={openApartment} />;
+        case "apartmentDetails": return <ApartmentDetails apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} />;
+        case "leases": return (
+          <div className="card">
+            <h3 className="card-title">החוזים שלי</h3>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>דירה</th><th>דייר</th><th>תאריך סיום</th><th>שכירות</th><th>סטטוס</th></tr></thead>
+                <tbody>
+                  {ownerUnits.map(u => (
+                    <tr key={u.id}><td>{u.building} / {u.apartmentNumber}</td><td>{u.tenant}</td><td>{u.leaseEnd}</td><td>{currency(u.rentAmount)}</td><td><span className={badgeClass(u.status)}>{u.status}</span></td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+        default: return null;
+      }
+    }
+
+    // Admin view
     switch (activePage) {
       case "dashboard": return <Dashboard openApartment={openApartment} openBuilding={openBuilding} />;
       case "owners": return <Owners openOwner={openOwner} />;
@@ -840,15 +973,18 @@ export default function Home() {
           <div><small>PROPERTY OS</small><strong>ניהול נכסים</strong></div>
         </div>
         <nav className="nav">
-          {navItems.map((item) => (
+          {getNavItemsForRole(userRole).map((item) => (
             <button key={item.key} className={`nav-btn ${activePage === item.key || (activePage === "apartmentDetails" && item.key === "apartments") || (activePage === "buildingDetails" && item.key === "buildings") || (activePage === "ownerDetails" && item.key === "owners") ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
               {item.label}
             </button>
           ))}
         </nav>
         <div className="side-card">
-          <div className="avatar">מ</div>
-          <div><div className="name">מנהל מערכת</div><div className="role">Admin</div></div>
+          <div className="avatar">{email[0]?.toUpperCase()}</div>
+          <div>
+            <div className="name">{email}</div>
+            <div className="role">{getRoleLabel(userRole)}</div>
+          </div>
         </div>
       </aside>
       <main className="main">
