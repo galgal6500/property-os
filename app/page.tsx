@@ -406,12 +406,13 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string
         <div className="card">
           <h3 className="card-title">דירות פנויות שצריך לקדם</h3>
           <div className="vacant-list">
-            {vacant.map((item) => (
-              <div key={item.id} className="vacant-item" onClick={() => openApartment(item.id)}>
-                <div style={{ fontWeight: 800 }}>{item.building} / דירה {item.apartmentNumber}</div>
-                <div className="muted" style={{ marginTop: 6 }}>בעל נכס: {item.owner}</div>
-                <div className="muted" style={{ marginTop: 6 }}>הכנסה צפויה: {currency(item.monthlyIncome)}</div>
-                <div style={{ marginTop: 12 }}><Badge value={item.status} /></div>
+            {vacantList.length === 0 ? (
+              <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין דירות פנויות 🎉</div>
+            ) : vacantList.map((item: any) => (
+              <div key={item.id} className="vacant-item" onClick={() => openApartment(item.id)} style={{ cursor: "pointer" }}>
+                <div style={{ fontWeight: 800 }}>{item.buildings?.name} / דירה {item.apartment_number}</div>
+                <div className="muted" style={{ marginTop: 6 }}>בעל נכס: {item.owner_name || "-"}</div>
+                <div style={{ marginTop: 12 }}><Badge value="פנוי" /></div>
               </div>
             ))}
           </div>
@@ -729,6 +730,9 @@ function Leases() {
   useState(() => { load(); });
 
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   async function addLease() {
     if (!form.tenant_name) return;
@@ -1362,12 +1366,48 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>({});
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  async function saveEdit() {
+    setSavingEdit(true);
+    await supabase.from("apartments").update({
+      status: editForm.status,
+      tenant_name: editForm.tenant_name,
+      tenant_phone: editForm.tenant_phone,
+      owner_name: editForm.owner_name,
+      rent_amount: parseFloat(editForm.rent_amount) || 0,
+      lease_end: editForm.lease_end || null,
+      fee_type: editForm.fee_type,
+      fee_value: parseFloat(editForm.fee_value) || 8,
+      notes: editForm.notes,
+    }).eq("id", apartmentId);
+    const { data: a } = await supabase.from("apartments").select("*, buildings(name, city)").eq("id", apartmentId).single();
+    setApt(a);
+    setEditing(false);
+    setSavingEdit(false);
+  }
 
   useState(() => {
     async function load() {
       setLoading(true);
       const { data: a } = await supabase.from("apartments").select("*, buildings(name, city)").eq("id", apartmentId).single();
       setApt(a);
+      if (a) setEditForm({
+        status: a.status || "פנוי",
+        tenant_name: a.tenant_name || "",
+        tenant_phone: a.tenant_phone || "",
+        owner_name: a.owner_name || "",
+        rent_amount: a.rent_amount || "",
+        lease_end: a.lease_end || "",
+        fee_type: a.fee_type || "percent",
+        fee_value: a.fee_value || "8",
+        notes: a.notes || "",
+      });
       const { data: ls } = await supabase.from("leases").select("*").eq("apartment_id", apartmentId).order("created_at", { ascending: false });
       setLeases(ls || []);
       const { data: rs } = await supabase.from("service_requests").select("*").eq("apartment_id", apartmentId).order("created_at", { ascending: false });
@@ -1387,6 +1427,25 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
     const { data: ls } = await supabase.from("leases").select("*").eq("apartment_id", apartmentId).order("created_at", { ascending: false });
     setLeases(ls || []);
     setUploadingId(null);
+  }
+
+  async function saveEdit() {
+    setSavingEdit(true);
+    await supabase.from("apartments").update({
+      status: editForm.status,
+      owner_name: editForm.owner_name,
+      tenant_name: editForm.tenant_name,
+      tenant_phone: editForm.tenant_phone,
+      rent_amount: parseFloat(editForm.rent_amount) || 0,
+      lease_end: editForm.lease_end || null,
+      fee_type: editForm.fee_type,
+      fee_value: parseFloat(editForm.fee_value) || 8,
+      notes: editForm.notes,
+    }).eq("id", apartmentId);
+    const { data: a } = await supabase.from("apartments").select("*, buildings(name, city)").eq("id", apartmentId).single();
+    setApt(a);
+    setEditing(false);
+    setSavingEdit(false);
   }
 
   async function updateRequestStatus(id: string, status: string) {
@@ -1420,7 +1479,39 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
           <h2 style={{ margin: "8px 0", fontSize: 34 }}>{apt.buildings?.name} / דירה {apt.apartment_number}</h2>
           <div className="muted"><Badge value={apt.status} /><span style={{ marginRight: 8 }}>{apt.buildings?.city} · קומה {apt.floor} · {apt.rooms} חדרים</span></div>
         </div>
+        <button className="btn btn-primary" onClick={() => setEditing(!editing)}>✏️ עריכה</button>
       </div>
+
+      {editing && (
+        <div className="card" style={{ background: "#f8fafc", borderRadius: 16, padding: 20 }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700 }}>עריכת פרטי דירה</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div className="field">
+              <label>סטטוס</label>
+              <select className="input" value={editForm.status} onChange={e => setEditForm({...editForm, status: e.target.value})}>
+                <option>פנוי</option><option>מושכר</option>
+              </select>
+            </div>
+            <div className="field"><label>דייר</label><input className="input" value={editForm.tenant_name} onChange={e => setEditForm({...editForm, tenant_name: e.target.value})} placeholder="שם הדייר" /></div>
+            <div className="field"><label>טלפון דייר</label><input className="input" value={editForm.tenant_phone} onChange={e => setEditForm({...editForm, tenant_phone: e.target.value})} placeholder="052-0000000" /></div>
+            <div className="field"><label>בעל נכס</label><input className="input" value={editForm.owner_name} onChange={e => setEditForm({...editForm, owner_name: e.target.value})} placeholder="שם בעל הנכס" /></div>
+            <div className="field"><label>שכר דירה ₪</label><input className="input" type="number" value={editForm.rent_amount} onChange={e => setEditForm({...editForm, rent_amount: e.target.value})} /></div>
+            <div className="field"><label>חוזה עד</label><input className="input" type="date" value={editForm.lease_end} onChange={e => setEditForm({...editForm, lease_end: e.target.value})} /></div>
+            <div className="field">
+              <label>סוג עמלה</label>
+              <select className="input" value={editForm.fee_type} onChange={e => setEditForm({...editForm, fee_type: e.target.value})}>
+                <option value="percent">אחוז</option><option value="fixed">קבוע</option>
+              </select>
+            </div>
+            <div className="field"><label>{editForm.fee_type === "percent" ? "אחוז %" : "עמלה ₪"}</label><input className="input" type="number" value={editForm.fee_value} onChange={e => setEditForm({...editForm, fee_value: e.target.value})} /></div>
+            <div className="field"><label>הערות</label><input className="input" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} /></div>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button className="btn btn-primary" onClick={saveEdit} disabled={savingEdit}>{savingEdit ? "שומר..." : "שמור שינויים"}</button>
+            <button className="btn btn-outline" onClick={() => setEditing(false)}>ביטול</button>
+          </div>
+        </div>
+      )}
 
       <div className="detail-kpis">
         <KPI title="בעל נכס" value={apt.owner_name || "-"} subtitle="לקוח משויך" />
@@ -1438,21 +1529,56 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
 
       {tab === "summary" && (
         <div className="card">
-          <h3 className="card-title">פרטי הדירה</h3>
-          <div className="info-grid">
-            <InfoBox label="מבנה" value={apt.buildings?.name} />
-            <InfoBox label="עיר" value={apt.buildings?.city} />
-            <InfoBox label="מספר דירה" value={apt.apartment_number} />
-            <InfoBox label="קומה" value={String(apt.floor)} />
-            <InfoBox label="חדרים" value={String(apt.rooms)} />
-            <InfoBox label="סטטוס" value={apt.status} />
-            <InfoBox label="בעל נכס" value={apt.owner_name || "-"} />
-            <InfoBox label="דייר" value={apt.tenant_name || "-"} />
-            <InfoBox label="טלפון דייר" value={apt.tenant_phone || "-"} />
-            <InfoBox label="שכר דירה" value={apt.rent_amount ? currency(apt.rent_amount) : "-"} />
-            <InfoBox label="עמלת ניהול" value={apt.fee_type === "percent" ? apt.fee_value + "%" : currency(apt.fee_value)} />
-            <InfoBox label="הערות" value={apt.notes || "-"} />
+          <div className="section-top" style={{ marginBottom: 16 }}>
+            <h3 className="card-title" style={{ margin: 0 }}>פרטי הדירה</h3>
+            {!editing ? (
+              <button className="btn btn-primary" onClick={() => { setEditForm({ status: apt.status, owner_name: apt.owner_name || "", tenant_name: apt.tenant_name || "", tenant_phone: apt.tenant_phone || "", rent_amount: apt.rent_amount || "", lease_end: apt.lease_end || "", fee_type: apt.fee_type || "percent", fee_value: apt.fee_value || 8, notes: apt.notes || "" }); setEditing(true); }}>✏️ עריכה</button>
+            ) : (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveEdit} disabled={savingEdit}>{savingEdit ? "שומר..." : "💾 שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setEditing(false)}>ביטול</button>
+              </div>
+            )}
           </div>
+
+          {!editing ? (
+            <div className="info-grid">
+              <InfoBox label="מבנה" value={apt.buildings?.name} />
+              <InfoBox label="עיר" value={apt.buildings?.city} />
+              <InfoBox label="מספר דירה" value={apt.apartment_number} />
+              <InfoBox label="קומה" value={String(apt.floor)} />
+              <InfoBox label="חדרים" value={String(apt.rooms)} />
+              <InfoBox label="סטטוס" value={apt.status} />
+              <InfoBox label="בעל נכס" value={apt.owner_name || "-"} />
+              <InfoBox label="דייר" value={apt.tenant_name || "-"} />
+              <InfoBox label="טלפון דייר" value={apt.tenant_phone || "-"} />
+              <InfoBox label="שכר דירה" value={apt.rent_amount ? currency(apt.rent_amount) : "-"} />
+              <InfoBox label="עמלת ניהול" value={apt.fee_type === "percent" ? apt.fee_value + "%" : currency(apt.fee_value)} />
+              <InfoBox label="הערות" value={apt.notes || "-"} />
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="field">
+                <label>סטטוס</label>
+                <select className="input" value={editForm.status} onChange={e => setEditForm({...editForm, status: e.target.value})}>
+                  <option>פנוי</option><option>מושכר</option>
+                </select>
+              </div>
+              <div className="field"><label>בעל נכס</label><input className="input" value={editForm.owner_name} onChange={e => setEditForm({...editForm, owner_name: e.target.value})} /></div>
+              <div className="field"><label>דייר</label><input className="input" value={editForm.tenant_name} onChange={e => setEditForm({...editForm, tenant_name: e.target.value})} /></div>
+              <div className="field"><label>טלפון דייר</label><input className="input" value={editForm.tenant_phone} onChange={e => setEditForm({...editForm, tenant_phone: e.target.value})} /></div>
+              <div className="field"><label>שכר דירה (₪)</label><input className="input" type="number" value={editForm.rent_amount} onChange={e => setEditForm({...editForm, rent_amount: e.target.value})} /></div>
+              <div className="field"><label>חוזה עד</label><input className="input" type="date" value={editForm.lease_end} onChange={e => setEditForm({...editForm, lease_end: e.target.value})} /></div>
+              <div className="field">
+                <label>סוג עמלה</label>
+                <select className="input" value={editForm.fee_type} onChange={e => setEditForm({...editForm, fee_type: e.target.value})}>
+                  <option value="percent">אחוז</option><option value="fixed">קבוע</option>
+                </select>
+              </div>
+              <div className="field"><label>{editForm.fee_type === "percent" ? "אחוז עמלה" : "עמלה קבועה (₪)"}</label><input className="input" type="number" value={editForm.fee_value} onChange={e => setEditForm({...editForm, fee_value: e.target.value})} /></div>
+              <div className="field" style={{ gridColumn: "span 3" }}><label>הערות</label><textarea className="input" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ minHeight: 70 }} /></div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1632,6 +1758,9 @@ function WorkContracts() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [form, setForm] = useState({ owner_id: "", owner_name: "", start_date: "", end_date: "", fee_type: "percent", fee_value: "8", status: "פעיל", notes: "" });
 
   async function load() {
@@ -2277,3 +2406,4 @@ export default function Home() {
     </div>
   );
 }
+
