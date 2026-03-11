@@ -177,6 +177,56 @@ function IncomeChart() {
 
 function Dashboard({ openApartment, openBuilding }: { openApartment: (id: number) => void; openBuilding: (id: number) => void }) {
   const vacant = apartments.filter((a) => a.status === "פנוי");
+  const [quickAction, setQuickAction] = useState<string | null>(null);
+  const [dbApts, setDbApts] = useState<any[]>([]);
+  const [dbBlds, setDbBlds] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [ownerForm, setOwnerForm] = useState({ name: "", phone: "", email: "" });
+  const [aptForm, setAptForm] = useState({ building_id: "", apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", tenant_phone: "", lease_end: "", fee_type: "percent", fee_value: "8" });
+  const [leaseForm, setLeaseForm] = useState({ apartment_id: "", tenant_name: "", start_date: "", end_date: "", rent_amount: "", deposit: "" });
+  const [reqForm, setReqForm] = useState({ apartment_id: "", issue: "", urgency: "בינונית", vendor: "", cost: "" });
+
+  useState(() => {
+    supabase.from("apartments").select("id, apartment_number, buildings(name)").then(({ data }) => setDbApts(data || []));
+    supabase.from("buildings").select("*").then(({ data }) => setDbBlds(data || []));
+  });
+
+  async function saveOwner() {
+    if (!ownerForm.name) return;
+    setSaving(true);
+    await supabase.from("owners").insert(ownerForm);
+    setOwnerForm({ name: "", phone: "", email: "" });
+    setQuickAction(null);
+    setSaving(false);
+  }
+
+  async function saveApt() {
+    if (!aptForm.apartment_number) return;
+    setSaving(true);
+    await supabase.from("apartments").insert({ ...aptForm, floor: parseInt(aptForm.floor), rooms: parseFloat(aptForm.rooms), rent_amount: parseFloat(aptForm.rent_amount) || 0, fee_value: parseFloat(aptForm.fee_value) || 8 });
+    setAptForm({ building_id: "", apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", tenant_phone: "", lease_end: "", fee_type: "percent", fee_value: "8" });
+    setQuickAction(null);
+    setSaving(false);
+  }
+
+  async function saveLease() {
+    if (!leaseForm.tenant_name) return;
+    setSaving(true);
+    await supabase.from("leases").insert({ ...leaseForm, rent_amount: parseFloat(leaseForm.rent_amount) || 0, deposit: parseFloat(leaseForm.deposit) || 0, status: "פעיל" });
+    setLeaseForm({ apartment_id: "", tenant_name: "", start_date: "", end_date: "", rent_amount: "", deposit: "" });
+    setQuickAction(null);
+    setSaving(false);
+  }
+
+  async function saveReq() {
+    if (!reqForm.issue) return;
+    setSaving(true);
+    await supabase.from("service_requests").insert({ ...reqForm, cost: parseFloat(reqForm.cost) || 0, status: "חדשה" });
+    setReqForm({ apartment_id: "", issue: "", urgency: "בינונית", vendor: "", cost: "" });
+    setQuickAction(null);
+    setSaving(false);
+  }
+
   return (
     <div style={{ display: "grid", gap: 18 }}>
       <div className="kpi-grid">
@@ -211,11 +261,87 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: number
         <div className="card">
           <h3 className="card-title">פעולות מהירות</h3>
           <div className="action-list">
-            <button className="btn btn-primary">הוסף בעל נכס</button>
-            <button className="btn btn-secondary">הוסף דירה</button>
-            <button className="btn btn-secondary">הוסף חוזה</button>
-            <button className="btn btn-secondary">פתח קריאת שירות</button>
+            <button className="btn btn-primary" onClick={() => setQuickAction(quickAction === "owner" ? null : "owner")}>👤 הוסף בעל נכס</button>
+            <button className="btn btn-secondary" onClick={() => setQuickAction(quickAction === "apt" ? null : "apt")}>🏠 הוסף דירה</button>
+            <button className="btn btn-secondary" onClick={() => setQuickAction(quickAction === "lease" ? null : "lease")}>📋 הוסף חוזה</button>
+            <button className="btn btn-secondary" onClick={() => setQuickAction(quickAction === "req" ? null : "req")}>🔧 פתח קריאת שירות</button>
           </div>
+
+          {quickAction === "owner" && (
+            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "#f8fafc", borderRadius: 12, padding: 16 }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>בעל נכס חדש</div>
+              <input className="input" placeholder="שם מלא *" value={ownerForm.name} onChange={e => setOwnerForm({...ownerForm, name: e.target.value})} />
+              <input className="input" placeholder="טלפון" value={ownerForm.phone} onChange={e => setOwnerForm({...ownerForm, phone: e.target.value})} />
+              <input className="input" placeholder="אימייל" value={ownerForm.email} onChange={e => setOwnerForm({...ownerForm, email: e.target.value})} />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveOwner} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setQuickAction(null)}>ביטול</button>
+              </div>
+            </div>
+          )}
+
+          {quickAction === "apt" && (
+            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "#f8fafc", borderRadius: 12, padding: 16 }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>דירה חדשה</div>
+              <select className="input" value={aptForm.building_id} onChange={e => setAptForm({...aptForm, building_id: e.target.value})}>
+                <option value="">בחר מבנה</option>
+                {dbBlds.map((b: any) => <option key={b.id} value={b.id}>{b.name}, {b.city}</option>)}
+              </select>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <input className="input" placeholder="מספר דירה *" value={aptForm.apartment_number} onChange={e => setAptForm({...aptForm, apartment_number: e.target.value})} />
+                <input className="input" placeholder="שכר דירה ₪" type="number" value={aptForm.rent_amount} onChange={e => setAptForm({...aptForm, rent_amount: e.target.value})} />
+                <input className="input" placeholder="בעל נכס" value={aptForm.owner_name} onChange={e => setAptForm({...aptForm, owner_name: e.target.value})} />
+                <input className="input" placeholder="דייר" value={aptForm.tenant_name} onChange={e => setAptForm({...aptForm, tenant_name: e.target.value})} />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveApt} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setQuickAction(null)}>ביטול</button>
+              </div>
+            </div>
+          )}
+
+          {quickAction === "lease" && (
+            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "#f8fafc", borderRadius: 12, padding: 16 }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>חוזה חדש</div>
+              <select className="input" value={leaseForm.apartment_id} onChange={e => setLeaseForm({...leaseForm, apartment_id: e.target.value})}>
+                <option value="">בחר דירה</option>
+                {dbApts.map((a: any) => <option key={a.id} value={a.id}>{a.buildings?.name} / {a.apartment_number}</option>)}
+              </select>
+              <input className="input" placeholder="שם דייר *" value={leaseForm.tenant_name} onChange={e => setLeaseForm({...leaseForm, tenant_name: e.target.value})} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <input className="input" type="date" value={leaseForm.start_date} onChange={e => setLeaseForm({...leaseForm, start_date: e.target.value})} />
+                <input className="input" type="date" value={leaseForm.end_date} onChange={e => setLeaseForm({...leaseForm, end_date: e.target.value})} />
+                <input className="input" placeholder="שכר דירה ₪" type="number" value={leaseForm.rent_amount} onChange={e => setLeaseForm({...leaseForm, rent_amount: e.target.value})} />
+                <input className="input" placeholder="פיקדון ₪" type="number" value={leaseForm.deposit} onChange={e => setLeaseForm({...leaseForm, deposit: e.target.value})} />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveLease} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setQuickAction(null)}>ביטול</button>
+              </div>
+            </div>
+          )}
+
+          {quickAction === "req" && (
+            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "#f8fafc", borderRadius: 12, padding: 16 }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>קריאת שירות חדשה</div>
+              <select className="input" value={reqForm.apartment_id} onChange={e => setReqForm({...reqForm, apartment_id: e.target.value})}>
+                <option value="">בחר דירה</option>
+                {dbApts.map((a: any) => <option key={a.id} value={a.id}>{a.buildings?.name} / {a.apartment_number}</option>)}
+              </select>
+              <input className="input" placeholder="נושא התקלה *" value={reqForm.issue} onChange={e => setReqForm({...reqForm, issue: e.target.value})} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <select className="input" value={reqForm.urgency} onChange={e => setReqForm({...reqForm, urgency: e.target.value})}>
+                  <option>נמוכה</option><option>בינונית</option><option>גבוהה</option>
+                </select>
+                <input className="input" placeholder="ספק / בעל מקצוע" value={reqForm.vendor} onChange={e => setReqForm({...reqForm, vendor: e.target.value})} />
+                <input className="input" placeholder="עלות ₪" type="number" value={reqForm.cost} onChange={e => setReqForm({...reqForm, cost: e.target.value})} />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveReq} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setQuickAction(null)}>ביטול</button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
