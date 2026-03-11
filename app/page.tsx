@@ -2256,7 +2256,7 @@ export default function Home() {
         <div className="login-wrap">
           <div className="login-left">
             <div>
-              <div className="eyebrow"><span className="dot" />Property OS · מערכת ניהול נכסים</div>
+              <div className="eyebrow"><span className="dot" />GM · ניהול נכסים</div>
               <h1 className="login-title">שליטה מלאה על המבנים, היחידות, הקריאות וההכנסות שלך</h1>
               <div className="login-sub">מערכת יוקרתית לניהול נכסים שמתאימה במיוחד לעבודה שלך: כמה יחידות באותו בניין, בכמה קומות שונות, עם מעקב על תפוסה, חוזים, קריאות שירות, ההכנסה האישית שלך וגם רווחיות לבעלי הנכסים.</div>
               <div className="hero-grid">
@@ -2354,7 +2354,7 @@ export default function Home() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-icon">🏢</div>
-          <div><small>PROPERTY OS</small><strong>ניהול נכסים</strong></div>
+          <div><small>GM</small><strong>ניהול נכסים</strong></div>
         </div>
         <nav className="nav">
           {getNavItemsForRole(userRole).map((item) => (
