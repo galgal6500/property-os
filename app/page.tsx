@@ -727,6 +727,8 @@ function Leases() {
 
   useState(() => { load(); });
 
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+
   async function addLease() {
     if (!form.tenant_name) return;
     setSaving(true);
@@ -744,6 +746,19 @@ function Leases() {
     setShowForm(false);
     await load();
     setSaving(false);
+  }
+
+  async function uploadDocument(leaseId: string, file: File) {
+    setUploadingId(leaseId);
+    const ext = file.name.split(".").pop();
+    const path = `leases/${leaseId}.${ext}`;
+    const { error } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+      await supabase.from("leases").update({ document_url: urlData.publicUrl }).eq("id", leaseId);
+      await load();
+    }
+    setUploadingId(null);
   }
 
   async function deleteLease(id: string) {
@@ -816,7 +831,7 @@ function Leases() {
         ) : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>דירה</th><th>דייר</th><th>התחלה</th><th>סיום</th><th>ימים נותרים</th><th>שכירות</th><th>פיקדון</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+              <thead><tr><th>דירה</th><th>דייר</th><th>התחלה</th><th>סיום</th><th>ימים נותרים</th><th>שכירות</th><th>פיקדון</th><th>סטטוס</th><th>מסמך</th><th>פעולות</th></tr></thead>
               <tbody>
                 {filtered.map((l) => {
                   const days = daysLeft(l.end_date);
@@ -832,6 +847,24 @@ function Leases() {
                       <td>{currency(l.rent_amount)}</td>
                       <td>{currency(l.deposit)}</td>
                       <td><Badge value={l.status} /></td>
+                      <td>
+                        {l.document_url ? (
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <a href={l.document_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>📄 פתח</a>
+                            <label style={{ cursor: "pointer", fontSize: 12, color: "#64748b" }}>
+                              🔄
+                              <input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadDocument(l.id, e.target.files[0])} />
+                            </label>
+                          </div>
+                        ) : (
+                          <label style={{ cursor: "pointer" }}>
+                            <span className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>
+                              {uploadingId === l.id ? "מעלה..." : "📎 העלה"}
+                            </span>
+                            <input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadDocument(l.id, e.target.files[0])} />
+                          </label>
+                        )}
+                      </td>
                       <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteLease(l.id)}>מחק</button></td>
                     </tr>
                   );
