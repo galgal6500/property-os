@@ -1741,7 +1741,7 @@ export default function Home() {
             </div>
           </div>
         );
-        default: return <TenantPortal />;
+        default: return <TenantPortal userProfile={userProfile} />;
       }
     }
 
