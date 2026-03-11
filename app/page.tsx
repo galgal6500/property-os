@@ -108,6 +108,7 @@ const navItems = [
   { key: "tenantPortal", label: "פורטל דייר" },
   { key: "settings", label: "הגדרות" },
   { key: "users", label: "משתמשים" },
+  { key: "workcontracts", label: "חוזי עבודה" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -1792,6 +1793,7 @@ export default function Home() {
       case "tenantPortal": return <TenantPortal />;
       case "settings": return <Placeholder title="הגדרות" text="כאן יהיו בהמשך פרטי העסק, סוגי תקלות, התראות, הרשאות משתמשים והגדרות מערכת נוספות." />;
       case "users": return <UsersManagement />;
+      case "workcontracts": return <WorkContracts />;
       default: return null;
     }
   }
@@ -1930,5 +1932,3 @@ export default function Home() {
     </div>
   );
 }
-
-            
