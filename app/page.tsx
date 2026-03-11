@@ -631,7 +631,15 @@ function UsersManagement() {
                   <tr key={u.id}>
                     <td style={{ fontWeight: 700 }}>{u.full_name}</td>
                     <td>{u.phone || "-"}</td>
-                    <td><Badge value={u.role === "tenant" ? "דייר" : u.role === "owner" ? "בעל נכס" : u.role} /></td>
+                    <td>
+                      <select style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
+                        value={u.role || "tenant"}
+                        onChange={e => supabase.from("profiles").update({ role: e.target.value }).eq("id", u.id).then(() => load())}>
+                        <option value="tenant">דייר</option>
+                        <option value="owner">בעל נכס</option>
+                        <option value="admin">מנהל</option>
+                      </select>
+                    </td>
                     <td>
                       <select style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
                         value={u.apartment_id || ""}
@@ -1890,3 +1898,4 @@ export default function Home() {
     </div>
   );
 }
+
