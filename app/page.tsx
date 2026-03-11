@@ -1552,11 +1552,26 @@ export default function Home() {
   const [password, setPassword] = useState("");
   const [userRole, setUserRole] = useState("admin");
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [authMode, setAuthMode] = useState<"login" | "register" | "forgot">("login");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
+
+  async function handleForgotPassword() {
+    if (!resetEmail) return;
+    setLoginLoading(true);
+    await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: "https://property-os-ten.vercel.app"
+    });
+    setResetSent(true);
+    setLoginLoading(false);
+  }
   const [regForm, setRegForm] = useState({ full_name: "", phone: "", role: "tenant" });
   const [regError, setRegError] = useState("");
   const [regSuccess, setRegSuccess] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
+  const [authMode, setAuthModeState] = useState<"login" | "register" | "forgot">("login");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
   async function handleLogin() {
     setLoginLoading(true);
@@ -1828,10 +1843,34 @@ export default function Home() {
                   <div className="field"><label>סיסמה</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" /></div>
                   {loginError && <div style={{color:"#dc2626", marginBottom:10, fontSize:14}}>{loginError}</div>}
                   <button className="btn btn-primary" style={{ width: "100%", height: 52 }} onClick={handleLogin} disabled={loginLoading}>{loginLoading ? "מתחבר..." : "התחבר"}</button>
-                  <div style={{ marginTop: 16, textAlign: "center", color: "#64748b", fontSize: 14 }}>
+                  <div style={{ marginTop: 12, textAlign: "center" }}>
+                    <button className="btn-link" style={{ fontSize: 13, color: "#64748b" }} onClick={() => setAuthMode("forgot")}>שכחתי סיסמה</button>
+                  </div>
+                  <div style={{ marginTop: 8, textAlign: "center", color: "#64748b", fontSize: 14 }}>
                     אין לך חשבון?{" "}
                     <button className="btn-link" onClick={() => setAuthMode("register")}>הירשם כאן</button>
                   </div>
+                </>
+              ) : authMode === "forgot" ? (
+                <>
+                  {resetSent ? (
+                    <div style={{ textAlign: "center", padding: "20px 0" }}>
+                      <div style={{ fontSize: 48, marginBottom: 16 }}>📧</div>
+                      <h2 style={{ marginBottom: 8 }}>האימייל נשלח!</h2>
+                      <p style={{ color: "#64748b" }}>בדוק את תיבת הדואר שלך ולחץ על הקישור לאיפוס הסיסמה.</p>
+                      <button className="btn btn-primary" style={{ marginTop: 16, width: "100%" }} onClick={() => { setResetSent(false); setAuthMode("login"); }}>חזרה להתחברות</button>
+                    </div>
+                  ) : (
+                    <>
+                      <h1>שחזור סיסמה</h1>
+                      <p style={{ color: "#64748b" }}>הזן את האימייל שלך ונשלח לך קישור לאיפוס הסיסמה</p>
+                      <div className="field"><label>אימייל</label><input className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="your@email.com" /></div>
+                      <button className="btn btn-primary" style={{ width: "100%", height: 52, marginTop: 8 }} onClick={handleForgotPassword} disabled={loginLoading}>{loginLoading ? "שולח..." : "שלח קישור לאיפוס"}</button>
+                      <div style={{ marginTop: 16, textAlign: "center" }}>
+                        <button className="btn-link" style={{ color: "#64748b", fontSize: 14 }} onClick={() => setAuthMode("login")}>חזרה להתחברות</button>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -1898,4 +1937,3 @@ export default function Home() {
     </div>
   );
 }
-
