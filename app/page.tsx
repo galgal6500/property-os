@@ -254,37 +254,90 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: number
 }
 
 function Owners({ openOwner }: { openOwner: (id: number) => void }) {
+  const [dbOwners, setDbOwners] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
+
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase.from("owners").select("*").order("created_at", { ascending: false });
+    setDbOwners(data || []);
+    setLoading(false);
+  }
+
+  useState(() => { load(); });
+
+  async function addOwner() {
+    if (!form.name) return;
+    setSaving(true);
+    await supabase.from("owners").insert(form);
+    setForm({ name: "", phone: "", email: "", notes: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function deleteOwner(id: string) {
+    if (!confirm("למחוק את בעל הנכס?")) return;
+    await supabase.from("owners").delete().eq("id", id);
+    await load();
+  }
+
   return (
-    <div className="card">
-      <div className="section-top">
-        <div>
-          <h2 className="card-title" style={{ marginBottom: 6 }}>בעלי נכסים</h2>
-          <div className="muted">רשימת הלקוחות שלך במערכת כולל רווחיות והוצאות</div>
+    <div style={{ display: "grid", gap: 18 }}>
+      <div className="card">
+        <div className="section-top">
+          <div>
+            <h2 className="card-title" style={{ marginBottom: 6 }}>בעלי נכסים</h2>
+            <div className="muted">רשימת הלקוחות שלך במערכת</div>
+          </div>
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף בעל נכס</button>
         </div>
-        <button className="btn btn-primary">הוסף בעל נכס</button>
-      </div>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>שם</th><th>טלפון</th><th>אימייל</th><th>הכנסות חודשיות</th><th>הוצאות חודשיות</th><th>רווח נטו</th><th>פעולות</th></tr></thead>
-          <tbody>
-            {owners.map((owner) => {
-              const ownerUnits = apartments.filter((a) => a.owner === owner.name);
-              const income = ownerUnits.reduce((sum, u) => sum + (u.rentAmount || 0), 0);
-              const expenses = ownerExpenses.filter((e) => e.ownerName === owner.name && e.paidBy === "בעל נכס").reduce((sum, e) => sum + e.amount, 0);
-              return (
-                <tr key={owner.id}>
-                  <td style={{ fontWeight: 800 }}>{owner.name}</td>
-                  <td>{owner.phone}</td>
-                  <td>{owner.email}</td>
-                  <td>{currency(income)}</td>
-                  <td>{currency(expenses)}</td>
-                  <td>{currency(income - expenses)}</td>
-                  <td><button className="btn btn-outline" onClick={() => openOwner(owner.id)}>צפייה</button></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+
+        {showForm && (
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>בעל נכס חדש</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="field"><label>שם מלא</label><input className="input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="יוסי כהן" /></div>
+              <div className="field"><label>טלפון</label><input className="input" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="052-1234567" /></div>
+              <div className="field"><label>אימייל</label><input className="input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="yossi@email.com" /></div>
+              <div className="field"><label>הערות</label><input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="הערות..." /></div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-primary" onClick={addOwner} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        ) : dbOwners.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>👤</div>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>אין בעלי נכסים עדיין</div>
+            <div>לחץ על "הוסף בעל נכס" כדי להתחיל</div>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>שם</th><th>טלפון</th><th>אימייל</th><th>הערות</th><th>פעולות</th></tr></thead>
+              <tbody>
+                {dbOwners.map((owner) => (
+                  <tr key={owner.id}>
+                    <td style={{ fontWeight: 800 }}>{owner.name}</td>
+                    <td>{owner.phone || "-"}</td>
+                    <td>{owner.email || "-"}</td>
+                    <td>{owner.notes || "-"}</td>
+                    <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteOwner(owner.id)}>מחק</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
