@@ -1497,7 +1497,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: number; back: ()
   );
 }
 
-function TenantPortal() {
+function TenantPortal({ userProfile }: { userProfile: any }) {
   return (
     <div style={{ display: "grid", gap: 18 }}>
       <div className="card">
