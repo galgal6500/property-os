@@ -374,31 +374,90 @@ function OwnerDetails({ ownerId, back }: { ownerId: number; back: () => void }) 
 }
 
 function Buildings({ openBuilding }: { openBuilding: (id: number) => void }) {
+  const [dbBuildings, setDbBuildings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newCity, setNewCity] = useState("");
+  const [newFloors, setNewFloors] = useState("1");
+  const [saving, setSaving] = useState(false);
+
+  async function loadBuildings() {
+    setLoading(true);
+    const { data } = await supabase.from("buildings").select("*").order("created_at", { ascending: false });
+    setDbBuildings(data || []);
+    setLoading(false);
+  }
+
+  useState(() => { loadBuildings(); });
+
+  async function addBuilding() {
+    if (!newName || !newCity) return;
+    setSaving(true);
+    await supabase.from("buildings").insert({ name: newName, city: newCity, floors: parseInt(newFloors) });
+    setNewName(""); setNewCity(""); setNewFloors("1");
+    setShowForm(false);
+    await loadBuildings();
+    setSaving(false);
+  }
+
+  async function deleteBuilding(id: string) {
+    if (!confirm("למחוק את המבנה?")) return;
+    await supabase.from("buildings").delete().eq("id", id);
+    await loadBuildings();
+  }
+
   return (
-    <div className="card">
-      <div className="section-top">
-        <div><h2 className="card-title">מבנים</h2><div className="muted">ניהול הבניינים שבהם יש לך יחידות</div></div>
-        <button className="btn btn-primary">הוסף מבנה</button>
-      </div>
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>מבנה</th><th>עיר</th><th>מספר יחידות</th><th>קומות פעילות</th><th>יחידות מושכרות</th><th>הכנסה חודשית</th><th>פעולות</th></tr></thead>
-          <tbody>
-            {buildings.map((b) => {
-              const units = apartments.filter((a) => a.buildingId === b.id);
-              const rented = units.filter((u) => u.status === "מושכר").length;
-              const income = units.reduce((sum, u) => sum + (u.monthlyIncome || 0), 0);
-              const floors = Array.from(new Set(units.map((u) => u.floor))).sort((a, z) => a - z).join(", ");
-              return (
-                <tr key={b.id}>
-                  <td style={{ fontWeight: 800 }}>{b.name}</td><td>{b.city}</td><td>{units.length}</td>
-                  <td>{floors}</td><td>{rented}</td><td>{currency(income)}</td>
-                  <td><button className="btn btn-outline" onClick={() => openBuilding(b.id)}>צפייה</button></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+    <div style={{ display: "grid", gap: 18 }}>
+      <div className="card">
+        <div className="section-top">
+          <div><h2 className="card-title">מבנים</h2><div className="muted">ניהול הבניינים שבהם יש לך יחידות</div></div>
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף מבנה</button>
+        </div>
+
+        {showForm && (
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>מבנה חדש</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 120px", gap: 12 }}>
+              <div className="field"><label>שם המבנה</label><input className="input" value={newName} onChange={e => setNewName(e.target.value)} placeholder="הרצל 10" /></div>
+              <div className="field"><label>עיר</label><input className="input" value={newCity} onChange={e => setNewCity(e.target.value)} placeholder="תל אביב" /></div>
+              <div className="field"><label>קומות</label><input className="input" type="number" value={newFloors} onChange={e => setNewFloors(e.target.value)} min="1" /></div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-primary" onClick={addBuilding} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        ) : dbBuildings.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🏢</div>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>אין מבנים עדיין</div>
+            <div>לחץ על "הוסף מבנה" כדי להתחיל</div>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>שם המבנה</th><th>עיר</th><th>קומות</th><th>תאריך הוספה</th><th>פעולות</th></tr></thead>
+              <tbody>
+                {dbBuildings.map((b) => (
+                  <tr key={b.id}>
+                    <td style={{ fontWeight: 800 }}>{b.name}</td>
+                    <td>{b.city}</td>
+                    <td>{b.floors}</td>
+                    <td>{new Date(b.created_at).toLocaleDateString("he-IL")}</td>
+                    <td style={{ display: "flex", gap: 8 }}>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteBuilding(b.id)}>מחק</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
