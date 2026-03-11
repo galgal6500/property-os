@@ -564,7 +564,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: number; back: ()
         <KPI title="דייר נוכחי" value={apartment.tenant} subtitle="דייר פעיל" />
         <KPI title="חוזה עד" value={apartment.leaseEnd} subtitle="מועד סיום" />
         <KPI title="קריאות פתוחות" value={String(apartment.openRequests)} subtitle="לטיפול" />
-        <KPI title="הכנסה חודשית" value={currency(apartment.monthlyIncome)} subtitle="מהדירה הזאת" />
+
       </div>
 
       <div className="tabs">
