@@ -177,7 +177,7 @@ function IncomeChart() {
   );
 }
 
-function Dashboard({ openApartment, openBuilding }: { openApartment: (id: number) => void; openBuilding: (id: number) => void }) {
+function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string) => void; openBuilding: (id: number) => void }) {
   const vacant = apartments.filter((a) => a.status === "פנוי");
   const [quickAction, setQuickAction] = useState<string | null>(null);
   const [stats, setStats] = useState({ owners: 0, buildings: 0, apartments: 0, vacant: 0, openRequests: 0, endingSoon: 0, monthlyIncome: 0 });
@@ -1197,7 +1197,7 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: numb
   );
 }
 
-function Apartments({ openApartment }: { openApartment: (id: number) => void }) {
+function Apartments({ openApartment }: { openApartment: (id: string) => void }) {
   const [filter, setFilter] = useState("הכל");
   const [query, setQuery] = useState("");
   const [dbApartments, setDbApartments] = useState<any[]>([]);
@@ -1340,7 +1340,10 @@ function Apartments({ openApartment }: { openApartment: (id: number) => void }) 
                     <td>{item.lease_end ? new Date(item.lease_end).toLocaleDateString("he-IL") : "-"}</td>
                     <td>{item.rent_amount ? currency(item.rent_amount) : "-"}</td>
                     <td><Badge value={item.status} /></td>
-                    <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteApartment(item.id)}>מחק</button></td>
+                    <td style={{ display: "flex", gap: 8 }}>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => openApartment(item.id)}>צפייה</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626" }} onClick={() => deleteApartment(item.id)}>מחק</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1352,150 +1355,275 @@ function Apartments({ openApartment }: { openApartment: (id: number) => void }) 
   );
 }
 
-function ApartmentDetails({ apartmentId, back }: { apartmentId: number; back: () => void }) {
+function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: () => void }) {
   const [tab, setTab] = useState("summary");
-  const apartment = apartments.find((a) => a.id === apartmentId) || apartments[0];
+  const [apt, setApt] = useState<any>(null);
+  const [leases, setLeases] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+
+  useState(() => {
+    async function load() {
+      setLoading(true);
+      const { data: a } = await supabase.from("apartments").select("*, buildings(name, city)").eq("id", apartmentId).single();
+      setApt(a);
+      const { data: ls } = await supabase.from("leases").select("*").eq("apartment_id", apartmentId).order("created_at", { ascending: false });
+      setLeases(ls || []);
+      const { data: rs } = await supabase.from("service_requests").select("*").eq("apartment_id", apartmentId).order("created_at", { ascending: false });
+      setRequests(rs || []);
+      setLoading(false);
+    }
+    load();
+  });
+
+  async function uploadDoc(leaseId: string, file: File) {
+    setUploadingId(leaseId);
+    const ext = file.name.split(".").pop();
+    const path = `leases/${leaseId}.${ext}`;
+    await supabase.storage.from("documents").upload(path, file, { upsert: true });
+    const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+    await supabase.from("leases").update({ document_url: urlData.publicUrl }).eq("id", leaseId);
+    const { data: ls } = await supabase.from("leases").select("*").eq("apartment_id", apartmentId).order("created_at", { ascending: false });
+    setLeases(ls || []);
+    setUploadingId(null);
+  }
+
+  async function updateRequestStatus(id: string, status: string) {
+    await supabase.from("service_requests").update({ status }).eq("id", id);
+    const { data: rs } = await supabase.from("service_requests").select("*").eq("apartment_id", apartmentId).order("created_at", { ascending: false });
+    setRequests(rs || []);
+  }
+
+  if (loading) return <div style={{ padding: 60, textAlign: "center", color: "#64748b" }}>טוען...</div>;
+  if (!apt) return <div style={{ padding: 60, textAlign: "center", color: "#dc2626" }}>לא נמצאה דירה</div>;
+
+  const activeLease = leases.find(l => l.status === "פעיל");
+  const pastLeases = leases.filter(l => l.status !== "פעיל");
+  const openRequests = requests.filter(r => r.status !== "הושלם");
+  const closedRequests = requests.filter(r => r.status === "הושלם");
 
   const tabs = [
-    { key: "summary", label: "סיכום" }, { key: "tenant", label: "דייר" }, { key: "lease", label: "חוזה" },
-    { key: "requests", label: "קריאות שירות" }, { key: "documents", label: "מסמכים" }, { key: "history", label: "היסטוריה" },
+    { key: "summary", label: "סיכום" },
+    { key: "tenant", label: "דייר נוכחי" },
+    { key: "lease", label: "חוזים" },
+    { key: "requests", label: `קריאות (${openRequests.length})` },
+    { key: "documents", label: "מסמכים" },
+    { key: "history", label: "היסטוריה" },
   ];
 
   return (
-    <div>
+    <div style={{ display: "grid", gap: 18 }}>
       <div className="detail-top">
         <div>
           <button className="back-link" onClick={back}>← חזרה לרשימת דירות</button>
-          <h2 style={{ margin: "8px 0", fontSize: 34 }}>{apartment.building} / דירה {apartment.apartmentNumber}</h2>
-          <div className="muted"><Badge value={apartment.status} /><span style={{ marginRight: 8 }}>{apartment.city} · קומה {apartment.floor}</span></div>
-        </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button className="btn btn-primary">הוספת דייר</button>
-          <button className="btn btn-secondary">הוספת חוזה</button>
-          <button className="btn btn-outline">פתיחת קריאת שירות</button>
+          <h2 style={{ margin: "8px 0", fontSize: 34 }}>{apt.buildings?.name} / דירה {apt.apartment_number}</h2>
+          <div className="muted"><Badge value={apt.status} /><span style={{ marginRight: 8 }}>{apt.buildings?.city} · קומה {apt.floor} · {apt.rooms} חדרים</span></div>
         </div>
       </div>
 
       <div className="detail-kpis">
-        <KPI title="בעל נכס" value={apartment.owner} subtitle="לקוח משויך" />
-        <KPI title="דייר נוכחי" value={apartment.tenant} subtitle="דייר פעיל" />
-        <KPI title="חוזה עד" value={apartment.leaseEnd} subtitle="מועד סיום" />
-        <KPI title="קריאות פתוחות" value={String(apartment.openRequests)} subtitle="לטיפול" />
-
+        <KPI title="בעל נכס" value={apt.owner_name || "-"} subtitle="לקוח משויך" />
+        <KPI title="דייר נוכחי" value={apt.tenant_name || "פנוי"} subtitle={apt.tenant_phone || ""} />
+        <KPI title="שכר דירה" value={apt.rent_amount ? currency(apt.rent_amount) : "-"} subtitle="חודשי" />
+        <KPI title="חוזה עד" value={activeLease?.end_date ? new Date(activeLease.end_date).toLocaleDateString("he-IL") : "-"} subtitle="מועד סיום" />
+        <KPI title="קריאות פתוחות" value={String(openRequests.length)} subtitle="לטיפול" />
       </div>
 
-      <div className="tabs">
-        {tabs.map((t) => (
-          <button key={t.key} className={`btn ${tab === t.key ? "btn-dark" : "btn-outline"}`} onClick={() => setTab(t.key)}>{t.label}</button>
+      <div className="tab-bar">
+        {tabs.map(t => (
+          <button key={t.key} className={`tab-btn ${tab === t.key ? "active" : ""}`} onClick={() => setTab(t.key)}>{t.label}</button>
         ))}
       </div>
 
       {tab === "summary" && (
         <div className="card">
-          <h3 className="card-title">פרטי דירה</h3>
+          <h3 className="card-title">פרטי הדירה</h3>
           <div className="info-grid">
-            <InfoBox label="מבנה" value={apartment.building} />
-            <InfoBox label="עיר" value={apartment.city} />
-            <InfoBox label="מספר דירה" value={apartment.apartmentNumber} />
-            <InfoBox label="קומה" value={apartment.floor} />
-            <InfoBox label="מספר חדרים" value={apartment.rooms} />
-            <InfoBox label="סטטוס" value={apartment.status} />
-            <InfoBox label="שכר דירה" value={currency(apartment.rentAmount)} />
-            <InfoBox label="הכנסה חודשית" value={currency(apartment.monthlyIncome)} />
+            <InfoBox label="מבנה" value={apt.buildings?.name} />
+            <InfoBox label="עיר" value={apt.buildings?.city} />
+            <InfoBox label="מספר דירה" value={apt.apartment_number} />
+            <InfoBox label="קומה" value={String(apt.floor)} />
+            <InfoBox label="חדרים" value={String(apt.rooms)} />
+            <InfoBox label="סטטוס" value={apt.status} />
+            <InfoBox label="בעל נכס" value={apt.owner_name || "-"} />
+            <InfoBox label="דייר" value={apt.tenant_name || "-"} />
+            <InfoBox label="טלפון דייר" value={apt.tenant_phone || "-"} />
+            <InfoBox label="שכר דירה" value={apt.rent_amount ? currency(apt.rent_amount) : "-"} />
+            <InfoBox label="עמלת ניהול" value={apt.fee_type === "percent" ? apt.fee_value + "%" : currency(apt.fee_value)} />
+            <InfoBox label="הערות" value={apt.notes || "-"} />
           </div>
-          <div className="note">{apartment.notes}</div>
         </div>
       )}
 
       {tab === "tenant" && (
         <div className="card">
-          <h3 className="card-title">פרטי דייר</h3>
-          <div className="split-2">
-            <div className="mini-user">
-              <div className="avatar">{apartment.tenant === "-" ? "—" : apartment.tenant[0]}</div>
-              <div><div style={{ fontWeight: 800, fontSize: 20 }}>{apartment.tenant}</div><div className="muted">דייר פעיל</div></div>
+          <h3 className="card-title">דייר נוכחי</h3>
+          {!apt.tenant_name ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div>
+              <div style={{ fontWeight: 700 }}>הדירה פנויה</div>
             </div>
-            <div style={{ display: "grid", gap: 12 }}>
-              <div className="line-item">טלפון: {apartment.phone}</div>
-              <div className="line-item">אימייל: dani@example.com</div>
-              <div className="line-item">מספר נפשות: 3</div>
+          ) : (
+            <div className="info-grid">
+              <InfoBox label="שם" value={apt.tenant_name} />
+              <InfoBox label="טלפון" value={apt.tenant_phone || "-"} />
+              <InfoBox label="חוזה עד" value={apt.lease_end ? new Date(apt.lease_end).toLocaleDateString("he-IL") : "-"} />
+              <InfoBox label="שכר דירה" value={apt.rent_amount ? currency(apt.rent_amount) : "-"} />
             </div>
-          </div>
+          )}
         </div>
       )}
 
       {tab === "lease" && (
-        <div className="card">
-          <h3 className="card-title">חוזה פעיל</h3>
-          <div className="info-grid">
-            <InfoBox label="תאריך התחלה" value="15/04/2025" />
-            <InfoBox label="תאריך סיום" value={apartment.leaseEnd} />
-            <InfoBox label="שכר דירה" value={currency(apartment.rentAmount)} />
-            <InfoBox label="סטטוס" value="פעיל" />
-            <InfoBox label="סוג עמלה" value={apartment.feeType === "percent" ? "אחוז" : "סכום קבוע"} />
-            <InfoBox label="גובה עמלה" value={apartment.feeType === "percent" ? apartment.feeValue + "%" : currency(apartment.feeValue)} />
-            <InfoBox label="הכנסה חודשית שלך" value={currency(apartment.monthlyIncome)} />
-            <InfoBox label="בעל נכס" value={apartment.owner} />
-          </div>
-          <div className="note">קובץ מצורף: חוזה שכירות 2025.pdf</div>
+        <div style={{ display: "grid", gap: 14 }}>
+          {activeLease && (
+            <div className="card">
+              <h3 className="card-title" style={{ color: "#16a34a" }}>✅ חוזה פעיל</h3>
+              <div className="info-grid">
+                <InfoBox label="דייר" value={activeLease.tenant_name} />
+                <InfoBox label="התחלה" value={activeLease.start_date ? new Date(activeLease.start_date).toLocaleDateString("he-IL") : "-"} />
+                <InfoBox label="סיום" value={activeLease.end_date ? new Date(activeLease.end_date).toLocaleDateString("he-IL") : "-"} />
+                <InfoBox label="שכירות" value={currency(activeLease.rent_amount)} />
+                <InfoBox label="פיקדון" value={currency(activeLease.deposit)} />
+                <InfoBox label="הערות" value={activeLease.notes || "-"} />
+              </div>
+              <div style={{ marginTop: 14 }}>
+                {activeLease.document_url ? (
+                  <a href={activeLease.document_url} target="_blank" rel="noreferrer" className="btn btn-outline">📄 פתח חוזה</a>
+                ) : (
+                  <label style={{ cursor: "pointer" }}>
+                    <span className="btn btn-outline">{uploadingId === activeLease.id ? "מעלה..." : "📎 העלה חוזה"}</span>
+                    <input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadDoc(activeLease.id, e.target.files[0])} />
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
+          {pastLeases.length > 0 && (
+            <div className="card">
+              <h3 className="card-title">📋 דיירים קודמים</h3>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>דייר</th><th>התחלה</th><th>סיום</th><th>שכירות</th><th>סטטוס</th><th>מסמך</th></tr></thead>
+                  <tbody>
+                    {pastLeases.map(l => (
+                      <tr key={l.id}>
+                        <td style={{ fontWeight: 700 }}>{l.tenant_name}</td>
+                        <td>{l.start_date ? new Date(l.start_date).toLocaleDateString("he-IL") : "-"}</td>
+                        <td>{l.end_date ? new Date(l.end_date).toLocaleDateString("he-IL") : "-"}</td>
+                        <td>{currency(l.rent_amount)}</td>
+                        <td><Badge value={l.status} /></td>
+                        <td>{l.document_url ? <a href={l.document_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>📄 פתח</a> : "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {!activeLease && pastLeases.length === 0 && (
+            <div className="card"><div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>אין חוזים עדיין</div></div>
+          )}
         </div>
       )}
 
       {tab === "requests" && (
+        <div style={{ display: "grid", gap: 14 }}>
+          {openRequests.length > 0 && (
+            <div className="card">
+              <h3 className="card-title" style={{ color: "#dc2626" }}>🔧 קריאות פתוחות ({openRequests.length})</h3>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>תאריך</th><th>תקלה</th><th>דחיפות</th><th>ספק</th><th>עלות</th><th>סטטוס</th></tr></thead>
+                  <tbody>
+                    {openRequests.map(r => (
+                      <tr key={r.id}>
+                        <td>{new Date(r.created_at).toLocaleDateString("he-IL")}</td>
+                        <td style={{ fontWeight: 700 }}>{r.issue}</td>
+                        <td><Badge value={r.urgency} /></td>
+                        <td>{r.vendor || "-"}</td>
+                        <td>{r.cost ? currency(r.cost) : "-"}</td>
+                        <td>
+                          <select value={r.status} onChange={e => updateRequestStatus(r.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
+                            <option>חדשה</option><option>בטיפול</option><option>ממתין לבעל מקצוע</option><option>הושלם</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {closedRequests.length > 0 && (
+            <div className="card">
+              <h3 className="card-title">✅ קריאות שטופלו ({closedRequests.length})</h3>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>תאריך</th><th>תקלה</th><th>ספק</th><th>עלות</th></tr></thead>
+                  <tbody>
+                    {closedRequests.map(r => (
+                      <tr key={r.id}>
+                        <td>{new Date(r.created_at).toLocaleDateString("he-IL")}</td>
+                        <td>{r.issue}</td>
+                        <td>{r.vendor || "-"}</td>
+                        <td>{r.cost ? currency(r.cost) : "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {requests.length === 0 && (
+            <div className="card"><div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>אין קריאות שירות לדירה זו</div></div>
+          )}
+        </div>
+      )}
+
+      {tab === "documents" && (
         <div className="card">
-          <h3 className="card-title">קריאות שירות</h3>
+          <h3 className="card-title">📄 מסמכים</h3>
+          {leases.filter(l => l.document_url).length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>אין מסמכים עדיין</div>
+          ) : (
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", padding: "8px 0" }}>
+              {leases.filter(l => l.document_url).map(l => (
+                <a key={l.id} href={l.document_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  📄 חוזה — {l.tenant_name} ({l.status})
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "history" && (
+        <div className="card">
+          <h3 className="card-title">📋 היסטוריה מלאה</h3>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>תקלה</th><th>דחיפות</th><th>סטטוס</th><th>עלות</th></tr></thead>
+              <thead><tr><th>תאריך</th><th>סוג</th><th>פרטים</th></tr></thead>
               <tbody>
-                {serviceRequests.map((item) => (
-                  <tr key={item.id}><td>{item.issue}</td><td><Badge value={item.urgency} /></td><td><Badge value={item.status} /></td><td>{item.cost}</td></tr>
+                {[...leases.map(l => ({ date: l.created_at, type: "חוזה", details: `${l.tenant_name} — ${l.status}` })),
+                  ...requests.map(r => ({ date: r.created_at, type: "קריאת שירות", details: `${r.issue} — ${r.status}` }))
+                ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((item, i) => (
+                  <tr key={i}>
+                    <td>{new Date(item.date).toLocaleDateString("he-IL")}</td>
+                    <td><Badge value={item.type} /></td>
+                    <td>{item.details}</td>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
-
-      {tab === "documents" && (
-        <div className="card">
-          <h3 className="card-title">מסמכים</h3>
-          <div style={{ display: "grid", gap: 12 }}>
-            {documents.map((doc) => (
-              <div key={doc.id} className="doc-row">
-                <div><div style={{ fontWeight: 800 }}>{doc.name}</div><div className="muted" style={{ marginTop: 6 }}>{doc.type} · {doc.date}</div></div>
-                <button className="btn btn-outline">פתח</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {tab === "history" && (
-        <div className="split-2">
-          <div className="card">
-            <h3 className="card-title">היסטוריית דיירים</h3>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>דייר</th><th>כניסה</th><th>יציאה</th></tr></thead>
-                <tbody>{tenantHistory.map((item) => (<tr key={item.id}><td>{item.name}</td><td>{item.from}</td><td>{item.to}</td></tr>))}</tbody>
-              </table>
-            </div>
-          </div>
-          <div className="card">
-            <h3 className="card-title">היסטוריית חוזים</h3>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>התחלה</th><th>סיום</th><th>שכירות</th><th>סטטוס</th></tr></thead>
-                <tbody>{leaseHistory.map((item) => (<tr key={item.id}><td>{item.from}</td><td>{item.to}</td><td>{item.rent}</td><td><Badge value={item.status} /></td></tr>))}</tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
+
 
 function WorkContracts() {
   const [contracts, setContracts] = useState<any[]>([]);
@@ -1945,11 +2073,11 @@ export default function Home() {
     setRegSuccess(true);
     setLoginLoading(false);
   }
-  const [selectedApartmentId, setSelectedApartmentId] = useState(1);
+  const [selectedApartmentId, setSelectedApartmentId] = useState<string>("");
   const [selectedBuildingId, setSelectedBuildingId] = useState(1);
   const [selectedOwnerId, setSelectedOwnerId] = useState(1);
 
-  function openApartment(id: number) { setSelectedApartmentId(id); setActivePage("apartmentDetails"); }
+  function openApartment(id: string) { setSelectedApartmentId(id); setActivePage("apartmentDetails"); }
   function openBuilding(id: number) { setSelectedBuildingId(id); setActivePage("buildingDetails"); }
   function openOwner(id: number) { setSelectedOwnerId(id); setActivePage("ownerDetails"); }
 
