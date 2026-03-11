@@ -177,7 +177,7 @@ function IncomeChart() {
   );
 }
 
-function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string) => void; openBuilding: (id: number) => void }) {
+function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string) => void; openBuilding: (id: any) => void }) {
   const vacant = apartments.filter((a) => a.status === "פנוי");
   const [quickAction, setQuickAction] = useState<string | null>(null);
   const [stats, setStats] = useState({ owners: 0, buildings: 0, apartments: 0, vacant: 0, openRequests: 0, endingSoon: 0, monthlyIncome: 0 });
@@ -1024,7 +1024,7 @@ function ServiceRequests() {
   );
 }
 
-function Buildings({ openBuilding }: { openBuilding: (id: number) => void }) {
+function Buildings({ openBuilding }: { openBuilding: (id: any) => void }) {
   const [dbBuildings, setDbBuildings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -1114,7 +1114,7 @@ function Buildings({ openBuilding }: { openBuilding: (id: number) => void }) {
   );
 }
 
-function BuildingDetails({ buildingId, back, openApartment }: { buildingId: number; back: () => void; openApartment: (id: number) => void }) {
+function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any; back: () => void; openApartment: (id: string) => void }) {
   const building = buildings.find((b) => b.id === buildingId) || buildings[0];
   const units = apartments.filter((a) => a.buildingId === building.id);
   const totalIncome = units.reduce((sum, u) => sum + (u.monthlyIncome || 0), 0);
@@ -2181,11 +2181,11 @@ export default function Home() {
     setLoginLoading(false);
   }
   const [selectedApartmentId, setSelectedApartmentId] = useState<string>("");
-  const [selectedBuildingId, setSelectedBuildingId] = useState(1);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<any>("");
   const [selectedOwnerId, setSelectedOwnerId] = useState(1);
 
   function openApartment(id: string) { setSelectedApartmentId(id); setActivePage("apartmentDetails"); }
-  function openBuilding(id: number) { setSelectedBuildingId(id); setActivePage("buildingDetails"); }
+  function openBuilding(id: any) { setSelectedBuildingId(id); setActivePage("buildingDetails"); }
   function openOwner(id: number) { setSelectedOwnerId(id); setActivePage("ownerDetails"); }
 
   function renderContent() {
@@ -2384,4 +2384,3 @@ export default function Home() {
     </div>
   );
 }
-
