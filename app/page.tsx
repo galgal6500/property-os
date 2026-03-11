@@ -1569,9 +1569,7 @@ export default function Home() {
   const [regError, setRegError] = useState("");
   const [regSuccess, setRegSuccess] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
-  const [authMode, setAuthModeState] = useState<"login" | "register" | "forgot">("login");
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetSent, setResetSent] = useState(false);
+
 
   async function handleLogin() {
     setLoginLoading(true);
