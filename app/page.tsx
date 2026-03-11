@@ -1497,6 +1497,248 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: number; back: ()
   );
 }
 
+function WorkContracts() {
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [owners, setOwners] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ owner_id: "", owner_name: "", start_date: "", end_date: "", fee_type: "percent", fee_value: "8", status: "פעיל", notes: "" });
+
+  async function load() {
+    setLoading(true);
+    const { data: cs } = await supabase.from("work_contracts").select("*").order("created_at", { ascending: false });
+    const { data: os } = await supabase.from("owners").select("*").order("name");
+    setContracts(cs || []);
+    setOwners(os || []);
+    setLoading(false);
+  }
+
+  useState(() => { load(); });
+
+  async function addContract() {
+    if (!form.owner_name) return;
+    setSaving(true);
+    await supabase.from("work_contracts").insert({ owner_id: form.owner_id || null, owner_name: form.owner_name, start_date: form.start_date || null, end_date: form.end_date || null, fee_type: form.fee_type, fee_value: parseFloat(form.fee_value) || 8, status: form.status, notes: form.notes });
+    setForm({ owner_id: "", owner_name: "", start_date: "", end_date: "", fee_type: "percent", fee_value: "8", status: "פעיל", notes: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function uploadDocument(id: string, file: File) {
+    setUploadingId(id);
+    const ext = file.name.split(".").pop();
+    const path = `work-contracts/${id}.${ext}`;
+    const { error } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+      await supabase.from("work_contracts").update({ document_url: urlData.publicUrl }).eq("id", id);
+      await load();
+    }
+    setUploadingId(null);
+  }
+
+  async function deleteContract(id: string) {
+    if (!confirm("למחוק את החוזה?")) return;
+    await supabase.from("work_contracts").delete().eq("id", id);
+    await load();
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div className="card">
+        <div className="section-top">
+          <div><h2 className="card-title">חוזי עבודה</h2><div className="muted">חוזים בינך לבין בעלי הנכסים</div></div>
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ חוזה עבודה חדש</button>
+        </div>
+
+        {showForm && (
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>חוזה עבודה חדש</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="field">
+                <label>בעל נכס</label>
+                <select className="input" value={form.owner_id} onChange={e => { const o = owners.find((x: any) => x.id === e.target.value); setForm({...form, owner_id: e.target.value, owner_name: o?.name || ""}); }}>
+                  <option value="">בחר בעל נכס</option>
+                  {owners.map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>שם (ידני)</label><input className="input" value={form.owner_name} onChange={e => setForm({...form, owner_name: e.target.value})} placeholder="יוסי כהן" /></div>
+              <div className="field"><label>סטטוס</label><select className="input" value={form.status} onChange={e => setForm({...form, status: e.target.value})}><option>פעיל</option><option>הסתיים</option><option>בוטל</option></select></div>
+              <div className="field"><label>תאריך התחלה</label><input className="input" type="date" value={form.start_date} onChange={e => setForm({...form, start_date: e.target.value})} /></div>
+              <div className="field"><label>תאריך סיום</label><input className="input" type="date" value={form.end_date} onChange={e => setForm({...form, end_date: e.target.value})} /></div>
+              <div className="field"><label>סוג עמלה</label><select className="input" value={form.fee_type} onChange={e => setForm({...form, fee_type: e.target.value})}><option value="percent">אחוז</option><option value="fixed">קבוע</option></select></div>
+              <div className="field"><label>{form.fee_type === "percent" ? "אחוז (%)" : "סכום (₪)"}</label><input className="input" type="number" value={form.fee_value} onChange={e => setForm({...form, fee_value: e.target.value})} /></div>
+              <div className="field" style={{ gridColumn: "span 2" }}><label>הערות</label><input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="תנאים מיוחדים..." /></div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-primary" onClick={addContract} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+
+        {loading ? <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div> : contracts.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40, marginBottom: 12 }}>📝</div><div style={{ fontWeight: 700 }}>אין חוזי עבודה עדיין</div></div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>בעל נכס</th><th>התחלה</th><th>סיום</th><th>עמלה</th><th>סטטוס</th><th>מסמך</th><th>פעולות</th></tr></thead>
+              <tbody>
+                {contracts.map((c) => (
+                  <tr key={c.id}>
+                    <td style={{ fontWeight: 700 }}>{c.owner_name}</td>
+                    <td>{c.start_date ? new Date(c.start_date).toLocaleDateString("he-IL") : "-"}</td>
+                    <td>{c.end_date ? new Date(c.end_date).toLocaleDateString("he-IL") : "-"}</td>
+                    <td>{c.fee_type === "percent" ? c.fee_value + "%" : currency(c.fee_value)}</td>
+                    <td><Badge value={c.status} /></td>
+                    <td>
+                      {c.document_url ? (
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <a href={c.document_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>📄 פתח</a>
+                          <label style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>🔄<input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadDocument(c.id, e.target.files[0])} /></label>
+                        </div>
+                      ) : (
+                        <label style={{ cursor: "pointer" }}>
+                          <span className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>{uploadingId === c.id ? "מעלה..." : "📎 העלה"}</span>
+                          <input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadDocument(c.id, e.target.files[0])} />
+                        </label>
+                      )}
+                    </td>
+                    <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteContract(c.id)}>מחק</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function OwnerDashboard({ userProfile }: { userProfile: any }) {
+  const [ownerApts, setOwnerApts] = useState<any[]>([]);
+  const [ownerLeases, setOwnerLeases] = useState<any[]>([]);
+  const [ownerWorkContracts, setOwnerWorkContracts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useState(() => {
+    async function load() {
+      setLoading(true);
+      const ownerName = userProfile?.full_name || "";
+      const { data: apts } = await supabase.from("apartments")
+        .select("*, buildings(name, city)")
+        .eq("owner_name", ownerName);
+      setOwnerApts(apts || []);
+
+      if (apts && apts.length > 0) {
+        const aptIds = apts.map((a: any) => a.id);
+        const { data: leases } = await supabase.from("leases")
+          .select("*, apartments(apartment_number, buildings(name))")
+          .in("apartment_id", aptIds)
+          .eq("status", "פעיל");
+        setOwnerLeases(leases || []);
+      }
+
+      const { data: wc } = await supabase.from("work_contracts")
+        .select("*")
+        .eq("owner_name", ownerName)
+        .eq("status", "פעיל");
+      setOwnerWorkContracts(wc || []);
+      setLoading(false);
+    }
+    load();
+  });
+
+  if (loading) return <div style={{ padding: 60, textAlign: "center", color: "#64748b" }}>טוען...</div>;
+
+  const totalRent = ownerApts.reduce((s, a) => s + (a.rent_amount || 0), 0);
+  const thirtyDays = new Date(); thirtyDays.setDate(thirtyDays.getDate() + 30);
+  const endingSoon = ownerLeases.filter(l => l.end_date && new Date(l.end_date) <= thirtyDays);
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div className="kpi-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0,1fr))" }}>
+        <KPI title="הדירות שלי" value={String(ownerApts.length)} subtitle="דירות משויכות" />
+        <KPI title="הכנסות החודש" value={currency(totalRent)} subtitle="שכירות מכל הדירות" />
+        <KPI title="חוזים קרובים לסיום" value={String(endingSoon.length)} subtitle="30 יום קדימה" />
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">💰 הדירות שלי</h3>
+        {ownerApts.length === 0 ? (
+          <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>אין דירות משויכות לשמך עדיין</div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>מבנה</th><th>דירה</th><th>דייר</th><th>שכירות</th><th>סטטוס</th></tr></thead>
+              <tbody>
+                {ownerApts.map(a => (
+                  <tr key={a.id}>
+                    <td>{a.buildings?.name}</td>
+                    <td>{a.apartment_number}</td>
+                    <td>{a.tenant_name || "-"}</td>
+                    <td style={{ fontWeight: 700, color: "#16a34a" }}>{currency(a.rent_amount)}</td>
+                    <td><Badge value={a.status} /></td>
+                  </tr>
+                ))}
+                <tr style={{ borderTop: "2px solid #e2e8f0" }}>
+                  <td colSpan={3} style={{ fontWeight: 700 }}>סה״כ הכנסות</td>
+                  <td style={{ fontWeight: 800, color: "#16a34a" }}>{currency(totalRent)}</td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">📄 המסמכים שלי</h3>
+        {ownerWorkContracts.filter((c: any) => c.document_url).length === 0 && ownerLeases.filter(l => l.document_url).length === 0 ? (
+          <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין מסמכים עדיין</div>
+        ) : (
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", padding: "8px 0" }}>
+            {ownerWorkContracts.filter((c: any) => c.document_url).map((c: any) => (
+              <a key={c.id} href={c.document_url} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                📝 חוזה עבודה — {c.owner_name}
+              </a>
+            ))}
+            {ownerLeases.filter(l => l.document_url).map(l => (
+              <a key={l.id} href={l.document_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                📄 חוזה שכירות — {l.apartments?.buildings?.name} / {l.apartments?.apartment_number}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {endingSoon.length > 0 && (
+        <div className="card">
+          <h3 className="card-title">⚠️ חוזים שמסתיימים בקרוב</h3>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>דירה</th><th>דייר</th><th>תאריך סיום</th></tr></thead>
+              <tbody>
+                {endingSoon.map(l => (
+                  <tr key={l.id}>
+                    <td>{l.apartments?.buildings?.name} / {l.apartments?.apartment_number}</td>
+                    <td>{l.tenant_name}</td>
+                    <td style={{ color: "#dc2626", fontWeight: 800 }}>{new Date(l.end_date).toLocaleDateString("he-IL")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TenantPortal({ userProfile }: { userProfile: any }) {
   return (
     <div style={{ display: "grid", gap: 18 }}>
