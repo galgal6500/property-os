@@ -1370,25 +1370,6 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
   const [editForm, setEditForm] = useState<any>(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
-  async function saveEdit() {
-    setSavingEdit(true);
-    await supabase.from("apartments").update({
-      status: editForm.status,
-      tenant_name: editForm.tenant_name,
-      tenant_phone: editForm.tenant_phone,
-      owner_name: editForm.owner_name,
-      rent_amount: parseFloat(editForm.rent_amount) || 0,
-      lease_end: editForm.lease_end || null,
-      fee_type: editForm.fee_type,
-      fee_value: parseFloat(editForm.fee_value) || 8,
-      notes: editForm.notes,
-    }).eq("id", apartmentId);
-    const { data: a } = await supabase.from("apartments").select("*, buildings(name, city)").eq("id", apartmentId).single();
-    setApt(a);
-    setEditing(false);
-    setSavingEdit(false);
-  }
-
   useState(() => {
     async function load() {
       setLoading(true);
@@ -2403,3 +2384,4 @@ export default function Home() {
     </div>
   );
 }
+
