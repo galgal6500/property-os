@@ -1714,7 +1714,7 @@ export default function Home() {
     // Tenant view
     if (userRole === "tenant") {
       switch (activePage) {
-        case "tenantPortal": return <TenantPortal />;
+        case "tenantPortal": return <TenantPortal userProfile={userProfile} />;
         case "requests": return (
           <div style={{ display: "grid", gap: 18 }}>
             <div className="card">
@@ -1746,88 +1746,8 @@ export default function Home() {
 
     // Owner view
     if (userRole === "owner") {
-      const ownerName = "יוסי כהן"; // will be dynamic later
-      const ownerUnits = apartments.filter(a => a.owner === ownerName);
-      const endingSoon = leasesEndingSoon.filter(l => ownerUnits.some(u => l.apartment.includes(u.building)));
-
       switch (activePage) {
-        case "dashboard": return (() => {
-          const totalRent = ownerUnits.reduce((s,u) => s + u.rentAmount, 0);
-          const totalFees = ownerUnits.reduce((s,u) => s + u.monthlyIncome, 0);
-          const serviceExpenses = 450; // dynamic later
-          const totalExpenses = totalFees + serviceExpenses;
-          return (
-          <div style={{ display: "grid", gap: 18 }}>
-            <div className="kpi-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0,1fr))" }}>
-              <KPI title="הדירות שלי" value={String(ownerUnits.length)} subtitle="דירות משויכות" />
-              <KPI title="הכנסות החודש" value={currency(totalRent)} subtitle="שכירות מכל הדירות" />
-              <KPI title="חוזים קרובים לסיום" value={String(endingSoon.length)} subtitle="30 יום קדימה" />
-            </div>
-
-            <div className="grid-1-1">
-              <div className="card">
-                <h3 className="card-title">💰 הכנסות — שכירות לפי דירה</h3>
-                <div className="table-wrap">
-                  <table>
-                    <thead><tr><th>מבנה</th><th>דירה</th><th>דייר</th><th>שכירות חודשית</th><th>סטטוס</th></tr></thead>
-                    <tbody>
-                      {ownerUnits.filter(u => u.rentAmount > 0).map(u => (
-                        <tr key={u.id}>
-                          <td>{u.building}</td>
-                          <td>{u.apartmentNumber}</td>
-                          <td>{u.tenant}</td>
-                          <td style={{fontWeight:700, color:"#16a34a"}}>{currency(u.rentAmount)}</td>
-                          <td><span className={badgeClass(u.status)}>{u.status}</span></td>
-                        </tr>
-                      ))}
-                      <tr style={{borderTop:"2px solid #e2e8f0"}}>
-                        <td colSpan={3} style={{fontWeight:700}}>סה״כ הכנסות</td>
-                        <td style={{fontWeight:800, color:"#16a34a"}}>{currency(totalRent)}</td>
-                        <td></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="card">
-                <h3 className="card-title">📋 הוצאות החודש</h3>
-                <div className="table-wrap">
-                  <table>
-                    <thead><tr><th>תיאור</th><th>דירה</th><th>סכום</th></tr></thead>
-                    <tbody>
-                      {ownerUnits.filter(u => u.monthlyIncome > 0).map(u => (
-                        <tr key={u.id}>
-                          <td>עמלת ניהול ({u.feeType === "percent" ? u.feeValue + "%" : "קבועה"})</td>
-                          <td>{u.building} / {u.apartmentNumber}</td>
-                          <td style={{fontWeight:700, color:"#dc2626"}}>{currency(u.monthlyIncome)}</td>
-                        </tr>
-                      ))}
-                      <tr>
-                        <td>תיקון אינסטלטור</td>
-                        <td>הרצל 10 / 3</td>
-                        <td style={{fontWeight:700, color:"#dc2626"}}>{currency(450)}</td>
-                      </tr>
-                      <tr style={{borderTop:"2px solid #e2e8f0"}}>
-                        <td colSpan={2} style={{fontWeight:700}}>סה״כ הוצאות</td>
-                        <td style={{fontWeight:800, color:"#dc2626"}}>{currency(totalExpenses)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {endingSoon.length > 0 && (
-              <div className="card">
-                <h3 className="card-title">⚠️ חוזים שמסתיימים בקרוב</h3>
-                <div className="table-wrap">
-                  <table>
-                    <thead><tr><th>דירה</th><th>דייר</th><th>תאריך סיום</th></tr></thead>
-                    <tbody>
-                      {endingSoon.map(item => (
-                        <tr key={item.id}><td>{item.apartment}</td><td>{item.tenant}</td><td style={{color:"#dc2626", fontWeight:800}}>{item.endDate}</td></tr>
-                      ))}
+        case "dashboard": return <OwnerDashboard userProfile={userProfile} />;
                     </tbody>
                   </table>
                 </div>
@@ -2010,3 +1930,5 @@ export default function Home() {
     </div>
   );
 }
+
+            
