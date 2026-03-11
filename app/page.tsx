@@ -87,6 +87,10 @@ const ownerMonthlySummary = [
 const tenantPortalData = {
   tenantName: "דני לוי", apartment: "הרצל 10 / דירה 3", building: "הרצל 10", floor: 1,
   leaseEnd: "15/04/2026", rentAmount: 5200, phone: "052-9991111",
+  expenses: [
+    { id: 1, description: "שכר דירה", amount: 5200, date: "01/03/2026" },
+    { id: 2, description: "תיקון אינסטלטור", amount: 450, date: "08/03/2026" },
+  ],
   requests: [
     { id: 1, issue: "נזילה במקלחת", status: "בטיפול", date: "08/03/2026" },
     { id: 2, issue: "מזגן לא מקרר", status: "חדשה", date: "02/02/2026" },
@@ -689,7 +693,7 @@ function TenantPortal() {
           <KPI title="הדירה שלי" value={tenantPortalData.apartment} subtitle="יחידה משויכת" />
           <KPI title="חוזה עד" value={tenantPortalData.leaseEnd} subtitle="מועד סיום" />
           <KPI title="שכר דירה" value={currency(tenantPortalData.rentAmount)} subtitle="תשלום חודשי" />
-          <KPI title="טלפון" value={tenantPortalData.phone} subtitle="איש קשר" />
+          <KPI title="הוצאה חודשית" value={currency(tenantPortalData.expenses.reduce((s,e) => s + e.amount, 0))} subtitle="סה״כ החודש" />
         </div>
       </div>
 
@@ -722,6 +726,24 @@ function TenantPortal() {
               {tenantPortalData.requests.map((item) => (
                 <tr key={item.id}><td>{item.date}</td><td>{item.issue}</td><td><Badge value={item.status} /></td></tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">הוצאות חודשיות</h3>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>תאריך</th><th>תיאור</th><th>סכום</th></tr></thead>
+            <tbody>
+              {tenantPortalData.expenses.map((item) => (
+                <tr key={item.id}><td>{item.date}</td><td>{item.description}</td><td style={{fontWeight:700}}>{currency(item.amount)}</td></tr>
+              ))}
+              <tr style={{borderTop:"2px solid #e2e8f0"}}>
+                <td colSpan={2} style={{fontWeight:700}}>סה״כ</td>
+                <td style={{fontWeight:800, color:"#dc2626"}}>{currency(tenantPortalData.expenses.reduce((s,e) => s + e.amount, 0))}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -861,8 +883,24 @@ export default function Home() {
           <div style={{ display: "grid", gap: 18 }}>
             <div className="kpi-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0,1fr))" }}>
               <KPI title="הדירות שלי" value={String(ownerUnits.length)} subtitle="דירות משויכות" />
-              <KPI title="הכנסה חודשית" value={currency(ownerUnits.reduce((s,u) => s + u.rentAmount, 0))} subtitle="ברוטו" />
+              <KPI title="הוצאה חודשית" value={currency(ownerUnits.reduce((s,u) => s + u.monthlyIncome, 0) + 450)} subtitle="עמלות + הוצאות שירות" />
               <KPI title="חוזים קרובים לסיום" value={String(endingSoon.length)} subtitle="30 יום קדימה" />
+            </div>
+            <div className="card">
+              <h3 className="card-title">הוצאות חודשיות</h3>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>תאריך</th><th>תיאור</th><th>דירה</th><th>סכום</th></tr></thead>
+                  <tbody>
+                    <tr><td>01/03/2026</td><td>עמלת ניהול</td><td>הרצל 10 / 3</td><td style={{fontWeight:700}}>{currency(416)}</td></tr>
+                    <tr><td>08/03/2026</td><td>תיקון אינסטלטור</td><td>הרצל 10 / 3</td><td style={{fontWeight:700}}>{currency(450)}</td></tr>
+                    <tr style={{borderTop:"2px solid #e2e8f0"}}>
+                      <td colSpan={3} style={{fontWeight:700}}>סה״כ</td>
+                      <td style={{fontWeight:800, color:"#dc2626"}}>{currency(866)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
             {endingSoon.length > 0 && (
               <div className="card">
