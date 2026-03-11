@@ -597,6 +597,196 @@ function OwnerDetails({ ownerId, back }: { ownerId: number; back: () => void }) 
   );
 }
 
+function Settings({ userEmail }: { userEmail: string }) {
+  const [tab, setTab] = useState("business");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Business settings
+  const [business, setBusiness] = useState({
+    name: "GM ניהול נכסים", phone: "", email: "", address: "", vat: ""
+  });
+
+  // Issue types
+  const [issueTypes, setIssueTypes] = useState([
+    "נזילה", "חשמל", "מזגן", "דלת/חלון", "ריצוף", "צנרת", "גינה", "אחר"
+  ]);
+  const [newIssue, setNewIssue] = useState("");
+
+  // Default fee
+  const [defaultFee, setDefaultFee] = useState({ type: "percent", value: "8" });
+
+  // Password change
+  const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
+  const [passError, setPassError] = useState("");
+  const [passSaved, setPassSaved] = useState(false);
+
+  // Email alerts
+  const [alerts, setAlerts] = useState({
+    leaseEnding: true, newRequest: true, requestClosed: false, newUser: true
+  });
+
+  async function saveBusiness() {
+    setSaving(true);
+    await supabase.from("settings").upsert({ key: "business", value: JSON.stringify(business) });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    setSaving(false);
+  }
+
+  async function saveAlerts() {
+    setSaving(true);
+    await supabase.from("settings").upsert({ key: "alerts", value: JSON.stringify(alerts) });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    setSaving(false);
+  }
+
+  async function saveFee() {
+    setSaving(true);
+    await supabase.from("settings").upsert({ key: "default_fee", value: JSON.stringify(defaultFee) });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    setSaving(false);
+  }
+
+  async function changePassword() {
+    setPassError("");
+    if (passwords.newPass !== passwords.confirm) { setPassError("הסיסמאות לא תואמות"); return; }
+    if (passwords.newPass.length < 6) { setPassError("סיסמה חייבת להיות לפחות 6 תווים"); return; }
+    const { error } = await supabase.auth.updateUser({ password: passwords.newPass });
+    if (error) { setPassError("שגיאה בשינוי הסיסמה"); return; }
+    setPassSaved(true);
+    setPasswords({ current: "", newPass: "", confirm: "" });
+    setTimeout(() => setPassSaved(false), 3000);
+  }
+
+  const tabs = [
+    { key: "business", label: "🏢 פרטי העסק" },
+    { key: "issues", label: "🔧 סוגי תקלות" },
+    { key: "fees", label: "💰 עמלות" },
+    { key: "alerts", label: "🔔 התראות" },
+    { key: "password", label: "🔑 סיסמה" },
+  ];
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div className="card">
+        <h2 className="card-title">הגדרות מערכת</h2>
+        <div className="tab-bar">
+          {tabs.map(t => (
+            <button key={t.key} className={`tab-btn ${tab === t.key ? "active" : ""}`} onClick={() => setTab(t.key)}>{t.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {tab === "business" && (
+        <div className="card">
+          <div className="section-top" style={{ marginBottom: 16 }}>
+            <h3 className="card-title" style={{ margin: 0 }}>פרטי העסק</h3>
+            {saved && <span style={{ color: "#16a34a", fontWeight: 700 }}>✅ נשמר!</span>}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="field"><label>שם העסק</label><input className="input" value={business.name} onChange={e => setBusiness({...business, name: e.target.value})} placeholder="GM ניהול נכסים" /></div>
+            <div className="field"><label>טלפון</label><input className="input" value={business.phone} onChange={e => setBusiness({...business, phone: e.target.value})} placeholder="052-1234567" /></div>
+            <div className="field"><label>אימייל</label><input className="input" value={business.email} onChange={e => setBusiness({...business, email: e.target.value})} placeholder="gm@property.com" /></div>
+            <div className="field"><label>כתובת</label><input className="input" value={business.address} onChange={e => setBusiness({...business, address: e.target.value})} placeholder="רחוב הרצל 1, תל אביב" /></div>
+            <div className="field"><label>ח.פ / ע.מ</label><input className="input" value={business.vat} onChange={e => setBusiness({...business, vat: e.target.value})} placeholder="123456789" /></div>
+          </div>
+          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={saveBusiness} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+        </div>
+      )}
+
+      {tab === "issues" && (
+        <div className="card">
+          <h3 className="card-title">סוגי תקלות</h3>
+          <div className="muted" style={{ marginBottom: 16 }}>סוגי התקלות שיופיעו בטופס קריאת שירות</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
+            {issueTypes.map((issue, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, background: "#f1f5f9", borderRadius: 20, padding: "6px 14px" }}>
+                <span>{issue}</span>
+                <button onClick={() => setIssueTypes(issueTypes.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 16 }}>×</button>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <input className="input" style={{ maxWidth: 220 }} value={newIssue} onChange={e => setNewIssue(e.target.value)} placeholder="סוג תקלה חדש..." onKeyDown={e => { if (e.key === "Enter" && newIssue) { setIssueTypes([...issueTypes, newIssue]); setNewIssue(""); }}} />
+            <button className="btn btn-primary" onClick={() => { if (newIssue) { setIssueTypes([...issueTypes, newIssue]); setNewIssue(""); }}}>הוסף</button>
+          </div>
+        </div>
+      )}
+
+      {tab === "fees" && (
+        <div className="card">
+          <div className="section-top" style={{ marginBottom: 16 }}>
+            <h3 className="card-title" style={{ margin: 0 }}>עמלת ניהול ברירת מחדל</h3>
+            {saved && <span style={{ color: "#16a34a", fontWeight: 700 }}>✅ נשמר!</span>}
+          </div>
+          <div className="muted" style={{ marginBottom: 16 }}>ערך זה ישמש כברירת מחדל בעת הוספת דירה חדשה</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, maxWidth: 400 }}>
+            <div className="field">
+              <label>סוג עמלה</label>
+              <select className="input" value={defaultFee.type} onChange={e => setDefaultFee({...defaultFee, type: e.target.value})}>
+                <option value="percent">אחוז מהשכירות</option>
+                <option value="fixed">סכום קבוע</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>{defaultFee.type === "percent" ? "אחוז (%)" : "סכום (₪)"}</label>
+              <input className="input" type="number" value={defaultFee.value} onChange={e => setDefaultFee({...defaultFee, value: e.target.value})} />
+            </div>
+          </div>
+          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={saveFee} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+        </div>
+      )}
+
+      {tab === "alerts" && (
+        <div className="card">
+          <div className="section-top" style={{ marginBottom: 16 }}>
+            <h3 className="card-title" style={{ margin: 0 }}>התראות באימייל</h3>
+            {saved && <span style={{ color: "#16a34a", fontWeight: 700 }}>✅ נשמר!</span>}
+          </div>
+          <div style={{ display: "grid", gap: 16 }}>
+            {[
+              { key: "leaseEnding", label: "חוזה מסתיים בעוד 30 יום", desc: "שלח התראה כשחוזה עומד להסתיים" },
+              { key: "newRequest", label: "קריאת שירות חדשה", desc: "שלח התראה בכל קריאה חדשה" },
+              { key: "requestClosed", label: "קריאת שירות נסגרה", desc: "שלח התראה כשקריאה מסומנת כהושלם" },
+              { key: "newUser", label: "משתמש חדש נרשם", desc: "שלח התראה כשמשתמש חדש מבקש גישה" },
+            ].map(item => (
+              <div key={item.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{item.label}</div>
+                  <div className="muted" style={{ marginTop: 4 }}>{item.desc}</div>
+                </div>
+                <div style={{ position: "relative", cursor: "pointer" }} onClick={() => setAlerts({...alerts, [item.key]: !alerts[item.key as keyof typeof alerts]})}>
+                  <div style={{ width: 48, height: 26, borderRadius: 13, background: alerts[item.key as keyof typeof alerts] ? "#c9a227" : "#cbd5e1", transition: "background 0.2s" }}>
+                    <div style={{ width: 20, height: 20, borderRadius: "50%", background: "white", position: "absolute", top: 3, left: alerts[item.key as keyof typeof alerts] ? 25 : 3, transition: "left 0.2s" }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={saveAlerts} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+        </div>
+      )}
+
+      {tab === "password" && (
+        <div className="card">
+          <h3 className="card-title">שינוי סיסמה</h3>
+          <div className="muted" style={{ marginBottom: 16 }}>מחובר כ: {userEmail}</div>
+          <div style={{ display: "grid", gap: 12, maxWidth: 400 }}>
+            <div className="field"><label>סיסמה חדשה</label><input className="input" type="password" value={passwords.newPass} onChange={e => setPasswords({...passwords, newPass: e.target.value})} placeholder="לפחות 6 תווים" /></div>
+            <div className="field"><label>אימות סיסמה</label><input className="input" type="password" value={passwords.confirm} onChange={e => setPasswords({...passwords, confirm: e.target.value})} placeholder="הזן שוב את הסיסמה" /></div>
+          </div>
+          {passError && <div style={{ color: "#dc2626", marginTop: 10, fontSize: 14 }}>{passError}</div>}
+          {passSaved && <div style={{ color: "#16a34a", marginTop: 10, fontWeight: 700 }}>✅ הסיסמה שונתה בהצלחה!</div>}
+          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={changePassword}>שמור סיסמה חדשה</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function UsersManagement() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2243,7 +2433,7 @@ export default function Home() {
       case "leases": return <Leases />;
       case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר, הסכמי ניהול וכל מסמך שקשור לבעל נכס, דירה או חוזה." />;
       case "tenantPortal": return <TenantPortal userProfile={userProfile} />;
-      case "settings": return <Placeholder title="הגדרות" text="כאן יהיו בהמשך פרטי העסק, סוגי תקלות, התראות, הרשאות משתמשים והגדרות מערכת נוספות." />;
+      case "settings": return <Settings userEmail={email} />;
       case "users": return <UsersManagement />;
       case "workcontracts": return <WorkContracts />;
       default: return null;
