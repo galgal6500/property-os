@@ -426,6 +426,147 @@ function OwnerDetails({ ownerId, back }: { ownerId: number; back: () => void }) 
   );
 }
 
+function ServiceRequests() {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [apartments, setApartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [filter, setFilter] = useState("הכל");
+  const [form, setForm] = useState({
+    apartment_id: "", issue: "", description: "",
+    urgency: "בינונית", status: "חדשה", cost: "", vendor: ""
+  });
+
+  async function load() {
+    setLoading(true);
+    const { data: reqs } = await supabase.from("service_requests").select("*, apartments(apartment_number, buildings(name))").order("created_at", { ascending: false });
+    const { data: apts } = await supabase.from("apartments").select("id, apartment_number, buildings(name)");
+    setRequests(reqs || []);
+    setApartments(apts || []);
+    setLoading(false);
+  }
+
+  useState(() => { load(); });
+
+  async function addRequest() {
+    if (!form.issue) return;
+    setSaving(true);
+    await supabase.from("service_requests").insert({
+      apartment_id: form.apartment_id || null,
+      issue: form.issue,
+      description: form.description,
+      urgency: form.urgency,
+      status: form.status,
+      cost: parseFloat(form.cost) || 0,
+      vendor: form.vendor
+    });
+    setForm({ apartment_id: "", issue: "", description: "", urgency: "בינונית", status: "חדשה", cost: "", vendor: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function updateStatus(id: string, status: string) {
+    await supabase.from("service_requests").update({ status }).eq("id", id);
+    await load();
+  }
+
+  async function deleteRequest(id: string) {
+    if (!confirm("למחוק את הקריאה?")) return;
+    await supabase.from("service_requests").delete().eq("id", id);
+    await load();
+  }
+
+  const filtered = filter === "הכל" ? requests : requests.filter(r => r.status === filter);
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div className="card">
+        <div className="section-top">
+          <div><h2 className="card-title">קריאות שירות</h2><div className="muted">ניהול כל הקריאות, תיקונים ובעלי מקצוע</div></div>
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ קריאה חדשה</button>
+        </div>
+
+        {showForm && (
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>קריאת שירות חדשה</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="field">
+                <label>דירה</label>
+                <select className="input" value={form.apartment_id} onChange={e => setForm({...form, apartment_id: e.target.value})}>
+                  <option value="">בחר דירה</option>
+                  {apartments.map((a: any) => <option key={a.id} value={a.id}>{a.buildings?.name} / {a.apartment_number}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>נושא התקלה</label><input className="input" value={form.issue} onChange={e => setForm({...form, issue: e.target.value})} placeholder="נזילה במקלחת" /></div>
+              <div className="field">
+                <label>דחיפות</label>
+                <select className="input" value={form.urgency} onChange={e => setForm({...form, urgency: e.target.value})}>
+                  <option>נמוכה</option><option>בינונית</option><option>גבוהה</option>
+                </select>
+              </div>
+              <div className="field">
+                <label>סטטוס</label>
+                <select className="input" value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                  <option>חדשה</option><option>בטיפול</option><option>ממתין לבעל מקצוע</option><option>הושלם</option>
+                </select>
+              </div>
+              <div className="field"><label>ספק / בעל מקצוע</label><input className="input" value={form.vendor} onChange={e => setForm({...form, vendor: e.target.value})} placeholder="אינסטלטור משה" /></div>
+              <div className="field"><label>עלות (₪)</label><input className="input" type="number" value={form.cost} onChange={e => setForm({...form, cost: e.target.value})} placeholder="450" /></div>
+            </div>
+            <div className="field"><label>תיאור מפורט</label><textarea className="input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="תיאור התקלה..." style={{ minHeight: 80, resize: "vertical" }} /></div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-primary" onClick={addRequest} disabled={saving}>{saving ? "שומר..." : "שמור קריאה"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+
+        <div className="chips" style={{ marginBottom: 16 }}>
+          {["הכל", "חדשה", "בטיפול", "ממתין לבעל מקצוע", "הושלם"].map(f => (
+            <button key={f} className={`btn ${filter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setFilter(f)}>{f}</button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🔧</div>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>אין קריאות שירות</div>
+            <div>לחץ על "קריאה חדשה" כדי להוסיף</div>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>תאריך</th><th>דירה</th><th>תקלה</th><th>דחיפות</th><th>ספק</th><th>עלות</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+              <tbody>
+                {filtered.map((r) => (
+                  <tr key={r.id}>
+                    <td>{new Date(r.created_at).toLocaleDateString("he-IL")}</td>
+                    <td>{r.apartments?.buildings?.name} / {r.apartments?.apartment_number}</td>
+                    <td style={{ fontWeight: 700 }}>{r.issue}</td>
+                    <td><Badge value={r.urgency} /></td>
+                    <td>{r.vendor || "-"}</td>
+                    <td>{r.cost ? currency(r.cost) : "-"}</td>
+                    <td>
+                      <select value={r.status} onChange={e => updateStatus(r.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
+                        <option>חדשה</option><option>בטיפול</option><option>ממתין לבעל מקצוע</option><option>הושלם</option>
+                      </select>
+                    </td>
+                    <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteRequest(r.id)}>מחק</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Buildings({ openBuilding }: { openBuilding: (id: number) => void }) {
   const [dbBuildings, setDbBuildings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1217,7 +1358,7 @@ export default function Home() {
       case "buildingDetails": return <BuildingDetails buildingId={selectedBuildingId} back={() => setActivePage("buildings")} openApartment={openApartment} />;
       case "apartments": return <Apartments openApartment={openApartment} />;
       case "apartmentDetails": return <ApartmentDetails apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} />;
-      case "requests": return <Placeholder title="קריאות שירות" text="כאן יהיה בהמשך מסך מלא לניהול קריאות, עם פילטרים, סטטוסים, עלויות, בעלי מקצוע ותיעוד מלא." />;
+      case "requests": return <ServiceRequests />;
       case "leases": return <Placeholder title="חוזים" text="כאן ייכנס מסך ניהול החוזים, כולל תאריכי התחלה וסיום, קבצים, תזכורות על סיום חוזה, סכומי שכירות וגם ההכנסה שלך." />;
       case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר, הסכמי ניהול וכל מסמך שקשור לבעל נכס, דירה או חוזה." />;
       case "tenantPortal": return <TenantPortal />;
