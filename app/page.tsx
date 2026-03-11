@@ -179,6 +179,10 @@ function IncomeChart() {
 function Dashboard({ openApartment, openBuilding }: { openApartment: (id: number) => void; openBuilding: (id: number) => void }) {
   const vacant = apartments.filter((a) => a.status === "פנוי");
   const [quickAction, setQuickAction] = useState<string | null>(null);
+  const [stats, setStats] = useState({ owners: 0, buildings: 0, apartments: 0, vacant: 0, openRequests: 0, endingSoon: 0, monthlyIncome: 0 });
+  const [recentRequests, setRecentRequests] = useState<any[]>([]);
+  const [endingLeases, setEndingLeases] = useState<any[]>([]);
+  const [vacantList, setVacantList] = useState<any[]>([]);
   const [dbApts, setDbApts] = useState<any[]>([]);
   const [dbBlds, setDbBlds] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
@@ -190,6 +194,40 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: number
   useState(() => {
     supabase.from("apartments").select("id, apartment_number, buildings(name)").then(({ data }) => setDbApts(data || []));
     supabase.from("buildings").select("*").then(({ data }) => setDbBlds(data || []));
+
+    // Load real stats
+    Promise.all([
+      supabase.from("owners").select("id", { count: "exact" }),
+      supabase.from("buildings").select("id", { count: "exact" }),
+      supabase.from("apartments").select("id, status, rent_amount, fee_type, fee_value", { count: "exact" }),
+      supabase.from("service_requests").select("id", { count: "exact" }).neq("status", "הושלם"),
+      supabase.from("leases").select("id, end_date, tenant_name, apartments(apartment_number, buildings(name))").eq("status", "פעיל"),
+      supabase.from("service_requests").select("*, apartments(apartment_number, buildings(name))").neq("status", "הושלם").order("created_at", { ascending: false }).limit(5),
+      supabase.from("apartments").select("id, apartment_number, buildings(name), rent_amount, owner_name").eq("status", "פנוי").limit(5),
+    ]).then(([owners, buildings, apts, openReqs, leases, requests, vacant]) => {
+      const allApts = apts.data || [];
+      const allLeases = leases.data || [];
+      const monthlyIncome = allApts.reduce((sum: number, a: any) => {
+        if (!a.rent_amount) return sum;
+        const fee = a.fee_type === "percent" ? (a.rent_amount * (a.fee_value || 8)) / 100 : (a.fee_value || 0);
+        return sum + fee;
+      }, 0);
+      const thirtyDays = new Date();
+      thirtyDays.setDate(thirtyDays.getDate() + 30);
+      const ending = allLeases.filter((l: any) => l.end_date && new Date(l.end_date) <= thirtyDays);
+      setStats({
+        owners: owners.count || 0,
+        buildings: buildings.count || 0,
+        apartments: apts.count || 0,
+        vacant: allApts.filter((a: any) => a.status === "פנוי").length,
+        openRequests: openReqs.count || 0,
+        endingSoon: ending.length,
+        monthlyIncome
+      });
+      setEndingLeases(ending.slice(0, 5));
+      setRecentRequests(requests.data || []);
+      setVacantList(vacant.data || []);
+    });
   });
 
   async function saveOwner() {
@@ -231,13 +269,13 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: number
   return (
     <div style={{ display: "grid", gap: 18 }}>
       <div className="kpi-grid">
-        <KPI title="בעלי נכסים" value="12" subtitle="לקוחות פעילים" />
-        <KPI title="מבנים" value="5" subtitle="מבנים מנוהלים" />
-        <KPI title="דירות" value="47" subtitle='סה״כ במערכת' />
-        <KPI title="דירות פנויות" value="4" subtitle="דורש שיווק" />
-        <KPI title="קריאות פתוחות" value="6" subtitle="לטיפול" />
-        <KPI title="חוזים קרובים לסיום" value="3" subtitle="30 יום קדימה" />
-        <KPI title="הכנסה חודשית" value={currency(totalMonthlyIncome())} subtitle="הכנסה צפויה מניהול" />
+        <KPI title="בעלי נכסים" value={String(stats.owners)} subtitle="לקוחות פעילים" />
+        <KPI title="מבנים" value={String(stats.buildings)} subtitle="מבנים מנוהלים" />
+        <KPI title="דירות" value={String(stats.apartments)} subtitle='סה״כ במערכת' />
+        <KPI title="דירות פנויות" value={String(stats.vacant)} subtitle="דורש שיווק" />
+        <KPI title="קריאות פתוחות" value={String(stats.openRequests)} subtitle="לטיפול" />
+        <KPI title="חוזים קרובים לסיום" value={String(stats.endingSoon)} subtitle="30 יום קדימה" />
+        <KPI title="הכנסה חודשית" value={currency(stats.monthlyIncome)} subtitle="הכנסה צפויה מניהול" />
       </div>
 
       <div className="grid-2-1">
@@ -247,9 +285,11 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: number
             <table>
               <thead><tr><th>דירה</th><th>תקלה</th><th>דחיפות</th><th>סטטוס</th></tr></thead>
               <tbody>
-                {serviceRequests.map((item) => (
+                {recentRequests.length === 0 ? (
+                  <tr><td colSpan={4} style={{ textAlign: "center", color: "#64748b", padding: 20 }}>אין קריאות פתוחות 🎉</td></tr>
+                ) : recentRequests.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.apartment}</td>
+                    <td>{item.apartments?.buildings?.name} / {item.apartments?.apartment_number}</td>
                     <td>{item.issue}</td>
                     <td><Badge value={item.urgency} /></td>
                     <td><Badge value={item.status} /></td>
@@ -353,15 +393,17 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: number
             <table>
               <thead><tr><th>דירה</th><th>דייר</th><th>בעל נכס</th><th>תאריך סיום</th></tr></thead>
               <tbody>
-                {leasesEndingSoon.map((item) => (
-                  <tr key={item.id}><td>{item.apartment}</td><td>{item.tenant}</td><td>{item.owner}</td><td>{item.endDate}</td></tr>
+                {endingLeases.length === 0 ? (
+                  <tr><td colSpan={4} style={{ textAlign: "center", color: "#64748b", padding: 20 }}>אין חוזים קרובים לסיום ✅</td></tr>
+                ) : endingLeases.map((item: any) => (
+                  <tr key={item.id}><td>{item.apartments?.buildings?.name} / {item.apartments?.apartment_number}</td><td>{item.tenant_name}</td><td>-</td><td>{item.end_date ? new Date(item.end_date).toLocaleDateString("he-IL") : "-"}</td></tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
         <div className="card">
-          <h3 className="card-title">דירות שצריך לקדם</h3>
+          <h3 className="card-title">דירות פנויות שצריך לקדם</h3>
           <div className="vacant-list">
             {vacant.map((item) => (
               <div key={item.id} className="vacant-item" onClick={() => openApartment(item.id)}>
