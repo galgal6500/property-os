@@ -1369,9 +1369,6 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [savingEdit, setSavingEdit] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState<any>({});
-  const [savingEdit, setSavingEdit] = useState(false);
 
   async function saveEdit() {
     setSavingEdit(true);
@@ -2406,4 +2403,3 @@ export default function Home() {
     </div>
   );
 }
-
