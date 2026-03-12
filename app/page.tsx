@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -2281,6 +2281,283 @@ function Placeholder({ title, text }: { title: string; text: string }) {
         <h2>{title}</h2>
         <p>{text}</p>
       </div>
+    </div>
+  );
+}
+
+// ─── Role helpers ────────────────────────────────────────────────────────────
+
+function getNavItemsForRole(role: string) {
+  if (role === "tenant") {
+    return [
+      { key: "tenantPortal", label: "הבית שלי" },
+      { key: "requests", label: "קריאות שירות" },
+    ];
+  }
+  if (role === "owner") {
+    return [
+      { key: "dashboard", label: "סיכום" },
+      { key: "apartments", label: "הדירות שלי" },
+      { key: "leases", label: "חוזים" },
+    ];
+  }
+  return navItems;
+}
+
+function getRoleName(role: string) {
+  if (role === "tenant") return "דייר";
+  if (role === "owner") return "בעל נכס";
+  if (role === "admin") return "מנהל מערכת";
+  return role;
+}
+
+// ─── Main App ────────────────────────────────────────────────────────────────
+
+export default function PropertyOS() {
+  const [session, setSession] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userRole, setUserRole] = useState("admin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"login" | "register" | "forgot">("login");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [regName, setRegName] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [regRole, setRegRole] = useState("tenant");
+  const [activePage, setActivePage] = useState("dashboard");
+  const [selectedApartmentId, setSelectedApartmentId] = useState<string>("");
+  const [selectedBuildingId, setSelectedBuildingId] = useState<any>("");
+  const [selectedOwnerId, setSelectedOwnerId] = useState(1);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) loadProfile(session.user.id, session.user.email || "");
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) loadProfile(session.user.id, session.user.email || "");
+      else { setUserProfile(null); setUserRole("admin"); }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function loadProfile(userId: string, userEmail: string) {
+    setEmail(userEmail);
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    if (data) {
+      setUserProfile(data);
+      setUserRole(data.role || "admin");
+      if (data.role === "tenant") setActivePage("tenantPortal");
+      else if (data.role === "owner") setActivePage("dashboard");
+      else setActivePage("dashboard");
+    }
+  }
+
+  async function handleLogin() {
+    setAuthError(""); setAuthLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setAuthError("אימייל או סיסמה שגויים");
+    setAuthLoading(false);
+  }
+
+  async function handleRegister() {
+    setAuthError(""); setAuthLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { full_name: regName, phone: regPhone, role: regRole } }
+    });
+    if (error) setAuthError(error.message);
+    else setAuthError("✅ נרשמת בהצלחה! המנהל יאשר את הגישה שלך בקרוב.");
+    setAuthLoading(false);
+  }
+
+  async function handleForgot() {
+    setAuthError(""); setAuthLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://property-os-ten.vercel.app"
+    });
+    if (error) setAuthError("שגיאה בשליחת המייל");
+    else setAuthError("✅ קישור לאיפוס סיסמה נשלח לאימייל שלך");
+    setAuthLoading(false);
+  }
+
+  function openApartment(id: string) { setSelectedApartmentId(id); setActivePage("apartmentDetails"); }
+  function openBuilding(id: any) { setSelectedBuildingId(id); setActivePage("buildingDetails"); }
+  function openOwner(id: number) { setSelectedOwnerId(id); setActivePage("ownerDetails"); }
+
+  function renderContent() {
+    // Tenant view
+    if (userRole === "tenant") {
+      switch (activePage) {
+        case "tenantPortal": return <TenantPortal userProfile={userProfile} />;
+        case "requests": return (
+          <div style={{ display: "grid", gap: 18 }}>
+            <div className="card">
+              <h3 className="card-title">הקריאות שלי</h3>
+              <TenantPortal userProfile={userProfile} />
+            </div>
+          </div>
+        );
+        default: return <TenantPortal userProfile={userProfile} />;
+      }
+    }
+
+    // Owner view
+    if (userRole === "owner") {
+      switch (activePage) {
+        case "dashboard": return <OwnerDashboard userProfile={userProfile} />;
+        default: return <OwnerDashboard userProfile={userProfile} />;
+      }
+    }
+
+    // Admin view
+    switch (activePage) {
+      case "dashboard": return <Dashboard openApartment={openApartment} openBuilding={openBuilding} />;
+      case "owners": return <Owners openOwner={openOwner} />;
+      case "ownerDetails": return <OwnerDetails ownerId={selectedOwnerId} back={() => setActivePage("owners")} />;
+      case "buildings": return <Buildings openBuilding={openBuilding} />;
+      case "buildingDetails": return <BuildingDetails buildingId={selectedBuildingId} back={() => setActivePage("buildings")} openApartment={openApartment} />;
+      case "apartments": return <Apartments openApartment={openApartment} />;
+      case "apartmentDetails": return <ApartmentDetails apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} />;
+      case "requests": return <ServiceRequests />;
+      case "leases": return <Leases />;
+      case "users": return <UsersManagement />;
+      case "workcontracts": return <WorkContracts />;
+      case "settings": return <Settings userEmail={email} />;
+      default: return <Dashboard openApartment={openApartment} openBuilding={openBuilding} />;
+    }
+  }
+
+  // Not logged in — show login screen
+  if (!session) {
+    return (
+      <div className="login-split">
+        <div className="login-form-side">
+          <div className="login-box">
+            {authMode === "login" && (
+              <>
+                <h2 className="login-title">ברוך הבא 👋</h2>
+                <p className="login-sub">התחבר למערכת הניהול שלך</p>
+                <div className="field"><label>אימייל *</label><input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" onKeyDown={e => e.key === "Enter" && handleLogin()} /></div>
+                <div className="field"><label>סיסמה *</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" onKeyDown={e => e.key === "Enter" && handleLogin()} /></div>
+                {authError && <div style={{ color: authError.startsWith("✅") ? "#16a34a" : "#dc2626", fontSize: 14, marginBottom: 8 }}>{authError}</div>}
+                <button className="btn btn-primary" style={{ width: "100%", marginTop: 8 }} onClick={handleLogin} disabled={authLoading}>{authLoading ? "מתחבר..." : "התחבר"}</button>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, fontSize: 14 }}>
+                  <button style={{ background: "none", border: "none", cursor: "pointer", color: "#c9a227" }} onClick={() => { setAuthMode("register"); setAuthError(""); }}>הרשמה למערכת</button>
+                  <button style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }} onClick={() => { setAuthMode("forgot"); setAuthError(""); }}>שכחתי סיסמה</button>
+                </div>
+              </>
+            )}
+            {authMode === "register" && (
+              <>
+                <h2 className="login-title">הרשמה למערכת</h2>
+                <p className="login-sub">מלא את הפרטים ומנהל יאשר את הגישה שלך</p>
+                <div className="field"><label>שם מלא *</label><input className="input" value={regName} onChange={e => setRegName(e.target.value)} placeholder="ישראל ישראלי" /></div>
+                <div className="field"><label>גל מזרחי דייר</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="noynoynoy115@walla.com" /></div>
+                <div className="field"><label>אימייל *</label><input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" /></div>
+                <div className="field"><label>סיסמה *</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="לפחות 6 תווים" /></div>
+                <div className="field"><label>טלפון</label><input className="input" value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="052-0000000" /></div>
+                <div className="field"><label>תפקיד</label>
+                  <select className="input" value={regRole} onChange={e => setRegRole(e.target.value)}>
+                    <option value="tenant">דייר</option>
+                    <option value="owner">בעל נכס</option>
+                  </select>
+                </div>
+                {authError && <div style={{ color: authError.startsWith("✅") ? "#16a34a" : "#dc2626", fontSize: 14, marginBottom: 8 }}>{authError}</div>}
+                <button className="btn btn-primary" style={{ width: "100%", marginTop: 8 }} onClick={handleRegister} disabled={authLoading}>{authLoading ? "נרשם..." : "שלח בקשת הצטרפות"}</button>
+                <div style={{ marginTop: 16, fontSize: 14, textAlign: "center" }}>
+                  <button style={{ background: "none", border: "none", cursor: "pointer", color: "#c9a227" }} onClick={() => { setAuthMode("login"); setAuthError(""); }}>יש לך כבר חשבון? התחבר כאן</button>
+                </div>
+              </>
+            )}
+            {authMode === "forgot" && (
+              <>
+                <h2 className="login-title">איפוס סיסמה</h2>
+                <p className="login-sub">הזן את האימייל שלך ונשלח לך קישור לאיפוס</p>
+                <div className="field"><label>אימייל *</label><input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" /></div>
+                {authError && <div style={{ color: authError.startsWith("✅") ? "#16a34a" : "#dc2626", fontSize: 14, marginBottom: 8 }}>{authError}</div>}
+                <button className="btn btn-primary" style={{ width: "100%", marginTop: 8 }} onClick={handleForgot} disabled={authLoading}>{authLoading ? "שולח..." : "שלח קישור לאיפוס"}</button>
+                <div style={{ marginTop: 16, fontSize: 14, textAlign: "center" }}>
+                  <button style={{ background: "none", border: "none", cursor: "pointer", color: "#c9a227" }} onClick={() => { setAuthMode("login"); setAuthError(""); }}>חזרה להתחברות</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="login-hero-side">
+          <div className="login-hero-content">
+            <div className="eyebrow"><span className="dot" />GM · ניהול נכסים</div>
+            <h1 className="login-hero-title">שליטה מלאה על המבנים, היחידות, הקריאות וההכנסות שלך</h1>
+            <p className="login-sub">מערכת יוקרתית לניהול נכסים שמתאימה במיוחד לעבודה שלך</p>
+            <div className="hero-stats">
+              <div className="hero-stat"><span className="hero-stat-num">47</span><span className="hero-stat-label">יחידות במערכת</span></div>
+              <div className="hero-stat"><span className="hero-stat-num">6</span><span className="hero-stat-label">קריאות פתוחות</span></div>
+              <div className="hero-stat"><span className="hero-stat-num">₪ 6,840</span><span className="hero-stat-label">הכנסה חודשית</span></div>
+              <div className="hero-stat"><span className="hero-stat-num">12</span><span className="hero-stat-label">בעלי נכסים פעילים</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pending approval
+  if (userProfile && userProfile.status === "ממתין לאישור") {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
+        <div style={{ textAlign: "center", padding: 40 }}>
+          <div style={{ fontSize: 60, marginBottom: 16 }}>⏳</div>
+          <h2 style={{ marginBottom: 8 }}>הבקשה שלך ממתינה לאישור</h2>
+          <p style={{ color: "#64748b" }}>המנהל יאשר את הגישה שלך בקרוב. תודה על הסבלנות!</p>
+          <button className="btn btn-outline" style={{ marginTop: 20 }} onClick={() => supabase.auth.signOut()}>התנתק</button>
+        </div>
+      </div>
+    );
+  }
+
+  const navItemsForRole = getNavItemsForRole(userRole);
+
+  return (
+    <div className="app-shell">
+      {/* Mobile overlay */}
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+        <div className="sidebar-logo">
+          <div><small>GM</small><strong>ניהול נכסים</strong></div>
+        </div>
+        <nav className="sidebar-nav">
+          {navItemsForRole.map(item => (
+            <button key={item.key} className={`nav-item ${activePage === item.key ? "active" : ""}`}
+              onClick={() => { setActivePage(item.key); setSidebarOpen(false); }}>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>{email}</div>
+          <div style={{ fontSize: 12, color: "#c9a227", marginBottom: 12 }}>{getRoleName(userRole)}</div>
+          <button className="btn btn-outline" style={{ width: "100%", fontSize: 13 }} onClick={() => supabase.auth.signOut()}>התנתק</button>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main className="main-content">
+        <div className="topbar">
+          <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+          <div className="topbar-title">{navItemsForRole.find(n => n.key === activePage)?.label || "לוח בקרה"}</div>
+          <div className="topbar-user">
+            <span style={{ fontSize: 13, color: "#64748b" }}>{email}</span>
+          </div>
+        </div>
+        <div className="page-content">
+          {renderContent()}
+        </div>
+      </main>
     </div>
   );
 }
