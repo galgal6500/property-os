@@ -1405,12 +1405,16 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
     tenant_phone: "", lease_end: "", fee_type: "percent", fee_value: "8", notes: ""
   });
 
+  const [dbOwners, setDbOwners] = useState<any[]>([]);
+
   async function load() {
     setLoading(true);
     const { data: apts } = await supabase.from("apartments").select("*, buildings(name, city)").order("created_at", { ascending: false });
     const { data: blds } = await supabase.from("buildings").select("*").order("name");
+    const { data: ows } = await supabase.from("owners").select("id, name").order("name");
     setDbApartments(apts || []);
     setDbBuildings(blds || []);
+    setDbOwners(ows || []);
     setLoading(false);
   }
 
@@ -1481,7 +1485,13 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
                 </select>
               </div>
               <div className="field"><label>שכר דירה</label><input className="input" type="number" value={form.rent_amount} onChange={e => setForm({...form, rent_amount: e.target.value})} placeholder="5200" /></div>
-              <div className="field"><label>בעל נכס</label><input className="input" value={form.owner_name} onChange={e => setForm({...form, owner_name: e.target.value})} placeholder="יוסי כהן" /></div>
+              <div className="field">
+                <label>בעל נכס</label>
+                <select className="input" value={form.owner_name} onChange={e => setForm({...form, owner_name: e.target.value})}>
+                  <option value="">-- בחר בעל נכס --</option>
+                  {dbOwners.map((o: any) => <option key={o.id} value={o.name}>{o.name}</option>)}
+                </select>
+              </div>
               <div className="field"><label>דייר</label><input className="input" value={form.tenant_name} onChange={e => setForm({...form, tenant_name: e.target.value})} placeholder="דני לוי" /></div>
               <div className="field"><label>טלפון דייר</label><input className="input" value={form.tenant_phone} onChange={e => setForm({...form, tenant_phone: e.target.value})} placeholder="052-1234567" /></div>
               <div className="field"><label>חוזה עד</label><input className="input" type="date" value={form.lease_end} onChange={e => setForm({...form, lease_end: e.target.value})} /></div>
@@ -1555,6 +1565,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
   const [leases, setLeases] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbOwners, setDbOwners] = useState<any[]>([]);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
@@ -1662,7 +1673,13 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
             </div>
             <div className="field"><label>דייר</label><input className="input" value={editForm.tenant_name} onChange={e => setEditForm({...editForm, tenant_name: e.target.value})} placeholder="שם הדייר" /></div>
             <div className="field"><label>טלפון דייר</label><input className="input" value={editForm.tenant_phone} onChange={e => setEditForm({...editForm, tenant_phone: e.target.value})} placeholder="052-0000000" /></div>
-            <div className="field"><label>בעל נכס</label><input className="input" value={editForm.owner_name} onChange={e => setEditForm({...editForm, owner_name: e.target.value})} placeholder="שם בעל הנכס" /></div>
+            <div className="field">
+              <label>בעל נכס</label>
+              <select className="input" value={editForm.owner_name} onChange={e => setEditForm({...editForm, owner_name: e.target.value})}>
+                <option value="">-- בחר בעל נכס --</option>
+                {dbOwners.map((o: any) => <option key={o.id} value={o.name}>{o.name}</option>)}
+              </select>
+            </div>
             <div className="field"><label>שכר דירה ₪</label><input className="input" type="number" value={editForm.rent_amount} onChange={e => setEditForm({...editForm, rent_amount: e.target.value})} /></div>
             <div className="field"><label>חוזה עד</label><input className="input" type="date" value={editForm.lease_end} onChange={e => setEditForm({...editForm, lease_end: e.target.value})} /></div>
             <div className="field">
