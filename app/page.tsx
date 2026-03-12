@@ -1571,53 +1571,6 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
           </div>
         )}
       </div>
-
-      {deleteId && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "white", borderRadius: 20, padding: 32, maxWidth: 380, width: "90%", textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🗑</div>
-            <h3 style={{ margin: "0 0 8px" }}>מחיקת דירה</h3>
-            <p style={{ color: "#64748b", marginBottom: 24 }}>האם אתה בטוח? לא ניתן לשחזר.</p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <button className="btn btn-primary" style={{ background: "#dc2626" }} onClick={() => deleteApartment(deleteId)}>כן, מחק</button>
-              <button className="btn btn-outline" onClick={() => setDeleteId(null)}>ביטול</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {editId && editForm && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "white", borderRadius: 20, padding: 28, maxWidth: 600, width: "95%", maxHeight: "90vh", overflowY: "auto" }}>
-            <h3 style={{ margin: "0 0 20px", fontSize: 20 }}>✏️ עריכת דירה</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div className="field">
-                <label>סטטוס</label>
-                <select className="input" value={editForm.status} onChange={e => setEditForm({...editForm, status: e.target.value})}>
-                  <option>פנוי</option><option>מושכר</option>
-                </select>
-              </div>
-              <div className="field"><label>בעל נכס</label><input className="input" value={editForm.owner_name} onChange={e => setEditForm({...editForm, owner_name: e.target.value})} /></div>
-              <div className="field"><label>דייר</label><input className="input" value={editForm.tenant_name} onChange={e => setEditForm({...editForm, tenant_name: e.target.value})} /></div>
-              <div className="field"><label>טלפון דייר</label><input className="input" value={editForm.tenant_phone} onChange={e => setEditForm({...editForm, tenant_phone: e.target.value})} /></div>
-              <div className="field"><label>שכר דירה (₪)</label><input className="input" type="number" value={editForm.rent_amount} onChange={e => setEditForm({...editForm, rent_amount: e.target.value})} /></div>
-              <div className="field"><label>חוזה עד</label><input className="input" type="date" value={editForm.lease_end} onChange={e => setEditForm({...editForm, lease_end: e.target.value})} /></div>
-              <div className="field">
-                <label>סוג עמלה</label>
-                <select className="input" value={editForm.fee_type} onChange={e => setEditForm({...editForm, fee_type: e.target.value})}>
-                  <option value="percent">אחוז</option><option value="fixed">קבוע</option>
-                </select>
-              </div>
-              <div className="field"><label>{editForm.fee_type === "percent" ? "אחוז (%)" : "סכום (₪)"}</label><input className="input" type="number" value={editForm.fee_value} onChange={e => setEditForm({...editForm, fee_value: e.target.value})} /></div>
-              <div className="field" style={{ gridColumn: "span 2" }}><label>הערות</label><textarea className="input" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ minHeight: 60 }} /></div>
-            </div>
-            <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-              <button className="btn btn-primary" onClick={saveApartmentEdit} disabled={savingEdit}>{savingEdit ? "שומר..." : "💾 שמור"}</button>
-              <button className="btn btn-outline" onClick={() => { setEditId(null); setEditForm(null); }}>ביטול</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
