@@ -1591,6 +1591,8 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
       setLeases(ls || []);
       const { data: rs } = await supabase.from("service_requests").select("*").eq("apartment_id", apartmentId).order("created_at", { ascending: false });
       setRequests(rs || []);
+      const { data: ows } = await supabase.from("owners").select("id, name").order("name");
+      setDbOwners(ows || []);
       setLoading(false);
     }
     load();
