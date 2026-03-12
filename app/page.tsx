@@ -1222,6 +1222,10 @@ function Buildings({ openBuilding }: { openBuilding: (id: any) => void }) {
   const [newCity, setNewCity] = useState("");
   const [newFloors, setNewFloors] = useState("1");
   const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   async function loadBuildings() {
     setLoading(true);
@@ -1243,9 +1247,23 @@ function Buildings({ openBuilding }: { openBuilding: (id: any) => void }) {
   }
 
   async function deleteBuilding(id: string) {
-    if (!confirm("למחוק את המבנה?")) return;
     await supabase.from("buildings").delete().eq("id", id);
+    setDeleteId(null);
     await loadBuildings();
+  }
+
+  async function saveEdit() {
+    if (!editId) return;
+    setSavingEdit(true);
+    await supabase.from("buildings").update({
+      name: editForm.name,
+      city: editForm.city,
+      floors: parseInt(editForm.floors),
+    }).eq("id", editId);
+    setEditId(null);
+    setEditForm(null);
+    await loadBuildings();
+    setSavingEdit(false);
   }
 
   return (
@@ -1291,7 +1309,9 @@ function Buildings({ openBuilding }: { openBuilding: (id: any) => void }) {
                     <td>{b.floors}</td>
                     <td>{new Date(b.created_at).toLocaleDateString("he-IL")}</td>
                     <td style={{ display: "flex", gap: 8 }}>
-                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteBuilding(b.id)}>מחק</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => openBuilding(b.id)}>👁 צפייה</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => { setEditId(b.id); setEditForm({ name: b.name, city: b.city, floors: String(b.floors) }); }}>✏️ עריכה</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626" }} onClick={() => setDeleteId(b.id)}>🗑 מחק</button>
                     </td>
                   </tr>
                 ))}
@@ -1300,6 +1320,37 @@ function Buildings({ openBuilding }: { openBuilding: (id: any) => void }) {
           </div>
         )}
       </div>
+
+      {deleteId && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "white", borderRadius: 20, padding: 32, maxWidth: 380, width: "90%", textAlign: "center" }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🗑</div>
+            <h3 style={{ margin: "0 0 8px" }}>מחיקת מבנה</h3>
+            <p style={{ color: "#64748b", marginBottom: 24 }}>האם אתה בטוח? המחיקה תמחק גם את כל הדירות במבנה.</p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+              <button className="btn btn-primary" style={{ background: "#dc2626" }} onClick={() => deleteBuilding(deleteId)}>כן, מחק</button>
+              <button className="btn btn-outline" onClick={() => setDeleteId(null)}>ביטול</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editId && editForm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "white", borderRadius: 20, padding: 28, maxWidth: 480, width: "95%" }}>
+            <h3 style={{ margin: "0 0 20px", fontSize: 20 }}>✏️ עריכת מבנה</h3>
+            <div style={{ display: "grid", gap: 14 }}>
+              <div className="field"><label>שם המבנה</label><input className="input" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} /></div>
+              <div className="field"><label>עיר</label><input className="input" value={editForm.city} onChange={e => setEditForm({...editForm, city: e.target.value})} /></div>
+              <div className="field"><label>מספר קומות</label><input className="input" type="number" value={editForm.floors} onChange={e => setEditForm({...editForm, floors: e.target.value})} min="1" /></div>
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+              <button className="btn btn-primary" onClick={saveEdit} disabled={savingEdit}>{savingEdit ? "שומר..." : "💾 שמור"}</button>
+              <button className="btn btn-outline" onClick={() => { setEditId(null); setEditForm(null); }}>ביטול</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
