@@ -1628,6 +1628,8 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
       const { data: a } = await supabase.from("apartments").select("*, buildings(name, city)").eq("id", apartmentId).single();
       setApt(a);
       if (a) setEditForm({
+        apartment_number: a.apartment_number || "",
+        floor: a.floor !== undefined ? String(a.floor) : "0",
         status: a.status || "פנוי",
         tenant_name: a.tenant_name || "",
         tenant_phone: a.tenant_phone || "",
@@ -1664,6 +1666,8 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
   async function saveEdit() {
     setSavingEdit(true);
     await supabase.from("apartments").update({
+      apartment_number: editForm.apartment_number,
+      floor: parseInt(editForm.floor) || 0,
       status: editForm.status,
       owner_name: editForm.owner_name,
       tenant_name: editForm.tenant_name,
@@ -1718,6 +1722,8 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
         <div className="card" style={{ background: "#f8fafc", borderRadius: 16, padding: 20 }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700 }}>עריכת פרטי דירה</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div className="field"><label>מספר דירה</label><input className="input" value={editForm.apartment_number} onChange={e => setEditForm({...editForm, apartment_number: e.target.value})} placeholder="3" /></div>
+            <div className="field"><label>קומה</label><input className="input" type="number" value={editForm.floor} onChange={e => setEditForm({...editForm, floor: e.target.value})} /></div>
             <div className="field">
               <label>סטטוס</label>
               <select className="input" value={editForm.status} onChange={e => setEditForm({...editForm, status: e.target.value})}>
@@ -1770,7 +1776,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
           <div className="section-top" style={{ marginBottom: 16 }}>
             <h3 className="card-title" style={{ margin: 0 }}>פרטי הדירה</h3>
             {!editing ? (
-              <button className="btn btn-primary" onClick={() => { setEditForm({ status: apt.status, owner_name: apt.owner_name || "", tenant_name: apt.tenant_name || "", tenant_phone: apt.tenant_phone || "", rent_amount: apt.rent_amount || "", lease_end: apt.lease_end || "", fee_type: apt.fee_type || "percent", fee_value: apt.fee_value || 8, notes: apt.notes || "" }); setEditing(true); }}>✏️ עריכה</button>
+              <button className="btn btn-primary" onClick={() => { setEditForm({ apartment_number: apt.apartment_number || "", floor: apt.floor !== undefined ? String(apt.floor) : "0", status: apt.status, owner_name: apt.owner_name || "", tenant_name: apt.tenant_name || "", tenant_phone: apt.tenant_phone || "", rent_amount: apt.rent_amount || "", lease_end: apt.lease_end || "", fee_type: apt.fee_type || "percent", fee_value: apt.fee_value || 8, notes: apt.notes || "" }); setEditing(true); }}>✏️ עריכה</button>
             ) : (
               <div style={{ display: "flex", gap: 8 }}>
                 <button className="btn btn-primary" onClick={saveEdit} disabled={savingEdit}>{savingEdit ? "שומר..." : "💾 שמור"}</button>
@@ -1796,6 +1802,8 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="field"><label>מספר דירה</label><input className="input" value={editForm.apartment_number} onChange={e => setEditForm({...editForm, apartment_number: e.target.value})} placeholder="3" /></div>
+              <div className="field"><label>קומה</label><input className="input" type="number" value={editForm.floor} onChange={e => setEditForm({...editForm, floor: e.target.value})} /></div>
               <div className="field">
                 <label>סטטוס</label>
                 <select className="input" value={editForm.status} onChange={e => setEditForm({...editForm, status: e.target.value})}>
