@@ -239,6 +239,7 @@ body {
   font-size: 14px;
 }
 
+/* ── App Layout ── */
 .app {
   min-height: 100vh;
   display: grid;
@@ -306,6 +307,7 @@ body {
   display: grid;
   gap: 8px;
   margin-top: 22px;
+  overflow-y: auto;
 }
 
 .nav-btn {
@@ -362,6 +364,11 @@ body {
 
 .side-card .name {
   font-weight: 800;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
 }
 
 .side-card .role {
@@ -490,6 +497,7 @@ body {
 
 .table-wrap {
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -628,6 +636,32 @@ tr:hover td {
   margin-bottom: 18px;
 }
 
+.tab-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-btn {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab-btn.active {
+  background: #0f172a;
+  color: #fff;
+  border-color: #0f172a;
+}
+
 .info-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -749,6 +783,15 @@ tr:hover td {
   transform: translateY(-2px);
 }
 
+/* ── Mobile bottom nav ── */
+.mobile-nav {
+  display: none;
+}
+
+/* ────────────────────────────────────────────
+   RESPONSIVE
+──────────────────────────────────────────── */
+
 @media (max-width: 1300px) {
   .kpi-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -789,28 +832,180 @@ tr:hover td {
   }
 }
 
+/* ── טלפון ── */
 @media (max-width: 640px) {
-  .login-left,
-  .login-right {
-    padding: 28px;
-  }
-  .login-title {
-    font-size: 38px;
-  }
-  .hero-grid {
-    grid-template-columns: 1fr;
-  }
-  .main {
+
+  /* Login */
+  .login-shell {
     padding: 16px;
   }
-  .kpi-grid,
-  .detail-kpis {
+  .login-wrap {
+    border-radius: 24px;
+    min-height: unset;
+  }
+  .login-left {
+    display: none;
+  }
+  .login-right {
+    padding: 24px 20px;
+  }
+  .login-card {
+    border-radius: 20px;
+    padding: 24px 20px;
+  }
+  .login-card h1 {
+    font-size: 26px;
+  }
+
+  /* App layout — sidebar הופך לתפריט תחתון */
+  .app {
     grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+    min-height: 100dvh;
   }
+
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    height: auto;
+    width: 100%;
+    z-index: 100;
+    padding: 0;
+    border-left: none;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    flex-direction: row;
+    background: rgba(13, 19, 37, 0.98);
+    backdrop-filter: blur(12px);
+  }
+
+  .brand {
+    display: none;
+  }
+
+  .side-card {
+    display: none;
+  }
+
+  .nav {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0;
+    margin: 0;
+    padding: 8px 12px;
+    width: 100%;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-btn {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+
+  /* Main content — ריפוד תחתון כדי שלא יחפף עם התפריט */
+  .main {
+    padding: 16px 14px 90px 14px;
+    min-height: 100dvh;
+  }
+
+  /* Topbar */
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
   .topbar h1 {
-    font-size: 28px;
+    font-size: 24px;
   }
+
+  .top-actions {
+    width: 100%;
+  }
+
   .search {
     width: 100%;
+  }
+
+  /* KPIs */
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .kpi .value {
+    font-size: 24px;
+  }
+
+  .detail-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  /* Cards */
+  .card {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .card-title {
+    font-size: 18px;
+  }
+
+  /* Info grid */
+  .info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  /* Detail top */
+  .detail-top {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .detail-top h2 {
+    font-size: 22px !important;
+  }
+
+  /* Buttons */
+  .section-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .section-top button {
+    width: 100%;
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  /* Building units */
+  .building-unit-box {
+    width: 90px;
+    height: 72px;
+    font-size: 13px;
+  }
+
+  /* Forms */
+  .field .input {
+    font-size: 16px; /* מונע zoom ב-iOS */
   }
 }
