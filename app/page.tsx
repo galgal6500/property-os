@@ -2499,6 +2499,7 @@ function NGSDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingVehicleId, setUploadingVehicleId] = useState<string | null>(null);
+  const [selectedWorkLog, setSelectedWorkLog] = useState<any>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
 
   const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", notes: "" });
@@ -2634,6 +2635,54 @@ function NGSDashboard() {
           licensePlate={selectedVehicle.license_plate}
           onClose={() => setSelectedVehicle(null)}
         />
+      )}
+
+      {selectedWorkLog && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {/* Header */}
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>📋 {selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : "-"}</div>
+                <div style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
+                  {selectedWorkLog.branch && <span>📍 {selectedWorkLog.branch}  ·  </span>}
+                  {selectedWorkLog.project_name && <span>🤝 {selectedWorkLog.project_name}  ·  </span>}
+                  {selectedWorkLog.filled_by && <span>ממלא: {selectedWorkLog.filled_by}</span>}
+                </div>
+              </div>
+              <button onClick={() => setSelectedWorkLog(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "#64748b" }}>×</button>
+            </div>
+            {/* Body */}
+            <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
+              {/* פרטים */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+                {selectedWorkLog.employee_name && <div style={{ background: "#f8fafc", borderRadius: 12, padding: 12 }}><div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>עובדים</div><div style={{ fontWeight: 700 }}>{[selectedWorkLog.employee_name, selectedWorkLog.workers].filter(Boolean).join(", ")}</div></div>}
+                {selectedWorkLog.hours > 0 && <div style={{ background: "#f8fafc", borderRadius: 12, padding: 12 }}><div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>שעות</div><div style={{ fontWeight: 700 }}>{selectedWorkLog.hours} ש׳</div></div>}
+              </div>
+              {/* שורות עבודה */}
+              <div style={{ fontWeight: 700, marginBottom: 12 }}>פירוט העבודה:</div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {[1,2,3,4,5,6,7,8,9,10].map(n => {
+                  const line = selectedWorkLog[`line${n}`];
+                  if (!line) return null;
+                  return (
+                    <div key={n} style={{ display: "flex", gap: 10, padding: "8px 12px", background: "#f8fafc", borderRadius: 10 }}>
+                      <span style={{ color: "#94a3b8", fontWeight: 700, minWidth: 22 }}>{n}.</span>
+                      <span style={{ fontSize: 14 }}>{line}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Footer */}
+            <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ background: selectedWorkLog.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: selectedWorkLog.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "4px 16px", fontSize: 13, fontWeight: 700 }}>
+                {selectedWorkLog.performa === "יצאה פרפורמה" ? "✅ יצאה פרפורמה" : "❌ לא טופל"}
+              </span>
+              <button className="btn btn-outline" onClick={() => setSelectedWorkLog(null)}>סגור</button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="card" style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", color: "#fff", border: "none" }}>
@@ -2971,44 +3020,30 @@ function NGSDashboard() {
           {workLogs.length === 0 ? (
             <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📋</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומני עבודה</div></div>
           ) : (
-            <div style={{ display: "grid", gap: 12 }}>
-              {workLogs.map(w => {
-                const lines = [w.line1,w.line2,w.line3,w.line4,w.line5,w.line6,w.line7,w.line8,w.line9,w.line10].filter(Boolean);
-                return (
-                  <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: 16, background: "#fff" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-                          <span style={{ fontWeight: 900, fontSize: 16 }}>📋 {w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
-                          {w.project_name && <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 12px", fontSize: 12, fontWeight: 700 }}>🤝 {w.project_name}</span>}
-                          {w.branch && <span style={{ background: "#f1f5f9", color: "#475569", borderRadius: 999, padding: "2px 12px", fontSize: 12, fontWeight: 700 }}>📍 {w.branch}</span>}
-                          {w.performa && <span style={{ background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: w.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "2px 12px", fontSize: 12, fontWeight: 700 }}>{w.performa === "יצאה פרפורמה" ? "✅ פרפורמה" : "❌ לא טופל"}</span>}
-                        </div>
-                        {w.filled_by && (
-                          <div style={{ fontSize: 13, color: "#64748b" }}>ממלא: <strong>{w.filled_by}</strong></div>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <select value={w.performa || "לא טופל"} onChange={async e => { await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id); await load(); }} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2" }}>
-                          <option value="לא טופל">❌ לא טופל</option>
-                          <option value="יצאה פרפורמה">✅ יצאה פרפורמה</option>
-                        </select>
-                        <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>
-                      </div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {workLogs.map(w => (
+                <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: "14px 18px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                  {/* LEFT - תאריך וסניף */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: "#0f172a" }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</div>
+                      <div style={{ fontSize: 14, color: "#64748b", marginTop: 2 }}>{w.branch ? `📍 ${w.branch}` : ""}{w.project_name ? `  ·  🤝 ${w.project_name}` : ""}</div>
                     </div>
-                    {lines.length > 0 && (
-                      <div style={{ marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
-                        {lines.map((line, i) => (
-                          <div key={i} style={{ fontSize: 13, padding: "3px 0", display: "flex", gap: 8 }}>
-                            <span style={{ color: "#94a3b8", fontWeight: 700, minWidth: 20 }}>{i+1}.</span>
-                            <span>{line}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <span style={{ background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: w.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>
+                      {w.performa === "יצאה פרפורמה" ? "✅ פרפורמה" : "❌ לא טופל"}
+                    </span>
                   </div>
-                );
-              })}
+                  {/* RIGHT - פעולות */}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setSelectedWorkLog(w)}>📄 פתח יומן</button>
+                    <select value={w.performa || "לא טופל"} onChange={async e => { await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id); await load(); }} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2" }}>
+                      <option value="לא טופל">❌ לא טופל</option>
+                      <option value="יצאה פרפורמה">✅ יצאה פרפורמה</option>
+                    </select>
+                    <button className="btn btn-outline" style={{ fontSize: 12, padding: "6px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
