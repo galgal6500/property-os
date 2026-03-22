@@ -2588,6 +2588,10 @@ function NGSDashboard() {
             <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{employees.filter(e => e.status === "פעיל").length}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>עובדים</div></div>
             <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{vehicles.length}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>רכבים</div></div>
             <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: openServiceCalls.length > 0 ? "#dc2626" : "#16a34a" }}>{openServiceCalls.length}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>קריאות פתוחות</div></div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: workLogs.filter(w => w.performa !== "יצאה פרפורמה").length > 0 ? "#f59e0b" : "#16a34a" }}>{workLogs.filter(w => w.performa !== "יצאה פרפורמה").length}</div>
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>יומנים לא מטופלים</div>
+            </div>
           </div>
         </div>
       </div>
@@ -2781,7 +2785,7 @@ function NGSDashboard() {
                 <div className="field"><label>תאריך</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
                 <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
                 <div className="field"><label>שעות</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
-                <div className="field"><label>פרויקט</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר פרויקט</option>{projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select></div>
+                <div className="field"><label>לקוח</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
                 <div className="field"><label>📄 פרפורמה</label><select className="input" value={workLogForm.performa} onChange={e => setWorkLogForm({...workLogForm, performa: e.target.value})}><option value="לא טופל">❌ לא טופל</option><option value="יצאה פרפורמה">✅ יצאה פרפורמה</option></select></div>
               </div>
               <div>
