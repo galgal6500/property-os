@@ -1,0 +1,11 @@
+{
+  "name": "GM ניהול נכסים",
+  "short_name": "GM נכסים",
+  "description": "מערכת יוקרתית לניהול נכסים",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#c9a227",
+  "orientation": "portrait",
+  "icons": []
+}
