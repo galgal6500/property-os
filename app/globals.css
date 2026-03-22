@@ -784,8 +784,12 @@ tr:hover td {
 }
 
 /* ── Mobile bottom nav ── */
-.mobile-nav {
+.mobile-bottom-nav {
   display: none;
+}
+
+.desktop-only {
+  display: inline-flex;
 }
 
 /* ────────────────────────────────────────────
@@ -857,59 +861,71 @@ tr:hover td {
     font-size: 26px;
   }
 
-  /* App layout — sidebar הופך לתפריט תחתון */
+  /* App layout */
   .app {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr auto;
     min-height: 100dvh;
   }
 
+  /* הסיידבר מוסתר לגמרי בטלפון */
   .sidebar {
+    display: none;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* תפריט תחתון למובייל */
+  .mobile-bottom-nav {
+    display: flex;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    top: auto;
-    height: auto;
-    width: 100%;
-    z-index: 100;
-    padding: 0;
-    border-left: none;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    flex-direction: row;
+    height: 64px;
     background: rgba(13, 19, 37, 0.98);
     backdrop-filter: blur(12px);
-  }
-
-  .brand {
-    display: none;
-  }
-
-  .side-card {
-    display: none;
-  }
-
-  .nav {
-    display: flex;
-    flex-direction: row;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    z-index: 100;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    gap: 0;
-    margin: 0;
-    padding: 8px 12px;
-    width: 100%;
     scrollbar-width: none;
   }
 
-  .nav::-webkit-scrollbar {
+  .mobile-bottom-nav::-webkit-scrollbar {
     display: none;
   }
 
-  .nav-btn {
-    flex-shrink: 0;
-    padding: 10px 14px;
-    font-size: 13px;
-    border-radius: 12px;
+  .mobile-nav-btn {
+    flex: 1;
+    min-width: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 8px 6px;
+    transition: 0.18s ease;
+  }
+
+  .mobile-nav-btn.active {
+    color: #d5b57a;
+  }
+
+  .mobile-nav-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .mobile-nav-label {
+    font-size: 10px;
+    font-weight: 700;
     white-space: nowrap;
   }
 
