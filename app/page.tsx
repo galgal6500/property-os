@@ -3128,6 +3128,15 @@ export default function Home() {
     );
   }
 
+  const navItemsForRole = getNavItemsForRole(userRole);
+
+  function isActive(key: string) {
+    return activePage === key ||
+      (activePage === "apartmentDetails" && key === "apartments") ||
+      (activePage === "buildingDetails" && key === "buildings") ||
+      (activePage === "ownerDetails" && key === "owners");
+  }
+
   return (
     <div className="app">
       <aside className="sidebar">
@@ -3136,8 +3145,8 @@ export default function Home() {
           <div><small>GM</small><strong>ניהול נכסים</strong></div>
         </div>
         <nav className="nav">
-          {getNavItemsForRole(userRole).map((item) => (
-            <button key={item.key} className={`nav-btn ${activePage === item.key || (activePage === "apartmentDetails" && item.key === "apartments") || (activePage === "buildingDetails" && item.key === "buildings") || (activePage === "ownerDetails" && item.key === "owners") ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
+          {navItemsForRole.map((item) => (
+            <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
               {item.label}
             </button>
           ))}
