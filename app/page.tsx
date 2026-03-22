@@ -3085,6 +3085,7 @@ export default function Home() {
       case "requests": return <ServiceRequests />;
       case "leases": return <Leases />;
       case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר, הסכמי ניהול וכל מסמך שקשור לבעל נכס, דירה או חוזה." />;
+      case "ngs": return <NGSDashboard />;
       case "tenantPortal": return <TenantPortal userProfile={userProfile} />;
       case "settings": return <Settings userEmail={email} />;
       case "users": return <UsersManagement />;
