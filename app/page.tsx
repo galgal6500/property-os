@@ -2453,7 +2453,7 @@ function NGSDashboard() {
   const [editingVehicle, setEditingVehicle] = useState<any>(null);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
-  const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", notes: "" });
+  const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", driver: "", notes: "" });
   const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "פעיל" });
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
@@ -2479,7 +2479,7 @@ function NGSDashboard() {
   async function saveVehicle() {
     if (!vehicleForm.license_plate) return; setSaving(true);
     await supabase.from("ngs_vehicles").insert({ ...vehicleForm, test_date: vehicleForm.test_date || null, next_test_date: vehicleForm.next_test_date || null });
-    setVehicleForm({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", notes: "" });
+    setVehicleForm({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", driver: "", notes: "" });
     setShowForm(false); await load(); setSaving(false);
   }
   async function updateVehicle() {
@@ -2493,6 +2493,7 @@ function NGSDashboard() {
       test_date: editingVehicle.test_date || null,
       next_test_date: editingVehicle.next_test_date || null,
       notes: editingVehicle.notes,
+      driver: editingVehicle.driver || null,
     }).eq("id", editingVehicle.id);
     setEditingVehicle(null);
     await load();
@@ -2588,7 +2589,42 @@ function NGSDashboard() {
               <span style={{ background: selectedWorkLog.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: selectedWorkLog.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "4px 16px", fontSize: 13, fontWeight: 700 }}>
                 {selectedWorkLog.performa === "יצאה פרפורמה" ? "✅ יצאה פרפורמה" : "❌ לא טופל"}
               </span>
-              <button className="btn btn-outline" onClick={() => setSelectedWorkLog(null)}>סגור</button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => {
+                  const lines = [1,2,3,4,5,6,7,8,9,10].map(n => selectedWorkLog[`line${n}`]).filter(Boolean);
+                  const win = window.open("", "_blank");
+                  if (!win) return;
+                  win.document.write(`
+                    <html dir="rtl"><head><title>יומן עבודה</title>
+                    <style>body{font-family:Arial,sans-serif;padding:30px;direction:rtl;}h2{margin-bottom:4px;}
+                    .meta{color:#64748b;font-size:14px;margin-bottom:20px;}
+                    .line{padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;font-size:14px;}
+                    .num{color:#94a3b8;font-weight:700;margin-left:10px;}
+                    .badge{padding:4px 14px;border-radius:999px;font-size:13px;font-weight:700;}
+                    .footer{margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;}
+                    @media print{button{display:none}}</style></head><body>
+                    <h2>📋 יומן עבודה — ${selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : ""}</h2>
+                    <div class="meta">
+                      ${selectedWorkLog.branch ? `📍 ${selectedWorkLog.branch}` : ""}
+                      ${selectedWorkLog.project_name ? ` &nbsp;·&nbsp; 🤝 ${selectedWorkLog.project_name}` : ""}
+                      ${selectedWorkLog.filled_by ? ` &nbsp;·&nbsp; ממלא: ${selectedWorkLog.filled_by}` : ""}
+                    </div>
+                    ${selectedWorkLog.employee_name ? `<div style="margin-bottom:16px"><strong>👷 עובדים:</strong> ${[selectedWorkLog.employee_name, selectedWorkLog.workers].filter(Boolean).join(", ")}</div>` : ""}
+                    ${selectedWorkLog.hours > 0 ? `<div style="margin-bottom:16px"><strong>⏱ שעות:</strong> ${selectedWorkLog.hours} ש׳</div>` : ""}
+                    <div style="font-weight:700;margin-bottom:10px">פירוט העבודה:</div>
+                    ${lines.map((l, i) => `<div class="line"><span class="num">${i+1}.</span>${l}</div>`).join("")}
+                    <div class="footer">
+                      <span class="badge" style="background:${selectedWorkLog.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2"};color:${selectedWorkLog.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626"}">
+                        ${selectedWorkLog.performa === "יצאה פרפורמה" ? "✅ יצאה פרפורמה" : "❌ לא טופל"}
+                      </span>
+                    </div>
+                    <script>window.onload=()=>window.print();</script>
+                    </body></html>
+                  `);
+                  win.document.close();
+                }}>🖨️ הדפס</button>
+                <button className="btn btn-outline" onClick={() => setSelectedWorkLog(null)}>סגור</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2665,6 +2701,7 @@ function NGSDashboard() {
                 <div className="field"><label>סטטוס</label><select className="input" value={vehicleForm.status} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})}><option>פעיל</option><option>בתיקון</option><option>מושבת</option></select></div>
                 <div className="field"><label>תאריך טסט אחרון</label><input className="input" type="date" value={vehicleForm.test_date} onChange={e => setVehicleForm({...vehicleForm, test_date: e.target.value})} /></div>
                 <div className="field"><label>תאריך טסט הבא</label><input className="input" type="date" value={vehicleForm.next_test_date} onChange={e => setVehicleForm({...vehicleForm, next_test_date: e.target.value})} /></div>
+                <div className="field"><label>👤 נהג</label><input className="input" value={vehicleForm.driver} onChange={e => setVehicleForm({...vehicleForm, driver: e.target.value})} placeholder="שם הנהג" /></div>
               </div>
               <div style={{ display: "flex", gap: 8 }}><button className="btn btn-primary" onClick={saveVehicle} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
@@ -2685,7 +2722,7 @@ function NGSDashboard() {
                           <Badge value={v.status} />
                           {testAlert && <span style={{ background: "#dc2626", color: "#fff", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ טסט בקרוב!</span>}
                         </div>
-                        <div style={{ fontSize: 14, color: "#64748b" }}>{v.model || "-"} · {v.year || "-"}</div>
+                        <div style={{ fontSize: 14, color: "#64748b" }}>{v.model || "-"} · {v.year || "-"}{v.driver ? ` · 👤 ${v.driver}` : ""}</div>
                       </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                         <button className="btn btn-secondary" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => setSelectedVehicle(v)}>🔧 טיפולים</button>
@@ -2722,6 +2759,7 @@ function NGSDashboard() {
                   <div className="field"><label>סטטוס</label><select className="input" value={editingVehicle.status} onChange={e => setEditingVehicle({...editingVehicle, status: e.target.value})}><option>פעיל</option><option>בתיקון</option><option>מושבת</option></select></div>
                   <div className="field"><label>תאריך טסט אחרון</label><input className="input" type="date" value={editingVehicle.test_date} onChange={e => setEditingVehicle({...editingVehicle, test_date: e.target.value})} /></div>
                   <div className="field"><label>תאריך טסט הבא</label><input className="input" type="date" value={editingVehicle.next_test_date} onChange={e => setEditingVehicle({...editingVehicle, next_test_date: e.target.value})} /></div>
+                  <div className="field"><label>👤 נהג</label><input className="input" value={editingVehicle.driver || ""} onChange={e => setEditingVehicle({...editingVehicle, driver: e.target.value})} placeholder="שם הנהג" /></div>
                   <div className="field" style={{ gridColumn: "span 2" }}><label>הערות</label><input className="input" value={editingVehicle.notes} onChange={e => setEditingVehicle({...editingVehicle, notes: e.target.value})} placeholder="הערות..." /></div>
                 </div>
                 <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
