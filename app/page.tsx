@@ -2331,6 +2331,15 @@ function Placeholder({ title, text }: { title: string; text: string }) {
 
 // ─── Role helpers ────────────────────────────────────────────────────────────
 
+function getNavIcon(key: string) {
+  const icons: Record<string, string> = {
+    dashboard: "🏠", owners: "👤", buildings: "🏢", apartments: "🚪",
+    requests: "🔧", leases: "📋", documents: "📄", tenantPortal: "🏠",
+    settings: "⚙️", users: "👥", workcontracts: "📝", ngs: "🏗",
+  };
+  return icons[key] || "•";
+}
+
 function getNavItemsForRole(role: string) {
   if (role === "tenant") {
     return [
