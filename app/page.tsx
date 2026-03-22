@@ -2456,7 +2456,7 @@ function NGSDashboard() {
   const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "פעיל" });
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
-  const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", notes: "" });
+  const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "" });
   const [workLogForm, setWorkLogForm] = useState({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
 
   async function load() {
@@ -2510,7 +2510,7 @@ function NGSDashboard() {
   async function saveServiceCall() {
     if (!serviceCallForm.issue) return; setSaving(true);
     await supabase.from("ngs_service_calls").insert(serviceCallForm);
-    setServiceCallForm({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", notes: "" }); setShowForm(false); await load(); setSaving(false);
+    setServiceCallForm({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "" }); setShowForm(false); await load(); setSaving(false);
   }
   async function saveWorkLog() {
     if (!workLogForm.employee_name && !workLogForm.filled_by) return; setSaving(true);
@@ -2613,7 +2613,8 @@ function NGSDashboard() {
               : openServiceCalls.slice(0, 5).map(s => (
                 <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, marginBottom: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontWeight: 700 }}>{s.issue}</span><Badge value={s.urgency} /></div>
-                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name} · {s.status}</div>
+                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name} · {s.status}{s.location ? ` · 📍 ${s.location}` : ""}</div>
+                  {s.description && <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>{s.description}</div>}
                 </div>
               ))}
             </div>
@@ -2758,7 +2759,9 @@ function NGSDashboard() {
                 <div className="field"><label>נושא *</label><input className="input" value={serviceCallForm.issue} onChange={e => setServiceCallForm({...serviceCallForm, issue: e.target.value})} /></div>
                 <div className="field"><label>דחיפות</label><select className="input" value={serviceCallForm.urgency} onChange={e => setServiceCallForm({...serviceCallForm, urgency: e.target.value})}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select></div>
                 <div className="field"><label>אחראי</label><select className="input" value={serviceCallForm.assigned_to} onChange={e => setServiceCallForm({...serviceCallForm, assigned_to: e.target.value})}><option value="">בחר עובד</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
+                <div className="field"><label>📍 מיקום</label><input className="input" value={serviceCallForm.location} onChange={e => setServiceCallForm({...serviceCallForm, location: e.target.value})} placeholder="כתובת / אתר..." /></div>
               </div>
+              <div className="field"><label>📝 מלל חופשי</label><textarea className="input" value={serviceCallForm.description} onChange={e => setServiceCallForm({...serviceCallForm, description: e.target.value})} placeholder="תיאור מפורט של הקריאה..." style={{ minHeight: 90, resize: "vertical" }} /></div>
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveServiceCall} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
