@@ -602,3 +602,90 @@ tr:hover td { background: #fafbfd; }
   /* Buttons */
   .btn { padding: 10px 16px; font-size: 14px; border-radius: 14px; }
 }
+
+/* ── Request cards (mobile) ── */
+.desktop-table { display: block; }
+.mobile-cards { display: none; }
+
+.request-card {
+  background: #fff;
+  border: 1px solid #e8eef6;
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(15,23,42,0.06);
+}
+
+.request-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.request-card-urgency {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.request-card-date {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.request-card-issue {
+  font-size: 17px;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.request-card-apt {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.request-card-vendor {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.request-card-cost {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.request-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  gap: 10px;
+}
+
+.request-status-select {
+  border: 1.5px solid;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  background: #fff;
+  flex: 1;
+
+  /* Request cards */
+  .desktop-table { display: none; }
+  .mobile-cards { display: block; }
+
+}
