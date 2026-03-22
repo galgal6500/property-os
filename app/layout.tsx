@@ -24,4 +24,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="GM נכסים" />
         <meta name="theme-color" content="#c9a227" />
-        <link rel="apple-touch-icon" href="/icons/ic
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
