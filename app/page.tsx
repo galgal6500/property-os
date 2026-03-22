@@ -2506,7 +2506,7 @@ function NGSDashboard() {
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
   const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", notes: "" });
-  const [workLogForm, setWorkLogForm] = useState({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+  const [workLogForm, setWorkLogForm] = useState({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
 
   async function load() {
     setLoading(true);
@@ -2596,7 +2596,7 @@ function NGSDashboard() {
     if (!workLogForm.employee_name) return;
     setSaving(true);
     await supabase.from("ngs_work_logs").insert({ ...workLogForm, hours: parseFloat(workLogForm.hours) || 0 });
-    setWorkLogForm({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+    setWorkLogForm({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
     setShowForm(false);
     await load();
     setSaving(false);
@@ -2925,6 +2925,7 @@ function NGSDashboard() {
                 <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
                 <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
                 <div className="field"><label>פרויקט</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר פרויקט</option>{projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select></div>
+                <div className="field"><label>📄 פרפורמה</label><select className="input" value={workLogForm.performa} onChange={e => setWorkLogForm({...workLogForm, performa: e.target.value})} style={{ border: workLogForm.performa === "יצאה פרפורמה" ? "2px solid #16a34a" : workLogForm.performa === "לא טופל" ? "2px solid #dc2626" : "1px solid #e2e8f0" }}><option value="לא טופל">❌ לא טופל</option><option value="יצאה פרפורמה">✅ יצאה פרפורמה</option></select></div>
               </div>
               {/* בחירת עובדים */}
               <div>
@@ -2981,12 +2982,19 @@ function NGSDashboard() {
                           <span style={{ fontWeight: 900, fontSize: 16 }}>📋 {w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
                           {w.project_name && <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 12px", fontSize: 12, fontWeight: 700 }}>🤝 {w.project_name}</span>}
                           {w.branch && <span style={{ background: "#f1f5f9", color: "#475569", borderRadius: 999, padding: "2px 12px", fontSize: 12, fontWeight: 700 }}>📍 {w.branch}</span>}
+                          {w.performa && <span style={{ background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: w.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "2px 12px", fontSize: 12, fontWeight: 700 }}>{w.performa === "יצאה פרפורמה" ? "✅ פרפורמה" : "❌ לא טופל"}</span>}
                         </div>
                         {w.filled_by && (
                           <div style={{ fontSize: 13, color: "#64748b" }}>ממלא: <strong>{w.filled_by}</strong></div>
                         )}
                       </div>
-                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <select value={w.performa || "לא טופל"} onChange={async e => { await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id); await load(); }} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2" }}>
+                          <option value="לא טופל">❌ לא טופל</option>
+                          <option value="יצאה פרפורמה">✅ יצאה פרפורמה</option>
+                        </select>
+                        <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>
+                      </div>
                     </div>
                     {lines.length > 0 && (
                       <div style={{ marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
