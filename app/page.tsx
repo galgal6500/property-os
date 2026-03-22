@@ -2506,7 +2506,7 @@ function NGSDashboard() {
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
   const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", notes: "" });
-  const [workLogForm, setWorkLogForm] = useState({ employee_name: "", date: "", hours: "", project_name: "", description: "" });
+  const [workLogForm, setWorkLogForm] = useState({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
 
   async function load() {
     setLoading(true);
@@ -2596,7 +2596,7 @@ function NGSDashboard() {
     if (!workLogForm.employee_name) return;
     setSaving(true);
     await supabase.from("ngs_work_logs").insert({ ...workLogForm, hours: parseFloat(workLogForm.hours) || 0 });
-    setWorkLogForm({ employee_name: "", date: "", hours: "", project_name: "", description: "" });
+    setWorkLogForm({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
     setShowForm(false);
     await load();
     setSaving(false);
@@ -2913,20 +2913,32 @@ function NGSDashboard() {
       {!loading && tab === "worklogs" && (
         <div className="card">
           <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה</h3><div className="muted">מעקב שעות</div></div>
+            <div><h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה</h3><div className="muted">מעקב שעות ופעילות</div></div>
             <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ יומן חדש</button>
           </div>
           {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
-                <div className="field"><label>עובד *</label><select className="input" value={workLogForm.employee_name} onChange={e => setWorkLogForm({...workLogForm, employee_name: e.target.value})}><option value="">בחר עובד</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 14 }}>
+              <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>📋 יומן עבודה חדש</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>ממלא היומן *</label><input className="input" value={workLogForm.filled_by} onChange={e => setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="שם הממלא" /></div>
                 <div className="field"><label>תאריך</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
-                <div className="field"><label>שעות</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
+                <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
+                <div className="field"><label>עובד ראשי *</label><select className="input" value={workLogForm.employee_name} onChange={e => setWorkLogForm({...workLogForm, employee_name: e.target.value})}><option value="">בחר עובד</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
+                <div className="field"><label>עובדים נוספים</label><input className="input" value={workLogForm.workers} onChange={e => setWorkLogForm({...workLogForm, workers: e.target.value})} placeholder="שמות נוספים..." /></div>
+                <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
                 <div className="field"><label>פרויקט</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר פרויקט</option>{projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select></div>
-                <div className="field" style={{ gridColumn: "span 2" }}><label>תיאור</label><input className="input" value={workLogForm.description} onChange={e => setWorkLogForm({...workLogForm, description: e.target.value})} placeholder="תיאור העבודה..." /></div>
+              </div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "#475569", marginTop: 4 }}>📝 פירוט העבודה (עד 10 שורות):</div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {([1,2,3,4,5,6,7,8,9,10] as number[]).map(n => (
+                  <div key={n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 700, minWidth: 24 }}>{n}.</span>
+                    <input className="input" style={{ flex: 1 }} value={(workLogForm as any)[`line${n}`]} onChange={e => setWorkLogForm({...workLogForm, [`line${n}`]: e.target.value})} placeholder={`שורה ${n}...`} />
+                  </div>
+                ))}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn btn-primary" onClick={saveWorkLog} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-primary" onClick={saveWorkLog} disabled={saving}>{saving ? "שומר..." : "💾 שמור יומן"}</button>
                 <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
               </div>
             </div>
@@ -2934,9 +2946,40 @@ function NGSDashboard() {
           {workLogs.length === 0 ? (
             <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📋</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומני עבודה</div></div>
           ) : (
-            <div className="table-wrap">
-              <table><thead><tr><th>תאריך</th><th>עובד</th><th>שעות</th><th>פרויקט</th><th>תיאור</th><th>פעולות</th></tr></thead>
-              <tbody>{workLogs.map(w => (<tr key={w.id}><td>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</td><td style={{ fontWeight: 700 }}>{w.employee_name}</td><td style={{ fontWeight: 700, color: "#16a34a" }}>{w.hours} ש׳</td><td>{w.project_name || "-"}</td><td>{w.description || "-"}</td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button></td></tr>))}</tbody></table>
+            <div style={{ display: "grid", gap: 12 }}>
+              {workLogs.map(w => {
+                const lines = [w.line1,w.line2,w.line3,w.line4,w.line5,w.line6,w.line7,w.line8,w.line9,w.line10].filter(Boolean);
+                return (
+                  <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: 16, background: "#fff" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 900, fontSize: 15 }}>📋 {w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
+                          {w.branch && <span style={{ background: "#f1f5f9", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>📍 {w.branch}</span>}
+                          {w.hours > 0 && <span style={{ background: "#dcfce7", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700, color: "#16a34a" }}>⏱ {w.hours} ש׳</span>}
+                        </div>
+                        <div style={{ fontSize: 13, color: "#64748b" }}>
+                          {w.filled_by && <><span>ממלא: </span><strong>{w.filled_by}</strong><span> · </span></>}
+                          <span>עובד: </span><strong>{w.employee_name}</strong>
+                          {w.workers && <><span> · </span><strong>{w.workers}</strong></>}
+                          {w.project_name && <><span> · פרויקט: </span><strong>{w.project_name}</strong></>}
+                        </div>
+                      </div>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>
+                    </div>
+                    {lines.length > 0 && (
+                      <div style={{ marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
+                        {lines.map((line, i) => (
+                          <div key={i} style={{ fontSize: 13, padding: "3px 0", display: "flex", gap: 8 }}>
+                            <span style={{ color: "#94a3b8", fontWeight: 700, minWidth: 20 }}>{i+1}.</span>
+                            <span>{line}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
