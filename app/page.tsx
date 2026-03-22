@@ -2923,10 +2923,34 @@ function NGSDashboard() {
                 <div className="field"><label>ממלא היומן *</label><input className="input" value={workLogForm.filled_by} onChange={e => setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="שם הממלא" /></div>
                 <div className="field"><label>תאריך</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
                 <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
-                <div className="field"><label>עובד ראשי *</label><select className="input" value={workLogForm.employee_name} onChange={e => setWorkLogForm({...workLogForm, employee_name: e.target.value})}><option value="">בחר עובד</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
-                <div className="field"><label>עובדים נוספים</label><input className="input" value={workLogForm.workers} onChange={e => setWorkLogForm({...workLogForm, workers: e.target.value})} placeholder="שמות נוספים..." /></div>
                 <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
                 <div className="field"><label>פרויקט</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר פרויקט</option>{projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select></div>
+              </div>
+              {/* בחירת עובדים */}
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13, color: "#475569", marginBottom: 8 }}>👷 עובדים שביצעו את העבודה:</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                  {employees.filter(e => e.status === "פעיל").map(e => {
+                    const selected = workLogForm.employee_name.split(",").map(s => s.trim()).includes(e.name);
+                    return (
+                      <button key={e.id} type="button"
+                        style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #c9a227" : "1px solid #e2e8f0", background: selected ? "#fef9ec" : "#f8fafc", color: selected ? "#92710d" : "#475569" }}
+                        onClick={() => {
+                          const current = workLogForm.employee_name ? workLogForm.employee_name.split(",").map(s => s.trim()).filter(Boolean) : [];
+                          const updated = selected ? current.filter(n => n !== e.name) : [...current, e.name];
+                          setWorkLogForm({...workLogForm, employee_name: updated.join(", ")});
+                        }}>
+                        {selected ? "✓ " : ""}{e.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input className="input" style={{ flex: 1 }} value={workLogForm.workers} onChange={e => setWorkLogForm({...workLogForm, workers: e.target.value})} placeholder="הוסף עובד ידנית (שם נוסף שאינו ברשימה)..." />
+                </div>
+                {workLogForm.employee_name && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: "#64748b" }}>נבחרו: <strong>{workLogForm.employee_name}</strong>{workLogForm.workers ? ` + ${workLogForm.workers}` : ""}</div>
+                )}
               </div>
               <div style={{ fontWeight: 600, fontSize: 13, color: "#475569", marginTop: 4 }}>📝 פירוט העבודה (עד 10 שורות):</div>
               <div style={{ display: "grid", gap: 8 }}>
