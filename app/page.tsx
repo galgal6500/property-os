@@ -1185,29 +1185,62 @@ function ServiceRequests() {
             <div>לחץ על "קריאה חדשה" כדי להוסיף</div>
           </div>
         ) : (
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>תאריך</th><th>דירה</th><th>תקלה</th><th>דחיפות</th><th>ספק</th><th>עלות</th><th>סטטוס</th><th>פעולות</th></tr></thead>
-              <tbody>
-                {filtered.map((r) => (
-                  <tr key={r.id}>
-                    <td>{new Date(r.created_at).toLocaleDateString("he-IL")}</td>
-                    <td>{r.apartments?.buildings?.name} / {r.apartments?.apartment_number}</td>
-                    <td style={{ fontWeight: 700 }}>{r.issue}</td>
-                    <td><Badge value={r.urgency} /></td>
-                    <td>{r.vendor || "-"}</td>
-                    <td>{r.cost ? currency(r.cost) : "-"}</td>
-                    <td>
-                      <select value={r.status} onChange={e => updateStatus(r.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
-                        <option>חדשה</option><option>בטיפול</option><option>ממתין לבעל מקצוע</option><option>הושלם</option>
+          <>
+            {/* Desktop table */}
+            <div className="table-wrap desktop-table">
+              <table>
+                <thead><tr><th>תאריך</th><th>דירה</th><th>תקלה</th><th>דחיפות</th><th>ספק</th><th>עלות</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+                <tbody>
+                  {filtered.map((r) => (
+                    <tr key={r.id}>
+                      <td>{new Date(r.created_at).toLocaleDateString("he-IL")}</td>
+                      <td>{r.apartments?.buildings?.name} / {r.apartments?.apartment_number}</td>
+                      <td style={{ fontWeight: 700 }}>{r.issue}</td>
+                      <td><Badge value={r.urgency} /></td>
+                      <td>{r.vendor || "-"}</td>
+                      <td>{r.cost ? currency(r.cost) : "-"}</td>
+                      <td>
+                        <select value={r.status} onChange={e => updateStatus(r.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
+                          <option>חדשה</option><option>בטיפול</option><option>ממתין לבעל מקצוע</option><option>הושלם</option>
+                        </select>
+                      </td>
+                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteRequest(r.id)}>מחק</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile cards */}
+            <div className="mobile-cards">
+              {filtered.map((r) => {
+                const urgencyColor = r.urgency === "גבוהה" ? "#dc2626" : r.urgency === "בינונית" ? "#d97706" : "#16a34a";
+                const statusColor = r.status === "חדשה" ? "#d97706" : r.status === "הושלם" ? "#16a34a" : "#2563eb";
+                return (
+                  <div key={r.id} className="request-card">
+                    <div className="request-card-top">
+                      <div className="request-card-urgency" style={{ background: urgencyColor + "20", color: urgencyColor, border: "1px solid " + urgencyColor + "40" }}>
+                        {r.urgency === "גבוהה" ? "🔴" : r.urgency === "בינונית" ? "🟡" : "🟢"} {r.urgency}
+                      </div>
+                      <div className="request-card-date">{new Date(r.created_at).toLocaleDateString("he-IL")}</div>
+                    </div>
+                    <div className="request-card-issue">{r.issue}</div>
+                    <div className="request-card-apt">📍 {r.apartments?.buildings?.name} / {r.apartments?.apartment_number}</div>
+                    {r.vendor && <div className="request-card-vendor">🔧 {r.vendor}</div>}
+                    {r.cost > 0 && <div className="request-card-cost">💰 {currency(r.cost)}</div>}
+                    <div className="request-card-bottom">
+                      <select value={r.status} onChange={e => updateStatus(r.id, e.target.value)} className="request-status-select" style={{ borderColor: statusColor, color: statusColor }}>
+                        <option>חדשה</option>
+                        <option>בטיפול</option>
+                        <option>ממתין לבעל מקצוע</option>
+                        <option>הושלם</option>
                       </select>
-                    </td>
-                    <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteRequest(r.id)}>מחק</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "6px 14px", color: "#dc2626" }} onClick={() => deleteRequest(r.id)}>מחק</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -2354,25 +2387,6 @@ function getRoleLabel(role: string) {
   return "מנהל מערכת";
 }
 
-// ─── Nav icons ───────────────────────────────────────────────────────────────
-
-function getNavIcon(key: string) {
-  const icons: Record<string, string> = {
-    dashboard: "🏠",
-    owners: "👤",
-    buildings: "🏢",
-    apartments: "🚪",
-    requests: "🔧",
-    leases: "📋",
-    documents: "📄",
-    tenantPortal: "🏠",
-    settings: "⚙️",
-    users: "👥",
-    workcontracts: "📝",
-  };
-  return icons[key] || "•";
-}
-
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -2628,26 +2642,16 @@ export default function Home() {
     );
   }
 
-  const navItemsForRole = getNavItemsForRole(userRole);
-
-  function isActive(key: string) {
-    return activePage === key ||
-      (activePage === "apartmentDetails" && key === "apartments") ||
-      (activePage === "buildingDetails" && key === "buildings") ||
-      (activePage === "ownerDetails" && key === "owners");
-  }
-
   return (
     <div className="app">
-      {/* ── Desktop sidebar ── */}
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-icon">🏢</div>
           <div><small>GM</small><strong>ניהול נכסים</strong></div>
         </div>
         <nav className="nav">
-          {navItemsForRole.map((item) => (
-            <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
+          {getNavItemsForRole(userRole).map((item) => (
+            <button key={item.key} className={`nav-btn ${activePage === item.key || (activePage === "apartmentDetails" && item.key === "apartments") || (activePage === "buildingDetails" && item.key === "buildings") || (activePage === "ownerDetails" && item.key === "owners") ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
               {item.label}
             </button>
           ))}
@@ -2660,32 +2664,16 @@ export default function Home() {
           </div>
         </div>
       </aside>
-
-      {/* ── Main content ── */}
       <main className="main">
         <div className="topbar">
-          <div><h1>שלום {getRoleLabel(userRole)}</h1><div className="sub">GM ניהול נכסים</div></div>
+          <div><h1>שלום מנהל מערכת</h1><div className="sub">תצוגה מוקדמת מלאה של המערכת</div></div>
           <div className="top-actions">
             <input className="search" placeholder="חיפוש מהיר..." />
-            <button className="btn btn-dark desktop-only">הוספה מהירה</button>
+            <button className="btn btn-dark">הוספה מהירה</button>
           </div>
         </div>
         {renderContent()}
       </main>
-
-      {/* ── Mobile bottom nav ── */}
-      <nav className="mobile-bottom-nav">
-        {navItemsForRole.slice(0, 5).map((item) => (
-          <button
-            key={item.key}
-            className={`mobile-nav-btn ${isActive(item.key) ? "active" : ""}`}
-            onClick={() => setActivePage(item.key)}
-          >
-            <span className="mobile-nav-icon">{getNavIcon(item.key)}</span>
-            <span className="mobile-nav-label">{item.label}</span>
-          </button>
-        ))}
-      </nav>
     </div>
   );
 }
