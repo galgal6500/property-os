@@ -2610,6 +2610,15 @@ export default function Home() {
     );
   }
 
+  const navItemsForRole = getNavItemsForRole(userRole);
+
+  function isActive(key: string) {
+    return activePage === key ||
+      (activePage === "apartmentDetails" && key === "apartments") ||
+      (activePage === "buildingDetails" && key === "buildings") ||
+      (activePage === "ownerDetails" && key === "owners");
+  }
+
   return (
     <div className="app">
       <aside className="sidebar">
@@ -2618,8 +2627,8 @@ export default function Home() {
           <div><small>GM</small><strong>ניהול נכסים</strong></div>
         </div>
         <nav className="nav">
-          {getNavItemsForRole(userRole).map((item) => (
-            <button key={item.key} className={`nav-btn ${activePage === item.key || (activePage === "apartmentDetails" && item.key === "apartments") || (activePage === "buildingDetails" && item.key === "buildings") || (activePage === "ownerDetails" && item.key === "owners") ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
+          {navItemsForRole.map((item) => (
+            <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
               {item.label}
             </button>
           ))}
@@ -2634,14 +2643,45 @@ export default function Home() {
       </aside>
       <main className="main">
         <div className="topbar">
-          <div><h1>שלום מנהל מערכת</h1><div className="sub">תצוגה מוקדמת מלאה של המערכת</div></div>
+          <div><h1>שלום {getRoleLabel(userRole)}</h1><div className="sub">GM ניהול נכסים</div></div>
           <div className="top-actions">
             <input className="search" placeholder="חיפוש מהיר..." />
-            <button className="btn btn-dark">הוספה מהירה</button>
+            <button className="btn btn-dark desktop-only">הוספה מהירה</button>
           </div>
         </div>
         {renderContent()}
       </main>
+
+      <nav className="mobile-bottom-nav">
+        {navItemsForRole.slice(0, 4).map((item) => (
+          <button key={item.key} className={`mobile-nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
+            <span className="mobile-nav-icon">{getNavIcon(item.key)}</span>
+            <span className="mobile-nav-label">{item.label}</span>
+          </button>
+        ))}
+        <button className={`mobile-nav-btn ${showMobileMenu ? "active" : ""}`} onClick={() => setShowMobileMenu(!showMobileMenu)}>
+          <span className="mobile-nav-icon">☰</span>
+          <span className="mobile-nav-label">עוד</span>
+        </button>
+      </nav>
+
+      {showMobileMenu && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 500 }} onClick={() => setShowMobileMenu(false)}>
+          <div style={{ position: "fixed", bottom: 70, left: 0, right: 0, background: "white", borderRadius: "20px 20px 0 0", boxShadow: "0 -4px 30px rgba(0,0,0,0.15)", padding: "12px 0 20px", zIndex: 600 }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 36, height: 4, background: "#e2e8f0", borderRadius: 2, margin: "0 auto 16px" }} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, padding: "0 8px" }}>
+              {navItemsForRole.slice(4).map((item) => (
+                <button key={item.key}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: isActive(item.key) ? "#fef9ec" : "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: isActive(item.key) ? "#c9a227" : "#475569" }}
+                  onClick={() => { setActivePage(item.key); setShowMobileMenu(false); }}>
+                  <span style={{ fontSize: 22 }}>{getNavIcon(item.key)}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, textAlign: "center" }}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
