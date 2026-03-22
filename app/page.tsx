@@ -2450,6 +2450,7 @@ function NGSDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingVehicleId, setUploadingVehicleId] = useState<string | null>(null);
+  const [editingVehicle, setEditingVehicle] = useState<any>(null);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", notes: "" });
@@ -2480,6 +2481,22 @@ function NGSDashboard() {
     await supabase.from("ngs_vehicles").insert({ ...vehicleForm, test_date: vehicleForm.test_date || null, next_test_date: vehicleForm.next_test_date || null });
     setVehicleForm({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", notes: "" });
     setShowForm(false); await load(); setSaving(false);
+  }
+  async function updateVehicle() {
+    if (!editingVehicle) return;
+    setSaving(true);
+    await supabase.from("ngs_vehicles").update({
+      license_plate: editingVehicle.license_plate,
+      model: editingVehicle.model,
+      year: editingVehicle.year,
+      status: editingVehicle.status,
+      test_date: editingVehicle.test_date || null,
+      next_test_date: editingVehicle.next_test_date || null,
+      notes: editingVehicle.notes,
+    }).eq("id", editingVehicle.id);
+    setEditingVehicle(null);
+    await load();
+    setSaving(false);
   }
   async function uploadGarageDoc(vehicleId: string, file: File) {
     setUploadingVehicleId(vehicleId);
@@ -2680,6 +2697,7 @@ function NGSDashboard() {
                             <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadGarageDoc(v.id, e.target.files[0])} />
                           </label>
                         )}
+                        <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setEditingVehicle({...v, test_date: v.test_date || "", next_test_date: v.next_test_date || "", notes: v.notes || ""})}>✏️ עריכה</button>
                         <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_vehicles", v.id)}>מחק</button>
                       </div>
                     </div>
@@ -2690,6 +2708,27 @@ function NGSDashboard() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {editingVehicle && (
+            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+              <div style={{ background: "white", borderRadius: 20, padding: 28, maxWidth: 520, width: "100%" }}>
+                <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 900 }}>✏️ עריכת רכב — {editingVehicle.license_plate}</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="field"><label>לוחית רישוי</label><input className="input" value={editingVehicle.license_plate} onChange={e => setEditingVehicle({...editingVehicle, license_plate: e.target.value})} /></div>
+                  <div className="field"><label>דגם</label><input className="input" value={editingVehicle.model} onChange={e => setEditingVehicle({...editingVehicle, model: e.target.value})} /></div>
+                  <div className="field"><label>שנה</label><input className="input" value={editingVehicle.year} onChange={e => setEditingVehicle({...editingVehicle, year: e.target.value})} /></div>
+                  <div className="field"><label>סטטוס</label><select className="input" value={editingVehicle.status} onChange={e => setEditingVehicle({...editingVehicle, status: e.target.value})}><option>פעיל</option><option>בתיקון</option><option>מושבת</option></select></div>
+                  <div className="field"><label>תאריך טסט אחרון</label><input className="input" type="date" value={editingVehicle.test_date} onChange={e => setEditingVehicle({...editingVehicle, test_date: e.target.value})} /></div>
+                  <div className="field"><label>תאריך טסט הבא</label><input className="input" type="date" value={editingVehicle.next_test_date} onChange={e => setEditingVehicle({...editingVehicle, next_test_date: e.target.value})} /></div>
+                  <div className="field" style={{ gridColumn: "span 2" }}><label>הערות</label><input className="input" value={editingVehicle.notes} onChange={e => setEditingVehicle({...editingVehicle, notes: e.target.value})} placeholder="הערות..." /></div>
+                </div>
+                <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                  <button className="btn btn-primary" onClick={updateVehicle} disabled={saving}>{saving ? "שומר..." : "💾 שמור"}</button>
+                  <button className="btn btn-outline" onClick={() => setEditingVehicle(null)}>ביטול</button>
+                </div>
+              </div>
             </div>
           )}
         </div>
