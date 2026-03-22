@@ -2344,6 +2344,149 @@ function getNavIcon(key: string) {
 
 // ─── נ.ג.ש מור הנדסה ─────────────────────────────────────────────────────────
 
+function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId: string; licensePlate: string; onClose: () => void }) {
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ service_type: "", date: "", notes: "" });
+
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase.from("ngs_vehicle_services")
+      .select("*")
+      .eq("vehicle_id", vehicleId)
+      .order("date", { ascending: false });
+    setServices(data || []);
+    setLoading(false);
+  }
+
+  useState(() => { load(); });
+
+  async function addService() {
+    if (!form.service_type || !form.date) return;
+    setSaving(true);
+    await supabase.from("ngs_vehicle_services").insert({ vehicle_id: vehicleId, ...form });
+    setForm({ service_type: "", date: "", notes: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function uploadDoc(serviceId: string, file: File) {
+    setUploadingId(serviceId);
+    const ext = file.name.split(".").pop();
+    const path = `vehicle-services/${serviceId}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+      await supabase.from("ngs_vehicle_services").update({ document_url: urlData.publicUrl }).eq("id", serviceId);
+      await load();
+    }
+    setUploadingId(null);
+  }
+
+  async function deleteService(id: string) {
+    if (!confirm("למחוק את הטיפול?")) return;
+    await supabase.from("ngs_vehicle_services").delete().eq("id", id);
+    await load();
+  }
+
+  const serviceTypes = ["טיפול שמן", "טסט", "גלגלים", "בלמים", "מצבר", "מזגן", "תיקון כללי", "אחר"];
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* Header */}
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>🔧 היסטוריית טיפולים</h3>
+            <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>רכב: {licensePlate}</div>
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => setShowForm(!showForm)}>+ טיפול חדש</button>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#64748b", lineHeight: 1 }}>×</button>
+          </div>
+        </div>
+
+        {/* Add form */}
+        {showForm && (
+          <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e8eef6" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div className="field">
+                <label>סוג טיפול *</label>
+                <select className="input" value={form.service_type} onChange={e => setForm({...form, service_type: e.target.value})}>
+                  <option value="">בחר סוג</option>
+                  {serviceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label>תאריך *</label>
+                <input className="input" type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
+              </div>
+              <div className="field" style={{ gridColumn: "span 2" }}>
+                <label>הערות</label>
+                <input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="פרטים נוספים..." />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-primary" onClick={addService} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+
+        {/* List */}
+        <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
+          {loading ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>טוען...</div>
+          ) : services.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>🔧</div>
+              <div style={{ fontWeight: 700 }}>אין טיפולים עדיין</div>
+              <div style={{ fontSize: 13, marginTop: 4 }}>לחץ על "טיפול חדש" להוספה</div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {services.map(s => (
+                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 14, background: "#fff" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontWeight: 800, fontSize: 15 }}>🔧 {s.service_type}</span>
+                        <span style={{ fontSize: 13, color: "#64748b" }}>{s.date ? new Date(s.date).toLocaleDateString("he-IL") : "-"}</span>
+                      </div>
+                      {s.notes && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.notes}</div>}
+                    </div>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+                      {s.document_url ? (
+                        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                          <a href={s.document_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "3px 10px" }}>📄 פתח</a>
+                          <label style={{ cursor: "pointer", fontSize: 12, color: "#64748b" }}>
+                            🔄
+                            <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadDoc(s.id, e.target.files[0])} />
+                          </label>
+                        </div>
+                      ) : (
+                        <label style={{ cursor: "pointer" }}>
+                          <span className="btn btn-outline" style={{ fontSize: 12, padding: "3px 10px" }}>{uploadingId === s.id ? "מעלה..." : "📎 העלה"}</span>
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadDoc(s.id, e.target.files[0])} />
+                        </label>
+                      )}
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "#dc2626" }} onClick={() => deleteService(s.id)}>מחק</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NGSDashboard() {
   const [tab, setTab] = useState("overview");
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -2356,6 +2499,7 @@ function NGSDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingVehicleId, setUploadingVehicleId] = useState<string | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
 
   const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", notes: "" });
   const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "פעיל" });
@@ -2484,6 +2628,14 @@ function NGSDashboard() {
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
+      {selectedVehicle && (
+        <VehicleServicesModal
+          vehicleId={selectedVehicle.id}
+          licensePlate={selectedVehicle.license_plate}
+          onClose={() => setSelectedVehicle(null)}
+        />
+      )}
+
       <div className="card" style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", color: "#fff", border: "none" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <div>
@@ -2595,14 +2747,15 @@ function NGSDashboard() {
                         {v.notes && <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>{v.notes}</div>}
                       </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <button className="btn btn-secondary" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => setSelectedVehicle(v)}>🔧 טיפולים</button>
                         {v.garage_doc_url ? (
                           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            <a href={v.garage_doc_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>🔧 טיפול מוסך</a>
+                            <a href={v.garage_doc_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>📄 מסמך</a>
                             <label style={{ cursor: "pointer", fontSize: 12 }}>🔄<input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadGarageDoc(v.id, e.target.files[0])} /></label>
                           </div>
                         ) : (
                           <label style={{ cursor: "pointer" }}>
-                            <span className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>{uploadingVehicleId === v.id ? "מעלה..." : "📎 העלה טיפול מוסך"}</span>
+                            <span className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>{uploadingVehicleId === v.id ? "מעלה..." : "📎 מסמך"}</span>
                             <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadGarageDoc(v.id, e.target.files[0])} />
                           </label>
                         )}
@@ -2653,20 +2806,8 @@ function NGSDashboard() {
             <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>👷</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין עובדים עדיין</div></div>
           ) : (
             <div className="table-wrap">
-              <table>
-                <thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>סטטוס</th><th>פעולות</th></tr></thead>
-                <tbody>
-                  {employees.map(e => (
-                    <tr key={e.id}>
-                      <td style={{ fontWeight: 800 }}>{e.name}</td>
-                      <td>{e.phone || "-"}</td>
-                      <td>{e.role || "-"}</td>
-                      <td><Badge value={e.status} /></td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_employees", e.id)}>מחק</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <table><thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+              <tbody>{employees.map(e => (<tr key={e.id}><td style={{ fontWeight: 800 }}>{e.name}</td><td>{e.phone || "-"}</td><td>{e.role || "-"}</td><td><Badge value={e.status} /></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_employees", e.id)}>מחק</button></td></tr>))}</tbody></table>
             </div>
           )}
         </div>
@@ -2697,20 +2838,8 @@ function NGSDashboard() {
             <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🤝</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין לקוחות עדיין</div></div>
           ) : (
             <div className="table-wrap">
-              <table>
-                <thead><tr><th>שם</th><th>טלפון</th><th>אימייל</th><th>כתובת</th><th>פעולות</th></tr></thead>
-                <tbody>
-                  {clients.map(c => (
-                    <tr key={c.id}>
-                      <td style={{ fontWeight: 800 }}>{c.name}</td>
-                      <td>{c.phone || "-"}</td>
-                      <td>{c.email || "-"}</td>
-                      <td>{c.address || "-"}</td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_clients", c.id)}>מחק</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <table><thead><tr><th>שם</th><th>טלפון</th><th>אימייל</th><th>כתובת</th><th>פעולות</th></tr></thead>
+              <tbody>{clients.map(c => (<tr key={c.id}><td style={{ fontWeight: 800 }}>{c.name}</td><td>{c.phone || "-"}</td><td>{c.email || "-"}</td><td>{c.address || "-"}</td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_clients", c.id)}>מחק</button></td></tr>))}</tbody></table>
             </div>
           )}
         </div>
@@ -2742,21 +2871,8 @@ function NGSDashboard() {
             <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📁</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין פרויקטים עדיין</div></div>
           ) : (
             <div className="table-wrap">
-              <table>
-                <thead><tr><th>שם פרויקט</th><th>לקוח</th><th>התחלה</th><th>סיום</th><th>סטטוס</th><th>פעולות</th></tr></thead>
-                <tbody>
-                  {projects.map(p => (
-                    <tr key={p.id}>
-                      <td style={{ fontWeight: 800 }}>{p.name}</td>
-                      <td>{p.client_name || "-"}</td>
-                      <td>{p.start_date ? new Date(p.start_date).toLocaleDateString("he-IL") : "-"}</td>
-                      <td>{p.end_date ? new Date(p.end_date).toLocaleDateString("he-IL") : "-"}</td>
-                      <td><Badge value={p.status} /></td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_projects", p.id)}>מחק</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <table><thead><tr><th>שם פרויקט</th><th>לקוח</th><th>התחלה</th><th>סיום</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+              <tbody>{projects.map(p => (<tr key={p.id}><td style={{ fontWeight: 800 }}>{p.name}</td><td>{p.client_name || "-"}</td><td>{p.start_date ? new Date(p.start_date).toLocaleDateString("he-IL") : "-"}</td><td>{p.end_date ? new Date(p.end_date).toLocaleDateString("he-IL") : "-"}</td><td><Badge value={p.status} /></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_projects", p.id)}>מחק</button></td></tr>))}</tbody></table>
             </div>
           )}
         </div>
@@ -2787,22 +2903,8 @@ function NGSDashboard() {
             <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
           ) : (
             <div className="table-wrap">
-              <table>
-                <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th><th>פעולות</th></tr></thead>
-                <tbody>
-                  {serviceCalls.map(s => (
-                    <tr key={s.id}>
-                      <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td>
-                      <td>{s.client_name || "-"}</td>
-                      <td style={{ fontWeight: 700 }}>{s.issue}</td>
-                      <td><Badge value={s.urgency} /></td>
-                      <td>{s.assigned_to || "-"}</td>
-                      <td><select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}><option>חדשה</option><option>בטיפול</option><option>הושלם</option></select></td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <table><thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+              <tbody>{serviceCalls.map(s => (<tr key={s.id}><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td><td>{s.client_name || "-"}</td><td style={{ fontWeight: 700 }}>{s.issue}</td><td><Badge value={s.urgency} /></td><td>{s.assigned_to || "-"}</td><td><select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}><option>חדשה</option><option>בטיפול</option><option>הושלם</option></select></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td></tr>))}</tbody></table>
             </div>
           )}
         </div>
@@ -2833,21 +2935,8 @@ function NGSDashboard() {
             <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📋</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומני עבודה</div></div>
           ) : (
             <div className="table-wrap">
-              <table>
-                <thead><tr><th>תאריך</th><th>עובד</th><th>שעות</th><th>פרויקט</th><th>תיאור</th><th>פעולות</th></tr></thead>
-                <tbody>
-                  {workLogs.map(w => (
-                    <tr key={w.id}>
-                      <td>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</td>
-                      <td style={{ fontWeight: 700 }}>{w.employee_name}</td>
-                      <td style={{ fontWeight: 700, color: "#16a34a" }}>{w.hours} ש׳</td>
-                      <td>{w.project_name || "-"}</td>
-                      <td>{w.description || "-"}</td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <table><thead><tr><th>תאריך</th><th>עובד</th><th>שעות</th><th>פרויקט</th><th>תיאור</th><th>פעולות</th></tr></thead>
+              <tbody>{workLogs.map(w => (<tr key={w.id}><td>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</td><td style={{ fontWeight: 700 }}>{w.employee_name}</td><td style={{ fontWeight: 700, color: "#16a34a" }}>{w.hours} ש׳</td><td>{w.project_name || "-"}</td><td>{w.description || "-"}</td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button></td></tr>))}</tbody></table>
             </div>
           )}
         </div>
