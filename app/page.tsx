@@ -2976,18 +2976,15 @@ function NGSDashboard() {
                 return (
                   <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: 16, background: "#fff" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-                          <span style={{ fontWeight: 900, fontSize: 15 }}>📋 {w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
-                          {w.branch && <span style={{ background: "#f1f5f9", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>📍 {w.branch}</span>}
-                          {w.hours > 0 && <span style={{ background: "#dcfce7", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700, color: "#16a34a" }}>⏱ {w.hours} ש׳</span>}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 900, fontSize: 16 }}>📋 {w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
+                          {w.project_name && <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 12px", fontSize: 12, fontWeight: 700 }}>🤝 {w.project_name}</span>}
+                          {w.branch && <span style={{ background: "#f1f5f9", color: "#475569", borderRadius: 999, padding: "2px 12px", fontSize: 12, fontWeight: 700 }}>📍 {w.branch}</span>}
                         </div>
-                        <div style={{ fontSize: 13, color: "#64748b" }}>
-                          {w.filled_by && <><span>ממלא: </span><strong>{w.filled_by}</strong><span> · </span></>}
-                          <span>עובד: </span><strong>{w.employee_name}</strong>
-                          {w.workers && <><span> · </span><strong>{w.workers}</strong></>}
-                          {w.project_name && <><span> · פרויקט: </span><strong>{w.project_name}</strong></>}
-                        </div>
+                        {w.filled_by && (
+                          <div style={{ fontSize: 13, color: "#64748b" }}>ממלא: <strong>{w.filled_by}</strong></div>
+                        )}
                       </div>
                       <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>
                     </div>
