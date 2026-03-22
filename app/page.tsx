@@ -3023,6 +3023,7 @@ export default function Home() {
     setLoginLoading(false);
   }
   const [selectedApartmentId, setSelectedApartmentId] = useState<string>("");
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [selectedBuildingId, setSelectedBuildingId] = useState<any>("");
   const [selectedOwnerId, setSelectedOwnerId] = useState(1);
 
@@ -3192,7 +3193,6 @@ export default function Home() {
   }
 
   const navItemsForRole = getNavItemsForRole(userRole);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   function isActive(key: string) {
     return activePage === key ||
