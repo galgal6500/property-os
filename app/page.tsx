@@ -2331,6 +2331,17 @@ function Placeholder({ title, text }: { title: string; text: string }) {
 }
 
 
+// ─── Nav icons ───────────────────────────────────────────────────────────────
+
+function getNavIcon(key: string) {
+  const icons: Record<string, string> = {
+    dashboard: "🏠", owners: "👤", buildings: "🏢", apartments: "🚪",
+    requests: "🔧", leases: "📋", documents: "📄", tenantPortal: "🏠",
+    settings: "⚙️", users: "👥", workcontracts: "📝", ngs: "🏗",
+  };
+  return icons[key] || "•";
+}
+
 // ─── נ.ג.ש מור הנדסה ─────────────────────────────────────────────────────────
 
 function NGSDashboard() {
@@ -2344,9 +2355,9 @@ function NGSDashboard() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingVehicleId, setUploadingVehicleId] = useState<string | null>(null);
 
-  // Forms
-  const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", notes: "" });
+  const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", notes: "" });
   const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "פעיל" });
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
@@ -2377,11 +2388,24 @@ function NGSDashboard() {
   async function saveVehicle() {
     if (!vehicleForm.license_plate) return;
     setSaving(true);
-    await supabase.from("ngs_vehicles").insert(vehicleForm);
-    setVehicleForm({ license_plate: "", model: "", year: "", status: "פעיל", notes: "" });
+    await supabase.from("ngs_vehicles").insert({ ...vehicleForm, test_date: vehicleForm.test_date || null, next_test_date: vehicleForm.next_test_date || null });
+    setVehicleForm({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", notes: "" });
     setShowForm(false);
     await load();
     setSaving(false);
+  }
+
+  async function uploadGarageDoc(vehicleId: string, file: File) {
+    setUploadingVehicleId(vehicleId);
+    const ext = file.name.split(".").pop();
+    const path = `garage-docs/${vehicleId}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+      await supabase.from("ngs_vehicles").update({ garage_doc_url: urlData.publicUrl }).eq("id", vehicleId);
+      await load();
+    }
+    setUploadingVehicleId(null);
   }
 
   async function saveEmployee() {
@@ -2460,7 +2484,6 @@ function NGSDashboard() {
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
-      {/* Header */}
       <div className="card" style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", color: "#fff", border: "none" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <div>
@@ -2471,10 +2494,10 @@ function NGSDashboard() {
           <div style={{ display: "flex", gap: 16 }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{employees.filter(e => e.status === "פעיל").length}</div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>עובדים פעילים</div>
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>עובדים</div>
             </div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{vehicles.filter(v => v.status === "פעיל").length}</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{vehicles.length}</div>
               <div style={{ fontSize: 12, color: "#94a3b8" }}>רכבים</div>
             </div>
             <div style={{ textAlign: "center" }}>
@@ -2485,7 +2508,6 @@ function NGSDashboard() {
         </div>
       </div>
 
-      {/* Tab bar */}
       <div className="tab-bar">
         {tabs.map(t => (
           <button key={t.key} className={`tab-btn ${tab === t.key ? "active" : ""}`} onClick={() => { setTab(t.key); setShowForm(false); }}>{t.label}</button>
@@ -2494,55 +2516,41 @@ function NGSDashboard() {
 
       {loading && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>}
 
-      {/* Overview */}
       {!loading && tab === "overview" && (
         <div style={{ display: "grid", gap: 18 }}>
           <div className="kpi-grid" style={{ gridTemplateColumns: "repeat(4, minmax(0,1fr))" }}>
             <KPI title="עובדים פעילים" value={String(employees.filter(e => e.status === "פעיל").length)} subtitle="צוות" />
-            <KPI title="רכבים פעילים" value={String(vehicles.filter(v => v.status === "פעיל").length)} subtitle="צי רכבים" />
+            <KPI title="רכבים" value={String(vehicles.length)} subtitle="צי רכבים" />
             <KPI title="פרויקטים פעילים" value={String(activeProjects.length)} subtitle="בביצוע" />
             <KPI title="קריאות פתוחות" value={String(openServiceCalls.length)} subtitle="לטיפול" />
           </div>
-
           <div className="grid-1-1">
             <div className="card">
               <h3 className="card-title">🔧 קריאות שירות פתוחות</h3>
               {openServiceCalls.length === 0 ? (
                 <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין קריאות פתוחות 🎉</div>
-              ) : (
-                <div style={{ display: "grid", gap: 10 }}>
-                  {openServiceCalls.slice(0, 5).map(s => (
-                    <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, background: "#fff" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontWeight: 700 }}>{s.issue}</div>
-                        <Badge value={s.urgency} />
-                      </div>
-                      <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name} · {s.status}</div>
-                    </div>
-                  ))}
+              ) : openServiceCalls.slice(0, 5).map(s => (
+                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontWeight: 700 }}>{s.issue}</span><Badge value={s.urgency} /></div>
+                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name} · {s.status}</div>
                 </div>
-              )}
+              ))}
             </div>
             <div className="card">
               <h3 className="card-title">📁 פרויקטים פעילים</h3>
               {activeProjects.length === 0 ? (
                 <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין פרויקטים פעילים</div>
-              ) : (
-                <div style={{ display: "grid", gap: 10 }}>
-                  {activeProjects.slice(0, 5).map(p => (
-                    <div key={p.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, background: "#fff" }}>
-                      <div style={{ fontWeight: 700 }}>{p.name}</div>
-                      <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{p.client_name || "-"}</div>
-                    </div>
-                  ))}
+              ) : activeProjects.slice(0, 5).map(p => (
+                <div key={p.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700 }}>{p.name}</div>
+                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{p.client_name || "-"}</div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </div>
       )}
 
-      {/* Vehicles */}
       {!loading && tab === "vehicles" && (
         <div className="card">
           <div className="section-top">
@@ -2556,6 +2564,8 @@ function NGSDashboard() {
                 <div className="field"><label>דגם</label><input className="input" value={vehicleForm.model} onChange={e => setVehicleForm({...vehicleForm, model: e.target.value})} placeholder="טויוטה הייאס" /></div>
                 <div className="field"><label>שנה</label><input className="input" value={vehicleForm.year} onChange={e => setVehicleForm({...vehicleForm, year: e.target.value})} placeholder="2022" /></div>
                 <div className="field"><label>סטטוס</label><select className="input" value={vehicleForm.status} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})}><option>פעיל</option><option>בתיקון</option><option>מושבת</option></select></div>
+                <div className="field"><label>🔍 תאריך טסט אחרון</label><input className="input" type="date" value={vehicleForm.test_date} onChange={e => setVehicleForm({...vehicleForm, test_date: e.target.value})} /></div>
+                <div className="field"><label>📅 תאריך טסט הבא</label><input className="input" type="date" value={vehicleForm.next_test_date} onChange={e => setVehicleForm({...vehicleForm, next_test_date: e.target.value})} /></div>
                 <div className="field"><label>הערות</label><input className="input" value={vehicleForm.notes} onChange={e => setVehicleForm({...vehicleForm, notes: e.target.value})} placeholder="הערות..." /></div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
@@ -2567,32 +2577,62 @@ function NGSDashboard() {
           {vehicles.length === 0 ? (
             <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🚗</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין רכבים עדיין</div></div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>לוחית</th><th>דגם</th><th>שנה</th><th>סטטוס</th><th>הערות</th><th>פעולות</th></tr></thead>
-                <tbody>
-                  {vehicles.map(v => (
-                    <tr key={v.id}>
-                      <td style={{ fontWeight: 800 }}>{v.license_plate}</td>
-                      <td>{v.model || "-"}</td>
-                      <td>{v.year || "-"}</td>
-                      <td><Badge value={v.status} /></td>
-                      <td>{v.notes || "-"}</td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_vehicles", v.id)}>מחק</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ display: "grid", gap: 12 }}>
+              {vehicles.map(v => {
+                const nextTest = v.next_test_date ? new Date(v.next_test_date) : null;
+                const daysToTest = nextTest ? Math.ceil((nextTest.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                const testAlert = daysToTest !== null && daysToTest <= 30;
+                return (
+                  <div key={v.id} style={{ border: `1px solid ${testAlert ? "#fca5a5" : "#e8eef6"}`, borderRadius: 16, padding: 16, background: testAlert ? "#fff7f7" : "#fff" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                          <span style={{ fontSize: 18, fontWeight: 900 }}>🚗 {v.license_plate}</span>
+                          <Badge value={v.status} />
+                          {testAlert && <span style={{ background: "#dc2626", color: "#fff", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ טסט בקרוב!</span>}
+                        </div>
+                        <div style={{ fontSize: 14, color: "#64748b" }}>{v.model || "-"} · {v.year || "-"}</div>
+                        {v.notes && <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>{v.notes}</div>}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        {v.garage_doc_url ? (
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <a href={v.garage_doc_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>🔧 טיפול מוסך</a>
+                            <label style={{ cursor: "pointer", fontSize: 12 }}>🔄<input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadGarageDoc(v.id, e.target.files[0])} /></label>
+                          </div>
+                        ) : (
+                          <label style={{ cursor: "pointer" }}>
+                            <span className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>{uploadingVehicleId === v.id ? "מעלה..." : "📎 העלה טיפול מוסך"}</span>
+                            <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadGarageDoc(v.id, e.target.files[0])} />
+                          </label>
+                        )}
+                        <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_vehicles", v.id)}>מחק</button>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 24, marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: "#94a3b8" }}>טסט אחרון</div>
+                        <div style={{ fontSize: 14, fontWeight: 700 }}>{v.test_date ? new Date(v.test_date).toLocaleDateString("he-IL") : "-"}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: "#94a3b8" }}>טסט הבא</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: testAlert ? "#dc2626" : "#0f172a" }}>
+                          {nextTest ? `${new Date(v.next_test_date).toLocaleDateString("he-IL")} ${daysToTest !== null ? `(${daysToTest <= 0 ? "⚠️ עבר!" : daysToTest + " ימים"})` : ""}` : "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
       )}
 
-      {/* Employees */}
       {!loading && tab === "employees" && (
         <div className="card">
           <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>👷 עובדים</h3><div className="muted">ניהול צוות העובדים</div></div>
+            <div><h3 className="card-title" style={{ margin: 0 }}>👷 עובדים</h3><div className="muted">ניהול צוות</div></div>
             <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף עובד</button>
           </div>
           {showForm && (
@@ -2632,11 +2672,10 @@ function NGSDashboard() {
         </div>
       )}
 
-      {/* Clients */}
       {!loading && tab === "clients" && (
         <div className="card">
           <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>🤝 לקוחות</h3><div className="muted">ניהול לקוחות ופרויקטים</div></div>
+            <div><h3 className="card-title" style={{ margin: 0 }}>🤝 לקוחות</h3><div className="muted">ניהול לקוחות</div></div>
             <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף לקוח</button>
           </div>
           {showForm && (
@@ -2645,7 +2684,7 @@ function NGSDashboard() {
                 <div className="field"><label>שם *</label><input className="input" value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} placeholder="חברת ABC" /></div>
                 <div className="field"><label>טלפון</label><input className="input" value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone: e.target.value})} placeholder="03-1234567" /></div>
                 <div className="field"><label>אימייל</label><input className="input" value={clientForm.email} onChange={e => setClientForm({...clientForm, email: e.target.value})} placeholder="abc@company.com" /></div>
-                <div className="field"><label>כתובת</label><input className="input" value={clientForm.address} onChange={e => setClientForm({...clientForm, address: e.target.value})} placeholder="רחוב הרצל 1, תל אביב" /></div>
+                <div className="field"><label>כתובת</label><input className="input" value={clientForm.address} onChange={e => setClientForm({...clientForm, address: e.target.value})} placeholder="תל אביב" /></div>
                 <div className="field"><label>הערות</label><input className="input" value={clientForm.notes} onChange={e => setClientForm({...clientForm, notes: e.target.value})} placeholder="הערות..." /></div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
@@ -2677,21 +2716,20 @@ function NGSDashboard() {
         </div>
       )}
 
-      {/* Projects */}
       {!loading && tab === "projects" && (
         <div className="card">
           <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>📁 פרויקטים</h3><div className="muted">ניהול פרויקטים ועבודות</div></div>
+            <div><h3 className="card-title" style={{ margin: 0 }}>📁 פרויקטים</h3><div className="muted">ניהול פרויקטים</div></div>
             <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ פרויקט חדש</button>
           </div>
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                <div className="field"><label>שם פרויקט *</label><input className="input" value={projectForm.name} onChange={e => setProjectForm({...projectForm, name: e.target.value})} placeholder="הרצאה ראשי..." /></div>
+                <div className="field"><label>שם פרויקט *</label><input className="input" value={projectForm.name} onChange={e => setProjectForm({...projectForm, name: e.target.value})} placeholder="שם הפרויקט" /></div>
                 <div className="field"><label>לקוח</label><select className="input" value={projectForm.client_name} onChange={e => setProjectForm({...projectForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
                 <div className="field"><label>סטטוס</label><select className="input" value={projectForm.status} onChange={e => setProjectForm({...projectForm, status: e.target.value})}><option>פעיל</option><option>הושלם</option><option>מושהה</option></select></div>
-                <div className="field"><label>תאריך התחלה</label><input className="input" type="date" value={projectForm.start_date} onChange={e => setProjectForm({...projectForm, start_date: e.target.value})} /></div>
-                <div className="field"><label>תאריך סיום</label><input className="input" type="date" value={projectForm.end_date} onChange={e => setProjectForm({...projectForm, end_date: e.target.value})} /></div>
+                <div className="field"><label>התחלה</label><input className="input" type="date" value={projectForm.start_date} onChange={e => setProjectForm({...projectForm, start_date: e.target.value})} /></div>
+                <div className="field"><label>סיום</label><input className="input" type="date" value={projectForm.end_date} onChange={e => setProjectForm({...projectForm, end_date: e.target.value})} /></div>
                 <div className="field"><label>תיאור</label><input className="input" value={projectForm.description} onChange={e => setProjectForm({...projectForm, description: e.target.value})} placeholder="תיאור..." /></div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
@@ -2724,11 +2762,10 @@ function NGSDashboard() {
         </div>
       )}
 
-      {/* Service Calls */}
       {!loading && tab === "service" && (
         <div className="card">
           <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>🔧 קריאות שירות</h3><div className="muted">קריאות שירות ללקוחות</div></div>
+            <div><h3 className="card-title" style={{ margin: 0 }}>🔧 קריאות שירות</h3><div className="muted">קריאות ללקוחות</div></div>
             <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ קריאה חדשה</button>
           </div>
           {showForm && (
@@ -2760,11 +2797,7 @@ function NGSDashboard() {
                       <td style={{ fontWeight: 700 }}>{s.issue}</td>
                       <td><Badge value={s.urgency} /></td>
                       <td>{s.assigned_to || "-"}</td>
-                      <td>
-                        <select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
-                          <option>חדשה</option><option>בטיפול</option><option>הושלם</option>
-                        </select>
-                      </td>
+                      <td><select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}><option>חדשה</option><option>בטיפול</option><option>הושלם</option></select></td>
                       <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td>
                     </tr>
                   ))}
@@ -2775,11 +2808,10 @@ function NGSDashboard() {
         </div>
       )}
 
-      {/* Work Logs */}
       {!loading && tab === "worklogs" && (
         <div className="card">
           <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה</h3><div className="muted">מעקב שעות ופעילות</div></div>
+            <div><h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה</h3><div className="muted">מעקב שעות</div></div>
             <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ יומן חדש</button>
           </div>
           {showForm && (
@@ -3105,6 +3137,15 @@ export default function Home() {
     );
   }
 
+  const navItemsForRole = getNavItemsForRole(userRole);
+
+  function isActive(key: string) {
+    return activePage === key ||
+      (activePage === "apartmentDetails" && key === "apartments") ||
+      (activePage === "buildingDetails" && key === "buildings") ||
+      (activePage === "ownerDetails" && key === "owners");
+  }
+
   return (
     <div className="app">
       <aside className="sidebar">
@@ -3113,8 +3154,8 @@ export default function Home() {
           <div><small>GM</small><strong>ניהול נכסים</strong></div>
         </div>
         <nav className="nav">
-          {getNavItemsForRole(userRole).map((item) => (
-            <button key={item.key} className={`nav-btn ${activePage === item.key || (activePage === "apartmentDetails" && item.key === "apartments") || (activePage === "buildingDetails" && item.key === "buildings") || (activePage === "ownerDetails" && item.key === "owners") ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
+          {navItemsForRole.map((item) => (
+            <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
               {item.label}
             </button>
           ))}
@@ -3129,14 +3170,22 @@ export default function Home() {
       </aside>
       <main className="main">
         <div className="topbar">
-          <div><h1>שלום מנהל מערכת</h1><div className="sub">תצוגה מוקדמת מלאה של המערכת</div></div>
+          <div><h1>שלום {getRoleLabel(userRole)}</h1><div className="sub">GM ניהול נכסים</div></div>
           <div className="top-actions">
             <input className="search" placeholder="חיפוש מהיר..." />
-            <button className="btn btn-dark">הוספה מהירה</button>
+            <button className="btn btn-dark desktop-only">הוספה מהירה</button>
           </div>
         </div>
         {renderContent()}
       </main>
+      <nav className="mobile-bottom-nav">
+        {navItemsForRole.slice(0, 5).map((item) => (
+          <button key={item.key} className={`mobile-nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
+            <span className="mobile-nav-icon">{getNavIcon(item.key)}</span>
+            <span className="mobile-nav-label">{item.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
