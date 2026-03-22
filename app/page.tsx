@@ -109,6 +109,7 @@ const navItems = [
   { key: "settings", label: "הגדרות" },
   { key: "users", label: "משתמשים" },
   { key: "workcontracts", label: "חוזי עבודה" },
+  { key: "ngs", label: "🏗 נ.ג.ש מור" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -2329,6 +2330,500 @@ function Placeholder({ title, text }: { title: string; text: string }) {
   );
 }
 
+
+// ─── נ.ג.ש מור הנדסה ─────────────────────────────────────────────────────────
+
+function NGSDashboard() {
+  const [tab, setTab] = useState("overview");
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [serviceCalls, setServiceCalls] = useState<any[]>([]);
+  const [workLogs, setWorkLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Forms
+  const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", notes: "" });
+  const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "פעיל" });
+  const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
+  const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
+  const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", notes: "" });
+  const [workLogForm, setWorkLogForm] = useState({ employee_name: "", date: "", hours: "", project_name: "", description: "" });
+
+  async function load() {
+    setLoading(true);
+    const [v, e, c, p, s, w] = await Promise.all([
+      supabase.from("ngs_vehicles").select("*").order("created_at", { ascending: false }),
+      supabase.from("ngs_employees").select("*").order("name"),
+      supabase.from("ngs_clients").select("*").order("name"),
+      supabase.from("ngs_projects").select("*").order("created_at", { ascending: false }),
+      supabase.from("ngs_service_calls").select("*").order("created_at", { ascending: false }),
+      supabase.from("ngs_work_logs").select("*").order("date", { ascending: false }),
+    ]);
+    setVehicles(v.data || []);
+    setEmployees(e.data || []);
+    setClients(c.data || []);
+    setProjects(p.data || []);
+    setServiceCalls(s.data || []);
+    setWorkLogs(w.data || []);
+    setLoading(false);
+  }
+
+  useState(() => { load(); });
+
+  async function saveVehicle() {
+    if (!vehicleForm.license_plate) return;
+    setSaving(true);
+    await supabase.from("ngs_vehicles").insert(vehicleForm);
+    setVehicleForm({ license_plate: "", model: "", year: "", status: "פעיל", notes: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function saveEmployee() {
+    if (!employeeForm.name) return;
+    setSaving(true);
+    await supabase.from("ngs_employees").insert(employeeForm);
+    setEmployeeForm({ name: "", phone: "", role: "", status: "פעיל" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function saveClient() {
+    if (!clientForm.name) return;
+    setSaving(true);
+    await supabase.from("ngs_clients").insert(clientForm);
+    setClientForm({ name: "", phone: "", email: "", address: "", notes: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function saveProject() {
+    if (!projectForm.name) return;
+    setSaving(true);
+    await supabase.from("ngs_projects").insert({ ...projectForm, start_date: projectForm.start_date || null, end_date: projectForm.end_date || null });
+    setProjectForm({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function saveServiceCall() {
+    if (!serviceCallForm.issue) return;
+    setSaving(true);
+    await supabase.from("ngs_service_calls").insert(serviceCallForm);
+    setServiceCallForm({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", notes: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function saveWorkLog() {
+    if (!workLogForm.employee_name) return;
+    setSaving(true);
+    await supabase.from("ngs_work_logs").insert({ ...workLogForm, hours: parseFloat(workLogForm.hours) || 0 });
+    setWorkLogForm({ employee_name: "", date: "", hours: "", project_name: "", description: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function updateServiceCallStatus(id: string, status: string) {
+    await supabase.from("ngs_service_calls").update({ status }).eq("id", id);
+    await load();
+  }
+
+  async function deleteItem(table: string, id: string) {
+    if (!confirm("למחוק?")) return;
+    await supabase.from(table).delete().eq("id", id);
+    await load();
+  }
+
+  const tabs = [
+    { key: "overview", label: "📊 סקירה" },
+    { key: "vehicles", label: "🚗 רכבים" },
+    { key: "employees", label: "👷 עובדים" },
+    { key: "clients", label: "🤝 לקוחות" },
+    { key: "projects", label: "📁 פרויקטים" },
+    { key: "service", label: "🔧 קריאות שירות" },
+    { key: "worklogs", label: "📋 יומני עבודה" },
+  ];
+
+  const openServiceCalls = serviceCalls.filter(s => s.status !== "הושלם");
+  const activeProjects = projects.filter(p => p.status === "פעיל");
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      {/* Header */}
+      <div className="card" style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", color: "#fff", border: "none" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 4 }}>מחלקת חברה</div>
+            <h2 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>🏗 נ.ג.ש מור הנדסה</h2>
+            <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 14 }}>ניהול רכבים, עובדים, לקוחות ופרויקטים</div>
+          </div>
+          <div style={{ display: "flex", gap: 16 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{employees.filter(e => e.status === "פעיל").length}</div>
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>עובדים פעילים</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{vehicles.filter(v => v.status === "פעיל").length}</div>
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>רכבים</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: openServiceCalls.length > 0 ? "#dc2626" : "#16a34a" }}>{openServiceCalls.length}</div>
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>קריאות פתוחות</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tab bar */}
+      <div className="tab-bar">
+        {tabs.map(t => (
+          <button key={t.key} className={`tab-btn ${tab === t.key ? "active" : ""}`} onClick={() => { setTab(t.key); setShowForm(false); }}>{t.label}</button>
+        ))}
+      </div>
+
+      {loading && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>}
+
+      {/* Overview */}
+      {!loading && tab === "overview" && (
+        <div style={{ display: "grid", gap: 18 }}>
+          <div className="kpi-grid" style={{ gridTemplateColumns: "repeat(4, minmax(0,1fr))" }}>
+            <KPI title="עובדים פעילים" value={String(employees.filter(e => e.status === "פעיל").length)} subtitle="צוות" />
+            <KPI title="רכבים פעילים" value={String(vehicles.filter(v => v.status === "פעיל").length)} subtitle="צי רכבים" />
+            <KPI title="פרויקטים פעילים" value={String(activeProjects.length)} subtitle="בביצוע" />
+            <KPI title="קריאות פתוחות" value={String(openServiceCalls.length)} subtitle="לטיפול" />
+          </div>
+
+          <div className="grid-1-1">
+            <div className="card">
+              <h3 className="card-title">🔧 קריאות שירות פתוחות</h3>
+              {openServiceCalls.length === 0 ? (
+                <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין קריאות פתוחות 🎉</div>
+              ) : (
+                <div style={{ display: "grid", gap: 10 }}>
+                  {openServiceCalls.slice(0, 5).map(s => (
+                    <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, background: "#fff" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ fontWeight: 700 }}>{s.issue}</div>
+                        <Badge value={s.urgency} />
+                      </div>
+                      <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name} · {s.status}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="card">
+              <h3 className="card-title">📁 פרויקטים פעילים</h3>
+              {activeProjects.length === 0 ? (
+                <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין פרויקטים פעילים</div>
+              ) : (
+                <div style={{ display: "grid", gap: 10 }}>
+                  {activeProjects.slice(0, 5).map(p => (
+                    <div key={p.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, background: "#fff" }}>
+                      <div style={{ fontWeight: 700 }}>{p.name}</div>
+                      <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{p.client_name || "-"}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vehicles */}
+      {!loading && tab === "vehicles" && (
+        <div className="card">
+          <div className="section-top">
+            <div><h3 className="card-title" style={{ margin: 0 }}>🚗 רכבים</h3><div className="muted">ניהול צי הרכבים</div></div>
+            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף רכב</button>
+          </div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>לוחית רישוי *</label><input className="input" value={vehicleForm.license_plate} onChange={e => setVehicleForm({...vehicleForm, license_plate: e.target.value})} placeholder="12-345-67" /></div>
+                <div className="field"><label>דגם</label><input className="input" value={vehicleForm.model} onChange={e => setVehicleForm({...vehicleForm, model: e.target.value})} placeholder="טויוטה הייאס" /></div>
+                <div className="field"><label>שנה</label><input className="input" value={vehicleForm.year} onChange={e => setVehicleForm({...vehicleForm, year: e.target.value})} placeholder="2022" /></div>
+                <div className="field"><label>סטטוס</label><select className="input" value={vehicleForm.status} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})}><option>פעיל</option><option>בתיקון</option><option>מושבת</option></select></div>
+                <div className="field"><label>הערות</label><input className="input" value={vehicleForm.notes} onChange={e => setVehicleForm({...vehicleForm, notes: e.target.value})} placeholder="הערות..." /></div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveVehicle} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+              </div>
+            </div>
+          )}
+          {vehicles.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🚗</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין רכבים עדיין</div></div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>לוחית</th><th>דגם</th><th>שנה</th><th>סטטוס</th><th>הערות</th><th>פעולות</th></tr></thead>
+                <tbody>
+                  {vehicles.map(v => (
+                    <tr key={v.id}>
+                      <td style={{ fontWeight: 800 }}>{v.license_plate}</td>
+                      <td>{v.model || "-"}</td>
+                      <td>{v.year || "-"}</td>
+                      <td><Badge value={v.status} /></td>
+                      <td>{v.notes || "-"}</td>
+                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_vehicles", v.id)}>מחק</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Employees */}
+      {!loading && tab === "employees" && (
+        <div className="card">
+          <div className="section-top">
+            <div><h3 className="card-title" style={{ margin: 0 }}>👷 עובדים</h3><div className="muted">ניהול צוות העובדים</div></div>
+            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף עובד</button>
+          </div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>שם *</label><input className="input" value={employeeForm.name} onChange={e => setEmployeeForm({...employeeForm, name: e.target.value})} placeholder="ישראל ישראלי" /></div>
+                <div className="field"><label>טלפון</label><input className="input" value={employeeForm.phone} onChange={e => setEmployeeForm({...employeeForm, phone: e.target.value})} placeholder="052-1234567" /></div>
+                <div className="field"><label>תפקיד</label><input className="input" value={employeeForm.role} onChange={e => setEmployeeForm({...employeeForm, role: e.target.value})} placeholder="טכנאי" /></div>
+                <div className="field"><label>סטטוס</label><select className="input" value={employeeForm.status} onChange={e => setEmployeeForm({...employeeForm, status: e.target.value})}><option>פעיל</option><option>חופשה</option><option>לא פעיל</option></select></div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveEmployee} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+              </div>
+            </div>
+          )}
+          {employees.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>👷</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין עובדים עדיין</div></div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+                <tbody>
+                  {employees.map(e => (
+                    <tr key={e.id}>
+                      <td style={{ fontWeight: 800 }}>{e.name}</td>
+                      <td>{e.phone || "-"}</td>
+                      <td>{e.role || "-"}</td>
+                      <td><Badge value={e.status} /></td>
+                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_employees", e.id)}>מחק</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Clients */}
+      {!loading && tab === "clients" && (
+        <div className="card">
+          <div className="section-top">
+            <div><h3 className="card-title" style={{ margin: 0 }}>🤝 לקוחות</h3><div className="muted">ניהול לקוחות ופרויקטים</div></div>
+            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף לקוח</button>
+          </div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>שם *</label><input className="input" value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} placeholder="חברת ABC" /></div>
+                <div className="field"><label>טלפון</label><input className="input" value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone: e.target.value})} placeholder="03-1234567" /></div>
+                <div className="field"><label>אימייל</label><input className="input" value={clientForm.email} onChange={e => setClientForm({...clientForm, email: e.target.value})} placeholder="abc@company.com" /></div>
+                <div className="field"><label>כתובת</label><input className="input" value={clientForm.address} onChange={e => setClientForm({...clientForm, address: e.target.value})} placeholder="רחוב הרצל 1, תל אביב" /></div>
+                <div className="field"><label>הערות</label><input className="input" value={clientForm.notes} onChange={e => setClientForm({...clientForm, notes: e.target.value})} placeholder="הערות..." /></div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveClient} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+              </div>
+            </div>
+          )}
+          {clients.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🤝</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין לקוחות עדיין</div></div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>שם</th><th>טלפון</th><th>אימייל</th><th>כתובת</th><th>פעולות</th></tr></thead>
+                <tbody>
+                  {clients.map(c => (
+                    <tr key={c.id}>
+                      <td style={{ fontWeight: 800 }}>{c.name}</td>
+                      <td>{c.phone || "-"}</td>
+                      <td>{c.email || "-"}</td>
+                      <td>{c.address || "-"}</td>
+                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_clients", c.id)}>מחק</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Projects */}
+      {!loading && tab === "projects" && (
+        <div className="card">
+          <div className="section-top">
+            <div><h3 className="card-title" style={{ margin: 0 }}>📁 פרויקטים</h3><div className="muted">ניהול פרויקטים ועבודות</div></div>
+            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ פרויקט חדש</button>
+          </div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>שם פרויקט *</label><input className="input" value={projectForm.name} onChange={e => setProjectForm({...projectForm, name: e.target.value})} placeholder="הרצאה ראשי..." /></div>
+                <div className="field"><label>לקוח</label><select className="input" value={projectForm.client_name} onChange={e => setProjectForm({...projectForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
+                <div className="field"><label>סטטוס</label><select className="input" value={projectForm.status} onChange={e => setProjectForm({...projectForm, status: e.target.value})}><option>פעיל</option><option>הושלם</option><option>מושהה</option></select></div>
+                <div className="field"><label>תאריך התחלה</label><input className="input" type="date" value={projectForm.start_date} onChange={e => setProjectForm({...projectForm, start_date: e.target.value})} /></div>
+                <div className="field"><label>תאריך סיום</label><input className="input" type="date" value={projectForm.end_date} onChange={e => setProjectForm({...projectForm, end_date: e.target.value})} /></div>
+                <div className="field"><label>תיאור</label><input className="input" value={projectForm.description} onChange={e => setProjectForm({...projectForm, description: e.target.value})} placeholder="תיאור..." /></div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveProject} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+              </div>
+            </div>
+          )}
+          {projects.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📁</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין פרויקטים עדיין</div></div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>שם פרויקט</th><th>לקוח</th><th>התחלה</th><th>סיום</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+                <tbody>
+                  {projects.map(p => (
+                    <tr key={p.id}>
+                      <td style={{ fontWeight: 800 }}>{p.name}</td>
+                      <td>{p.client_name || "-"}</td>
+                      <td>{p.start_date ? new Date(p.start_date).toLocaleDateString("he-IL") : "-"}</td>
+                      <td>{p.end_date ? new Date(p.end_date).toLocaleDateString("he-IL") : "-"}</td>
+                      <td><Badge value={p.status} /></td>
+                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_projects", p.id)}>מחק</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Service Calls */}
+      {!loading && tab === "service" && (
+        <div className="card">
+          <div className="section-top">
+            <div><h3 className="card-title" style={{ margin: 0 }}>🔧 קריאות שירות</h3><div className="muted">קריאות שירות ללקוחות</div></div>
+            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ קריאה חדשה</button>
+          </div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>לקוח</label><select className="input" value={serviceCallForm.client_name} onChange={e => setServiceCallForm({...serviceCallForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
+                <div className="field"><label>נושא *</label><input className="input" value={serviceCallForm.issue} onChange={e => setServiceCallForm({...serviceCallForm, issue: e.target.value})} placeholder="תיאור הבעיה" /></div>
+                <div className="field"><label>דחיפות</label><select className="input" value={serviceCallForm.urgency} onChange={e => setServiceCallForm({...serviceCallForm, urgency: e.target.value})}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select></div>
+                <div className="field"><label>אחראי</label><select className="input" value={serviceCallForm.assigned_to} onChange={e => setServiceCallForm({...serviceCallForm, assigned_to: e.target.value})}><option value="">בחר עובד</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
+                <div className="field"><label>הערות</label><input className="input" value={serviceCallForm.notes} onChange={e => setServiceCallForm({...serviceCallForm, notes: e.target.value})} placeholder="הערות..." /></div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveServiceCall} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+              </div>
+            </div>
+          )}
+          {serviceCalls.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+                <tbody>
+                  {serviceCalls.map(s => (
+                    <tr key={s.id}>
+                      <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td>
+                      <td>{s.client_name || "-"}</td>
+                      <td style={{ fontWeight: 700 }}>{s.issue}</td>
+                      <td><Badge value={s.urgency} /></td>
+                      <td>{s.assigned_to || "-"}</td>
+                      <td>
+                        <select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
+                          <option>חדשה</option><option>בטיפול</option><option>הושלם</option>
+                        </select>
+                      </td>
+                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Work Logs */}
+      {!loading && tab === "worklogs" && (
+        <div className="card">
+          <div className="section-top">
+            <div><h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה</h3><div className="muted">מעקב שעות ופעילות</div></div>
+            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ יומן חדש</button>
+          </div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>עובד *</label><select className="input" value={workLogForm.employee_name} onChange={e => setWorkLogForm({...workLogForm, employee_name: e.target.value})}><option value="">בחר עובד</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
+                <div className="field"><label>תאריך</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
+                <div className="field"><label>שעות</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
+                <div className="field"><label>פרויקט</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר פרויקט</option>{projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select></div>
+                <div className="field" style={{ gridColumn: "span 2" }}><label>תיאור</label><input className="input" value={workLogForm.description} onChange={e => setWorkLogForm({...workLogForm, description: e.target.value})} placeholder="תיאור העבודה..." /></div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveWorkLog} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+              </div>
+            </div>
+          )}
+          {workLogs.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📋</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומני עבודה</div></div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>תאריך</th><th>עובד</th><th>שעות</th><th>פרויקט</th><th>תיאור</th><th>פעולות</th></tr></thead>
+                <tbody>
+                  {workLogs.map(w => (
+                    <tr key={w.id}>
+                      <td>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</td>
+                      <td style={{ fontWeight: 700 }}>{w.employee_name}</td>
+                      <td style={{ fontWeight: 700, color: "#16a34a" }}>{w.hours} ש׳</td>
+                      <td>{w.project_name || "-"}</td>
+                      <td>{w.description || "-"}</td>
+                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Role helpers ────────────────────────────────────────────────────────────
 
 function getNavItemsForRole(role: string) {
@@ -2352,26 +2847,6 @@ function getRoleLabel(role: string) {
   if (role === "tenant") return "דייר";
   if (role === "owner") return "בעל נכס";
   return "מנהל מערכת";
-}
-
-
-// ─── Nav icons ───────────────────────────────────────────────────────────────
-
-function getNavIcon(key: string) {
-  const icons: Record<string, string> = {
-    dashboard: "🏠",
-    owners: "👤",
-    buildings: "🏢",
-    apartments: "🚪",
-    requests: "🔧",
-    leases: "📋",
-    documents: "📄",
-    tenantPortal: "🏠",
-    settings: "⚙️",
-    users: "👥",
-    workcontracts: "📝",
-  };
-  return icons[key] || "•";
 }
 
 // ─── Root App ─────────────────────────────────────────────────────────────────
@@ -2526,6 +3001,7 @@ export default function Home() {
       case "settings": return <Settings userEmail={email} />;
       case "users": return <UsersManagement />;
       case "workcontracts": return <WorkContracts />;
+      case "ngs": return <NGSDashboard />;
       default: return null;
     }
   }
@@ -2629,15 +3105,6 @@ export default function Home() {
     );
   }
 
-  const navItemsForRole = getNavItemsForRole(userRole);
-
-  function isActive(key: string) {
-    return activePage === key ||
-      (activePage === "apartmentDetails" && key === "apartments") ||
-      (activePage === "buildingDetails" && key === "buildings") ||
-      (activePage === "ownerDetails" && key === "owners");
-  }
-
   return (
     <div className="app">
       <aside className="sidebar">
@@ -2646,8 +3113,8 @@ export default function Home() {
           <div><small>GM</small><strong>ניהול נכסים</strong></div>
         </div>
         <nav className="nav">
-          {navItemsForRole.map((item) => (
-            <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
+          {getNavItemsForRole(userRole).map((item) => (
+            <button key={item.key} className={`nav-btn ${activePage === item.key || (activePage === "apartmentDetails" && item.key === "apartments") || (activePage === "buildingDetails" && item.key === "buildings") || (activePage === "ownerDetails" && item.key === "owners") ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
               {item.label}
             </button>
           ))}
@@ -2662,26 +3129,14 @@ export default function Home() {
       </aside>
       <main className="main">
         <div className="topbar">
-          <div><h1>שלום {getRoleLabel(userRole)}</h1><div className="sub">GM ניהול נכסים</div></div>
+          <div><h1>שלום מנהל מערכת</h1><div className="sub">תצוגה מוקדמת מלאה של המערכת</div></div>
           <div className="top-actions">
             <input className="search" placeholder="חיפוש מהיר..." />
-            <button className="btn btn-dark desktop-only">הוספה מהירה</button>
+            <button className="btn btn-dark">הוספה מהירה</button>
           </div>
         </div>
         {renderContent()}
       </main>
-      <nav className="mobile-bottom-nav">
-        {navItemsForRole.slice(0, 5).map((item) => (
-          <button
-            key={item.key}
-            className={`mobile-nav-btn ${isActive(item.key) ? "active" : ""}`}
-            onClick={() => setActivePage(item.key)}
-          >
-            <span className="mobile-nav-icon">{getNavIcon(item.key)}</span>
-            <span className="mobile-nav-label">{item.label}</span>
-          </button>
-        ))}
-      </nav>
     </div>
   );
 }
