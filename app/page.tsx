@@ -836,22 +836,49 @@ function UsersManagement() {
     if (!addForm.full_name || !addForm.email || !addForm.password) { setAddError("שם, אימייל וסיסמה הם חובה"); return; }
     if (addForm.password.length < 6) { setAddError("סיסמה לפחות 6 תווים"); return; }
     setAddLoading(true);
-    const { data, error } = await supabase.auth.admin
-      ? await (supabase as any).auth.admin.createUser({ email: addForm.email, password: addForm.password, email_confirm: true })
-      : { data: null, error: { message: "נדרש שימוש בפונקציה edge" } };
-    
-    // fallback: use signUp + force confirm via service role
-    const { data: d2, error: e2 } = await supabase.auth.signUp({ email: addForm.email, password: addForm.password });
-    if (e2) { setAddError(e2.message); setAddLoading(false); return; }
-    if (d2.user) {
-      await supabase.from("profiles").upsert({
-        id: d2.user.id,
-        full_name: addForm.full_name,
-        phone: addForm.phone,
-        role: addForm.role,
-        status: "מאושר"
-      });
+
+    const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    if (!serviceKey) {
+      setAddError("חסר NEXT_PUBLIC_SUPABASE_SERVICE_KEY בהגדרות Vercel");
+      setAddLoading(false);
+      return;
     }
+
+    // Use admin API with service role key
+    const res = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": serviceKey,
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        email: addForm.email,
+        password: addForm.password,
+        email_confirm: true,
+      }),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok || result.error) {
+      setAddError(result.error?.message || result.msg || "שגיאה ביצירת המשתמש");
+      setAddLoading(false);
+      return;
+    }
+
+    const userId = result.id;
+    await supabase.from("profiles").upsert({
+      id: userId,
+      full_name: addForm.full_name,
+      phone: addForm.phone,
+      role: addForm.role,
+      status: "מאושר",
+      email: addForm.email,
+    });
+
     setAddForm({ full_name: "", email: "", phone: "", password: "", role: "tenant" });
     setShowAddForm(false);
     setAddLoading(false);
