@@ -3089,148 +3089,77 @@ function NGSDashboard() {
 
 // \u2500\u2500\u2500 Role helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'''
 
-content = content.replace('// \u2500\u2500\u2500 Role helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', ngs_block)
+function SidebarNav({ activePage, setActivePage, isActive, userRole }: { activePage: string; setActivePage: (p: string) => void; isActive: (k: string) => boolean; userRole: string }) {
+  const [openGroup, setOpenGroup] = useState<string | null>("property");
 
-# 4. Update mobile nav
-old_return = '''  return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-icon">\ud83c\udfe2</div>
-          <div><small>GM</small><strong>\u05e0\u05d9\u05d4\u05d5\u05dc \u05e0\u05db\u05e1\u05d9\u05dd</strong></div>
-        </div>
-        <nav className="nav">
-          {getNavItemsForRole(userRole).map((item) => (
-            <button key={item.key} className={`nav-btn ${activePage === item.key || (activePage === "apartmentDetails" && item.key === "apartments") || (activePage === "buildingDetails" && item.key === "buildings") || (activePage === "ownerDetails" && item.key === "owners") ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div className="side-card">
-          <div className="avatar">{email[0]?.toUpperCase()}</div>
-          <div>
-            <div className="name">{email}</div>
-            <div className="role">{getRoleLabel(userRole)}</div>
-          </div>
-        </div>
-      </aside>
-      <main className="main">
-        <div className="topbar">
-          <div><h1>\u05e9\u05dc\u05d5\u05dd \u05de\u05e0\u05d4\u05dc \u05de\u05e2\u05e8\u05db\u05ea</h1><div className="sub">\u05ea\u05e6\u05d5\u05d2\u05d4 \u05de\u05d5\u05e7\u05d3\u05de\u05ea \u05de\u05dc\u05d0\u05d4 \u05e9\u05dc \u05d4\u05de\u05e2\u05e8\u05db\u05ea</div></div>
-          <div className="top-actions">
-            <input className="search" placeholder="\u05d7\u05d9\u05e4\u05d5\u05e9 \u05de\u05d4\u05d9\u05e8..." />
-            <button className="btn btn-dark">\u05d4\u05d5\u05e1\u05e4\u05d4 \u05de\u05d4\u05d9\u05e8\u05d4</button>
-          </div>
-        </div>
-        {renderContent()}
-      </main>
-    </div>
-  );
-}'''
-
-new_return = '''  const navItemsForRole = getNavItemsForRole(userRole);
-
-  function isActive(key: string) {
-    return activePage === key ||
-      (activePage === "apartmentDetails" && key === "apartments") ||
-      (activePage === "buildingDetails" && key === "buildings") ||
-      (activePage === "ownerDetails" && key === "owners");
+  if (userRole === "tenant") {
+    return (
+      <>
+        {[{ key: "tenantPortal", label: "🏠 הבית שלי" }, { key: "requests", label: "🔧 קריאות שירות" }].map(item => (
+          <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>
+        ))}
+      </>
+    );
   }
 
-  return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-icon">\ud83c\udfe2</div>
-          <div><small>GM</small><strong>\u05e0\u05d9\u05d4\u05d5\u05dc \u05e0\u05db\u05e1\u05d9\u05dd</strong></div>
-        </div>
-        <nav className="nav">
-          {navItemsForRole.map((item) => (
-            <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div className="side-card">
-          <div className="avatar">{email[0]?.toUpperCase()}</div>
-          <div>
-            <div className="name">{email}</div>
-            <div className="role">{getRoleLabel(userRole)}</div>
-          </div>
-        </div>
-      </aside>
-      <main className="main">
-        <div className="topbar">
-          <div><h1>\u05e9\u05dc\u05d5\u05dd {getRoleLabel(userRole)}</h1><div className="sub">GM \u05e0\u05d9\u05d4\u05d5\u05dc \u05e0\u05db\u05e1\u05d9\u05dd</div></div>
-          <div className="top-actions">
-            <input className="search" placeholder="\u05d7\u05d9\u05e4\u05d5\u05e9 \u05de\u05d4\u05d9\u05e8..." />
-            <button className="btn btn-dark desktop-only">\u05d4\u05d5\u05e1\u05e4\u05d4 \u05de\u05d4\u05d9\u05e8\u05d4</button>
-          </div>
-        </div>
-        {renderContent()}
-      </main>
-      <nav className="mobile-bottom-nav">
-        {navItemsForRole.slice(0, 5).map((item) => (
-          <button key={item.key} className={`mobile-nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
-            <span className="mobile-nav-icon">{getNavIcon(item.key)}</span>
-            <span className="mobile-nav-label">{item.label}</span>
-          </button>
+  if (userRole === "owner") {
+    return (
+      <>
+        {[{ key: "dashboard", label: "🏠 סיכום" }, { key: "apartments", label: "🚪 הדירות שלי" }, { key: "leases", label: "📋 חוזים" }].map(item => (
+          <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>
         ))}
-      </nav>
+      </>
+    );
+  }
+
+  if (userRole === "ngs_worker") {
+    return <button className={`nav-btn ${isActive("ngs") ? "active" : ""}`} onClick={() => setActivePage("ngs")}>🏗 נ.ג.ש מור</button>;
+  }
+
+  const propertyItems = [
+    { key: "owners", label: "👤 בעלי נכסים" },
+    { key: "buildings", label: "🏢 מבנים" },
+    { key: "apartments", label: "🚪 דירות" },
+    { key: "requests", label: "🔧 קריאות שירות" },
+    { key: "leases", label: "📋 חוזים" },
+    { key: "workcontracts", label: "📝 חוזי עבודה" },
+    { key: "documents", label: "📄 מסמכים" },
+  ];
+
+  const isPropertyActive = propertyItems.some(i => isActive(i.key));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
+      <div>
+        <button className={`nav-btn ${isActive("dashboard") ? "active" : ""}`} onClick={() => setActivePage("dashboard")}>🏠 דשבורד</button>
+
+        <div style={{ marginTop: 4 }}>
+          <button
+            onClick={() => setOpenGroup(openGroup === "property" ? null : "property")}
+            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", background: isPropertyActive ? "rgba(213,181,122,0.15)" : openGroup === "property" ? "rgba(255,255,255,0.05)" : "transparent", border: "none", cursor: "pointer", color: isPropertyActive || openGroup === "property" ? "#d5b57a" : "#94a3b8", fontWeight: 700, fontSize: 14, borderRadius: 12, marginBottom: 2 }}>
+            <span>🏢 ניהול נכסים</span>
+            <span style={{ fontSize: 11, transition: "transform 0.2s", transform: openGroup === "property" ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
+          </button>
+          {openGroup === "property" && (
+            <div style={{ paddingRight: 10, borderRight: "2px solid rgba(213,181,122,0.25)", marginRight: 10, marginBottom: 4 }}>
+              {propertyItems.map(item => (
+                <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} style={{ fontSize: 13, padding: "8px 12px" }} onClick={() => setActivePage(item.key)}>{item.label}</button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button className={`nav-btn ${isActive("ngs") ? "active" : ""}`} style={{ marginTop: 4 }} onClick={() => setActivePage("ngs")}>🏗 נ.ג.ש מור</button>
+      </div>
+
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10, marginTop: 10 }}>
+        <button className={`nav-btn ${isActive("users") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("users")}>👥 משתמשים</button>
+        <button className={`nav-btn ${isActive("settings") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("settings")}>⚙️ הגדרות</button>
+      </div>
     </div>
   );
-}'''
+}
 
-content = content.replace(old_return, new_return)
-
-with open('/home/claude/page_final.tsx', 'w', encoding='utf-8') as f:
-    f.write(content)
-
-print("Done!")
-print("NGSDashboard:", 'NGSDashboard' in content)
-print("saveVehicle:", 'saveVehicle' in content)
-print("uploadGarageDoc:", 'uploadGarageDoc' in content)
-print("test_date:", 'test_date' in content)
-print("mobile-bottom-nav:", 'mobile-bottom-nav' in content)
-print("ngs in nav:", '"ngs", label' in content)
-EOF",
-      "description": "Build complete updated page.tsx"
-    },
-    "message": "Build complete updated page.tsx",
-    "integration_name": null,
-    "integration_icon_url": null,
-    "icon_name": "commandLine",
-    "context": null,
-    "display_content": {
-      "type": "json_block",
-      "json_block": "{"language": "bash", "code": "python3 << 'EOF'\
-# The uploaded file doesn't have NGS - it's an older version\
-# I need to build from this file + add ALL the NGS changes + test date + garage doc\
-# Let me do it in one shot\
-\
-with open('/mnt/user-data/uploads/page.tsx', 'r', encoding='utf-8') as f:\
-    content = f.read()\
-\
-# 1. Add ngs to navItems\
-content = content.replace(\
-    '  { key: \\"workcontracts\\", label: \\"\\u05d7\\u05d5\\u05d6\\u05d9 \\u05e2\\u05d1\\u05d5\\u05d3\\u05d4\\" },\\\
-];',\
-    '  { key: \\"workcontracts\\", label: \\"\\u05d7\\u05d5\\u05d6\\u05d9 \\u05e2\\u05d1\\u05d5\\u05d3\\u05d4\\" },\\\
-  { key: \\"ngs\\", label: \\"\\ud83c\\udfd7 \\u05e0.\\u05d2.\\u05e9 \\u05de\\u05d5\\u05e8\\" },\\\
-];'\
-)\
-\
-# 2. Add ngs case in renderContent\
-content = content.replace(\
-    '      case \\"workcontracts\\": return <WorkContracts />;',\
-    '      case \\"workcontracts\\": return <WorkContracts />;\\\
-      case \\"ngs\\": return <NGSDashboard />;'\
-)\
-\
-# 3. Add getNavIcon and NGSDashboard before Role helpers\
-ngs_block = '''\
-// \\u2500\\u2500\\u2500 Nav icons \\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\\u2500\
-\
 function getNavIcon(key: string) {\
   const icons: Record<string, string> = {\
     dashboard: \\"\\ud83c\\udfe0\\", owners: \\"\\ud83d\\udc64\\", buildings: \\"\\ud83c\\udfe2\\", apartments: \\"\\ud83d\\udeaa\\",\
