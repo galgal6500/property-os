@@ -2559,7 +2559,7 @@ function NGSDashboard() {
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
   const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "" });
-  const [workLogForm, setWorkLogForm] = useState({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+  const [workLogForm, setWorkLogForm] = useState({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
 
   async function load() {
     setLoading(true);
@@ -2634,7 +2634,7 @@ function NGSDashboard() {
   async function saveWorkLog() {
     if (!workLogForm.employee_name && !workLogForm.filled_by) return; setSaving(true);
     await supabase.from("ngs_work_logs").insert({ ...workLogForm, hours: parseFloat(workLogForm.hours) || 0 });
-    setWorkLogForm({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+    setWorkLogForm({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
     setShowForm(false); await load(); setSaving(false);
   }
   async function updateServiceCallStatus(id: string, status: string) {
@@ -2677,6 +2677,12 @@ function NGSDashboard() {
                 {selectedWorkLog.employee_name && <div style={{ background: "#f8fafc", borderRadius: 12, padding: 12 }}><div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>עובדים</div><div style={{ fontWeight: 700 }}>{[selectedWorkLog.employee_name, selectedWorkLog.workers].filter(Boolean).join(", ")}</div></div>}
                 {selectedWorkLog.hours > 0 && <div style={{ background: "#f8fafc", borderRadius: 12, padding: 12 }}><div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>שעות</div><div style={{ fontWeight: 700 }}>{selectedWorkLog.hours} ש׳</div></div>}
               </div>
+              {selectedWorkLog.client_notes && (
+                <div style={{ marginBottom: 16, padding: 12, background: "#fffbeb", borderRadius: 12, border: "1px solid #fde68a" }}>
+                  <div style={{ fontSize: 11, color: "#92400e", fontWeight: 700, marginBottom: 4 }}>📝 הערות ללקוח</div>
+                  <div style={{ fontSize: 14, color: "#78350f" }}>{selectedWorkLog.client_notes}</div>
+                </div>
+              )}
               <div style={{ fontWeight: 700, marginBottom: 12 }}>פירוט העבודה:</div>
               <div style={{ display: "grid", gap: 6 }}>
                 {[1,2,3,4,5,6,7,8,9,10].map(n => {
@@ -2710,7 +2716,7 @@ function NGSDashboard() {
                       ${selectedWorkLog.project_name ? ` &nbsp;·&nbsp; 🤝 ${selectedWorkLog.project_name}` : ""}
                       ${selectedWorkLog.filled_by ? ` &nbsp;·&nbsp; ממלא: ${selectedWorkLog.filled_by}` : ""}
                     </div>
-                    ${selectedWorkLog.employee_name ? `<div style="margin-bottom:16px"><strong>👷 עובדים:</strong> ${[selectedWorkLog.employee_name, selectedWorkLog.workers].filter(Boolean).join(", ")}</div>` : ""}
+                    ${selectedWorkLog.client_notes ? `<div style="margin-bottom:16px;padding:10px;background:#fffbeb;border-radius:8px"><strong>📝 הערות ללקוח:</strong> ${selectedWorkLog.client_notes}</div>` : ""}${selectedWorkLog.employee_name ? `<div style="margin-bottom:16px"><strong>👷 עובדים:</strong> ${[selectedWorkLog.employee_name, selectedWorkLog.workers].filter(Boolean).join(", ")}</div>` : ""}
                     ${selectedWorkLog.hours > 0 ? `<div style="margin-bottom:16px"><strong>⏱ שעות:</strong> ${selectedWorkLog.hours} ש׳</div>` : ""}
                     <div style="font-weight:700;margin-bottom:10px">פירוט העבודה:</div>
                     ${lines.map((l, i) => `<div class="line"><span class="num">${i+1}.</span>${l}</div>`).join("")}
@@ -2976,12 +2982,12 @@ function NGSDashboard() {
               <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>📋 יומן עבודה חדש</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                 <div className="field"><label>ממלא היומן</label><input className="input" value={workLogForm.filled_by} onChange={e => setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="שם הממלא" /></div>
-                <div className="field"><label>תאריך</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
-                <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
-                <div className="field"><label>שעות</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
                 <div className="field"><label>לקוח</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
-                <div className="field"><label>📄 פרפורמה</label><select className="input" value={workLogForm.performa} onChange={e => setWorkLogForm({...workLogForm, performa: e.target.value})}><option value="לא טופל">❌ לא טופל</option><option value="יצאה פרפורמה">✅ יצאה פרפורמה</option></select></div>
+                <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
+                <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
+                <div className="field"><label>תאריך</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
               </div>
+              <div className="field"><label>📝 הערות ללקוח</label><textarea className="input" value={workLogForm.client_notes} onChange={e => setWorkLogForm({...workLogForm, client_notes: e.target.value})} placeholder="מלל חופשי ללקוח..." style={{ minHeight: 70, resize: "vertical" }} /></div>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 13, color: "#475569", marginBottom: 8 }}>👷 עובדים שביצעו את העבודה:</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
