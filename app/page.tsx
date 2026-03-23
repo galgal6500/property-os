@@ -2562,7 +2562,7 @@ function NGSDashboard() {
           <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <div style={{ fontSize: 22, fontWeight: 900 }}>📋 {selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : "-"}</div>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>📋 #{selectedWorkLog.serial_number} &nbsp;·&nbsp; {selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : "-"}</div>
                 <div style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
                   {selectedWorkLog.branch && <span>📍 {selectedWorkLog.branch} · </span>}
                   {selectedWorkLog.project_name && <span>🤝 {selectedWorkLog.project_name} · </span>}
@@ -2603,7 +2603,7 @@ function NGSDashboard() {
                     .badge{padding:4px 14px;border-radius:999px;font-size:13px;font-weight:700;}
                     .footer{margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;}
                     @media print{button{display:none}}</style></head><body>
-                    <h2>📋 יומן עבודה — ${selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : ""}</h2>
+                    <h2>📋 יומן עבודה #${selectedWorkLog.serial_number} — ${selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : ""}</h2>
                     <div class="meta">
                       ${selectedWorkLog.branch ? `📍 ${selectedWorkLog.branch}` : ""}
                       ${selectedWorkLog.project_name ? ` &nbsp;·&nbsp; 🤝 ${selectedWorkLog.project_name}` : ""}
@@ -2905,7 +2905,7 @@ function NGSDashboard() {
                 <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: "14px 18px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <div>
-                      <div style={{ fontSize: 20, fontWeight: 900, color: "#0f172a" }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 13, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 10px" }}>#{w.serial_number}</span><span style={{ fontSize: 20, fontWeight: 900, color: "#0f172a" }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span></div>
                       <div style={{ fontSize: 14, color: "#64748b", marginTop: 2 }}>{w.branch ? `📍 ${w.branch}` : ""}{w.project_name ? `  ·  🤝 ${w.project_name}` : ""}</div>
                       {w.filled_by && <div style={{ fontSize: 13, color: "#94a3b8" }}>ממלא: {w.filled_by}</div>}
                     </div>
