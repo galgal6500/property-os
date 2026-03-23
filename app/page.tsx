@@ -2452,6 +2452,8 @@ function NGSDashboard() {
   const [uploadingVehicleId, setUploadingVehicleId] = useState<string | null>(null);
   const [editingVehicle, setEditingVehicle] = useState<any>(null);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any>(null);
+  const [workLogFilter, setWorkLogFilter] = useState("הכל");
+  const [serviceCallFilter, setServiceCallFilter] = useState("הכל");
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", driver: "", notes: "" });
   const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "פעיל" });
@@ -2833,6 +2835,14 @@ function NGSDashboard() {
       {!loading && tab === "service" && (
         <div className="card">
           <div className="section-top"><div><h3 className="card-title" style={{ margin: 0 }}>🔧 קריאות שירות</h3></div><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ קריאה חדשה</button></div>
+          <div className="chips" style={{ marginBottom: 12, marginTop: 8 }}>
+            {["הכל", "חדשה", "בטיפול", "הושלם"].map(f => (
+              <button key={f} className={`btn ${serviceCallFilter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setServiceCallFilter(f)}>{f}</button>
+            ))}
+            <span style={{ fontSize: 13, color: "#64748b", marginRight: 8 }}>
+              {serviceCallFilter === "הכל" ? `סה״כ: ${serviceCalls.length}` : `מוצגים: ${serviceCalls.filter(s => s.status === serviceCallFilter).length}`}
+            </span>
+          </div>
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
@@ -2847,13 +2857,21 @@ function NGSDashboard() {
             </div>
           )}
           {serviceCalls.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
-          : <div className="table-wrap"><table><thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>{serviceCalls.map(s => (<tr key={s.id}><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td><td>{s.client_name || "-"}</td><td style={{ fontWeight: 700 }}>{s.issue}</td><td><Badge value={s.urgency} /></td><td>{s.assigned_to || "-"}</td><td><select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}><option>חדשה</option><option>בטיפול</option><option>הושלם</option></select></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td></tr>))}</tbody></table></div>}
+          : <div className="table-wrap"><table><thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>{serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).map(s => (<tr key={s.id}><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td><td>{s.client_name || "-"}</td><td style={{ fontWeight: 700 }}>{s.issue}</td><td><Badge value={s.urgency} /></td><td>{s.assigned_to || "-"}</td><td><select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}><option>חדשה</option><option>בטיפול</option><option>הושלם</option></select></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td></tr>))}</tbody></table></div>}
         </div>
       )}
 
       {!loading && tab === "worklogs" && (
         <div className="card">
           <div className="section-top"><div><h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה</h3></div><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ יומן חדש</button></div>
+          <div className="chips" style={{ marginBottom: 12, marginTop: 8 }}>
+            {["הכל", "לא טופל", "יצאה פרפורמה"].map(f => (
+              <button key={f} className={`btn ${workLogFilter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setWorkLogFilter(f)}>{f}</button>
+            ))}
+            <span style={{ fontSize: 13, color: "#64748b", marginRight: 8 }}>
+              {workLogFilter === "הכל" ? `סה״כ: ${workLogs.length}` : `מוצגים: ${workLogs.filter(w => workLogFilter === "לא טופל" ? w.performa !== "יצאה פרפורמה" : w.performa === "יצאה פרפורמה").length}`}
+            </span>
+          </div>
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 14 }}>
               <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>📋 יומן עבודה חדש</div>
@@ -2901,7 +2919,7 @@ function NGSDashboard() {
           {workLogs.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📋</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומני עבודה</div></div>
           : (
             <div style={{ display: "grid", gap: 10 }}>
-              {workLogs.map(w => (
+              {workLogs.filter(w => workLogFilter === "הכל" ? true : workLogFilter === "לא טופל" ? w.performa !== "יצאה פרפורמה" : w.performa === "יצאה פרפורמה").map(w => (
                 <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: "14px 18px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <div>
