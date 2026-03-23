@@ -2329,32 +2329,563 @@ function Placeholder({ title, text }: { title: string; text: string }) {
   );
 }
 
-// ─── Role helpers ────────────────────────────────────────────────────────────
+function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId: string; licensePlate: string; onClose: () => void }) {
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ service_type: "", date: "", notes: "" });
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase.from("ngs_vehicle_services").select("*").eq("vehicle_id", vehicleId).order("date", { ascending: false });
+    setServices(data || []); setLoading(false);
+  }
+  useState(() => { load(); });
+  async function addService() {
+    if (!form.service_type || !form.date) return;
+    setSaving(true);
+    await supabase.from("ngs_vehicle_services").insert({ vehicle_id: vehicleId, ...form });
+    setForm({ service_type: "", date: "", notes: "" }); setShowForm(false); await load(); setSaving(false);
+  }
+  async function uploadDoc(serviceId: string, file: File) {
+    setUploadingId(serviceId);
+    const ext = file.name.split(".").pop();
+    const path = `vehicle-services/${serviceId}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
+      await supabase.from("ngs_vehicle_services").update({ document_url: urlData.publicUrl }).eq("id", serviceId);
+      await load();
+    }
+    setUploadingId(null);
+  }
+  async function deleteService(id: string) {
+    if (!confirm("\u05dc\u05de\u05d7\u05d5\u05e7?")) return;
+    await supabase.from("ngs_vehicle_services").delete().eq("id", id); await load();
+  }
+  const serviceTypes = ["\u05d8\u05d9\u05e4\u05d5\u05dc \u05e9\u05de\u05df", "\u05d8\u05e1\u05d8", "\u05d2\u05dc\u05d2\u05dc\u05d9\u05dd", "\u05d1\u05dc\u05de\u05d9\u05dd", "\u05de\u05e6\u05d1\u05e8", "\u05de\u05d6\u05d2\u05df", "\u05ea\u05d9\u05e7\u05d5\u05df \u05db\u05dc\u05dc\u05d9", "\u05d0\u05d7\u05e8"];
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>\ud83d\udd27 \u05d4\u05d9\u05e1\u05d8\u05d5\u05e8\u05d9\u05d9\u05ea \u05d8\u05d9\u05e4\u05d5\u05dc\u05d9\u05dd</h3><div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>\u05e8\u05db\u05d1: {licensePlate}</div></div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => setShowForm(!showForm)}>+ \u05d8\u05d9\u05e4\u05d5\u05dc \u05d7\u05d3\u05e9</button>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#64748b" }}>\u00d7</button>
+          </div>
+        </div>
+        {showForm && (
+          <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e8eef6" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div className="field"><label>\u05e1\u05d5\u05d2 \u05d8\u05d9\u05e4\u05d5\u05dc *</label><select className="input" value={form.service_type} onChange={e => setForm({...form, service_type: e.target.value})}><option value="">\u05d1\u05d7\u05e8 \u05e1\u05d5\u05d2</option>{serviceTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+              <div className="field"><label>\u05ea\u05d0\u05e8\u05d9\u05da *</label><input className="input" type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
+              <div className="field" style={{ gridColumn: "span 2" }}><label>\u05d4\u05e2\u05e8\u05d5\u05ea</label><input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="\u05e4\u05e8\u05d8\u05d9\u05dd \u05e0\u05d5\u05e1\u05e4\u05d9\u05dd..." /></div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-primary" onClick={addService} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button>
+            </div>
+          </div>
+        )}
+        <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
+          {loading ? <div style={{ padding: 30, textAlign: "center" }}>\u05d8\u05d5\u05e2\u05df...</div> : services.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\udd27</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05d8\u05d9\u05e4\u05d5\u05dc\u05d9\u05dd \u05e2\u05d3\u05d9\u05d9\u05df</div></div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {services.map(s => (
+                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontWeight: 800 }}>\ud83d\udd27 {s.service_type}</span>
+                        <span style={{ fontSize: 13, color: "#64748b" }}>{s.date ? new Date(s.date).toLocaleDateString("he-IL") : "-"}</span>
+                      </div>
+                      {s.notes && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.notes}</div>}
+                    </div>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      {s.document_url ? (
+                        <a href={s.document_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "3px 10px" }}>\ud83d\udcc4 \u05e4\u05ea\u05d7</a>
+                      ) : (
+                        <label style={{ cursor: "pointer" }}>
+                          <span className="btn btn-outline" style={{ fontSize: 12, padding: "3px 10px" }}>{uploadingId === s.id ? "\u05de\u05e2\u05dc\u05d4..." : "\ud83d\udcce \u05d4\u05e2\u05dc\u05d4"}</span>
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadDoc(s.id, e.target.files[0])} />
+                        </label>
+                      )}
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "#dc2626" }} onClick={() => deleteService(s.id)}>\u05de\u05d7\u05e7</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function NGSDashboard() {
+  const [tab, setTab] = useState("overview");
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [serviceCalls, setServiceCalls] = useState<any[]>([]);
+  const [workLogs, setWorkLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploadingVehicleId, setUploadingVehicleId] = useState<string | null>(null);
+  const [selectedWorkLog, setSelectedWorkLog] = useState<any>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+  const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "\u05e4\u05e2\u05d9\u05dc", test_date: "", next_test_date: "", notes: "" });
+  const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "\u05e4\u05e2\u05d9\u05dc" });
+  const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
+  const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "\u05e4\u05e2\u05d9\u05dc", start_date: "", end_date: "", description: "" });
+  const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "\u05d1\u05d9\u05e0\u05d5\u05e0\u05d9\u05ea", status: "\u05d7\u05d3\u05e9\u05d4", assigned_to: "", notes: "" });
+  const [workLogForm, setWorkLogForm] = useState({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", performa: "\u05dc\u05d0 \u05d8\u05d5\u05e4\u05dc", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+
+  async function load() {
+    setLoading(true);
+    const [v, e, c, p, s, w] = await Promise.all([
+      supabase.from("ngs_vehicles").select("*").order("created_at", { ascending: false }),
+      supabase.from("ngs_employees").select("*").order("name"),
+      supabase.from("ngs_clients").select("*").order("name"),
+      supabase.from("ngs_projects").select("*").order("created_at", { ascending: false }),
+      supabase.from("ngs_service_calls").select("*").order("created_at", { ascending: false }),
+      supabase.from("ngs_work_logs").select("*").order("date", { ascending: false }),
+    ]);
+    setVehicles(v.data || []); setEmployees(e.data || []); setClients(c.data || []);
+    setProjects(p.data || []); setServiceCalls(s.data || []); setWorkLogs(w.data || []);
+    setLoading(false);
+  }
+  useState(() => { load(); });
+
+  async function saveVehicle() {
+    if (!vehicleForm.license_plate) return; setSaving(true);
+    await supabase.from("ngs_vehicles").insert({ ...vehicleForm, test_date: vehicleForm.test_date || null, next_test_date: vehicleForm.next_test_date || null });
+    setVehicleForm({ license_plate: "", model: "", year: "", status: "\u05e4\u05e2\u05d9\u05dc", test_date: "", next_test_date: "", notes: "" });
+    setShowForm(false); await load(); setSaving(false);
+  }
+  async function uploadGarageDoc(vehicleId: string, file: File) {
+    setUploadingVehicleId(vehicleId);
+    const ext = file.name.split(".").pop();
+    const { error } = await supabase.storage.from("documents").upload(`garage-docs/${vehicleId}-${Date.now()}.${ext}`, file, { upsert: true });
+    if (!error) {
+      const { data: u } = supabase.storage.from("documents").getPublicUrl(`garage-docs/${vehicleId}-${Date.now()}.${ext}`);
+      await supabase.from("ngs_vehicles").update({ garage_doc_url: u.publicUrl }).eq("id", vehicleId);
+      await load();
+    }
+    setUploadingVehicleId(null);
+  }
+  async function saveEmployee() {
+    if (!employeeForm.name) return; setSaving(true);
+    await supabase.from("ngs_employees").insert(employeeForm);
+    setEmployeeForm({ name: "", phone: "", role: "", status: "\u05e4\u05e2\u05d9\u05dc" }); setShowForm(false); await load(); setSaving(false);
+  }
+  async function saveClient() {
+    if (!clientForm.name) return; setSaving(true);
+    await supabase.from("ngs_clients").insert(clientForm);
+    setClientForm({ name: "", phone: "", email: "", address: "", notes: "" }); setShowForm(false); await load(); setSaving(false);
+  }
+  async function saveProject() {
+    if (!projectForm.name) return; setSaving(true);
+    await supabase.from("ngs_projects").insert({ ...projectForm, start_date: projectForm.start_date || null, end_date: projectForm.end_date || null });
+    setProjectForm({ client_name: "", name: "", status: "\u05e4\u05e2\u05d9\u05dc", start_date: "", end_date: "", description: "" }); setShowForm(false); await load(); setSaving(false);
+  }
+  async function saveServiceCall() {
+    if (!serviceCallForm.issue) return; setSaving(true);
+    await supabase.from("ngs_service_calls").insert(serviceCallForm);
+    setServiceCallForm({ client_name: "", issue: "", urgency: "\u05d1\u05d9\u05e0\u05d5\u05e0\u05d9\u05ea", status: "\u05d7\u05d3\u05e9\u05d4", assigned_to: "", notes: "" }); setShowForm(false); await load(); setSaving(false);
+  }
+  async function saveWorkLog() {
+    if (!workLogForm.employee_name && !workLogForm.filled_by) return; setSaving(true);
+    await supabase.from("ngs_work_logs").insert({ ...workLogForm, hours: parseFloat(workLogForm.hours) || 0 });
+    setWorkLogForm({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", performa: "\u05dc\u05d0 \u05d8\u05d5\u05e4\u05dc", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+    setShowForm(false); await load(); setSaving(false);
+  }
+  async function updateServiceCallStatus(id: string, status: string) {
+    await supabase.from("ngs_service_calls").update({ status }).eq("id", id); await load();
+  }
+  async function deleteItem(table: string, id: string) {
+    if (!confirm("\u05dc\u05de\u05d7\u05d5\u05e7?")) return;
+    await supabase.from(table).delete().eq("id", id); await load();
+  }
+
+  const tabs = [
+    { key: "overview", label: "\ud83d\udcca \u05e1\u05e7\u05d9\u05e8\u05d4" }, { key: "vehicles", label: "\ud83d\ude97 \u05e8\u05db\u05d1\u05d9\u05dd" },
+    { key: "employees", label: "\ud83d\udc77 \u05e2\u05d5\u05d1\u05d3\u05d9\u05dd" }, { key: "clients", label: "\ud83e\udd1d \u05dc\u05e7\u05d5\u05d7\u05d5\u05ea" },
+    { key: "projects", label: "\ud83d\udcc1 \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd" }, { key: "service", label: "\ud83d\udd27 \u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e9\u05d9\u05e8\u05d5\u05ea" },
+    { key: "worklogs", label: "\ud83d\udccb \u05d9\u05d5\u05de\u05e0\u05d9 \u05e2\u05d1\u05d5\u05d3\u05d4" },
+  ];
+  const openServiceCalls = serviceCalls.filter(s => s.status !== "\u05d4\u05d5\u05e9\u05dc\u05dd");
+  const activeProjects = projects.filter(p => p.status === "\u05e4\u05e2\u05d9\u05dc");
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      {selectedVehicle && <VehicleServicesModal vehicleId={selectedVehicle.id} licensePlate={selectedVehicle.license_plate} onClose={() => setSelectedVehicle(null)} />}
+
+      {selectedWorkLog && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>\ud83d\udccb {selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : "-"}</div>
+                <div style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
+                  {selectedWorkLog.branch && <span>\ud83d\udccd {selectedWorkLog.branch} \u00b7 </span>}
+                  {selectedWorkLog.project_name && <span>\ud83e\udd1d {selectedWorkLog.project_name} \u00b7 </span>}
+                  {selectedWorkLog.filled_by && <span>\u05de\u05de\u05dc\u05d0: {selectedWorkLog.filled_by}</span>}
+                </div>
+              </div>
+              <button onClick={() => setSelectedWorkLog(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "#64748b" }}>\u00d7</button>
+            </div>
+            <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+                {selectedWorkLog.employee_name && <div style={{ background: "#f8fafc", borderRadius: 12, padding: 12 }}><div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>\u05e2\u05d5\u05d1\u05d3\u05d9\u05dd</div><div style={{ fontWeight: 700 }}>{[selectedWorkLog.employee_name, selectedWorkLog.workers].filter(Boolean).join(", ")}</div></div>}
+                {selectedWorkLog.hours > 0 && <div style={{ background: "#f8fafc", borderRadius: 12, padding: 12 }}><div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>\u05e9\u05e2\u05d5\u05ea</div><div style={{ fontWeight: 700 }}>{selectedWorkLog.hours} \u05e9\u05f3</div></div>}
+              </div>
+              <div style={{ fontWeight: 700, marginBottom: 12 }}>\u05e4\u05d9\u05e8\u05d5\u05d8 \u05d4\u05e2\u05d1\u05d5\u05d3\u05d4:</div>
+              <div style={{ display: "grid", gap: 6 }}>
+                {[1,2,3,4,5,6,7,8,9,10].map(n => {
+                  const line = selectedWorkLog[`line${n}`];
+                  if (!line) return null;
+                  return <div key={n} style={{ display: "flex", gap: 10, padding: "8px 12px", background: "#f8fafc", borderRadius: 10 }}><span style={{ color: "#94a3b8", fontWeight: 700, minWidth: 22 }}>{n}.</span><span style={{ fontSize: 14 }}>{line}</span></div>;
+                })}
+              </div>
+            </div>
+            <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ background: selectedWorkLog.performa === "\u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4" ? "#dcfce7" : "#fee2e2", color: selectedWorkLog.performa === "\u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "4px 16px", fontSize: 13, fontWeight: 700 }}>
+                {selectedWorkLog.performa === "\u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4" ? "\u2705 \u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4" : "\u274c \u05dc\u05d0 \u05d8\u05d5\u05e4\u05dc"}
+              </span>
+              <button className="btn btn-outline" onClick={() => setSelectedWorkLog(null)}>\u05e1\u05d2\u05d5\u05e8</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="card" style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", color: "#fff", border: "none" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 4 }}>\u05de\u05d7\u05dc\u05e7\u05ea \u05d7\u05d1\u05e8\u05d4</div>
+            <h2 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>\ud83c\udfd7 \u05e0.\u05d2.\u05e9 \u05de\u05d5\u05e8 \u05d4\u05e0\u05d3\u05e1\u05d4</h2>
+            <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 14 }}>\u05e0\u05d9\u05d4\u05d5\u05dc \u05e8\u05db\u05d1\u05d9\u05dd, \u05e2\u05d5\u05d1\u05d3\u05d9\u05dd, \u05dc\u05e7\u05d5\u05d7\u05d5\u05ea \u05d5\u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd</div>
+          </div>
+          <div style={{ display: "flex", gap: 16 }}>
+            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{employees.filter(e => e.status === "\u05e4\u05e2\u05d9\u05dc").length}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>\u05e2\u05d5\u05d1\u05d3\u05d9\u05dd</div></div>
+            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{vehicles.length}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>\u05e8\u05db\u05d1\u05d9\u05dd</div></div>
+            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: openServiceCalls.length > 0 ? "#dc2626" : "#16a34a" }}>{openServiceCalls.length}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>\u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e4\u05ea\u05d5\u05d7\u05d5\u05ea</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="tab-bar" style={{ overflowX: "auto" }}>
+        {tabs.map(t => <button key={t.key} className={`tab-btn ${tab === t.key ? "active" : ""}`} onClick={() => { setTab(t.key); setShowForm(false); }}>{t.label}</button>)}
+      </div>
+
+      {loading && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>\u05d8\u05d5\u05e2\u05df...</div>}
+
+      {!loading && tab === "overview" && (
+        <div style={{ display: "grid", gap: 18 }}>
+          <div className="kpi-grid">
+            <KPI title="\u05e2\u05d5\u05d1\u05d3\u05d9\u05dd \u05e4\u05e2\u05d9\u05dc\u05d9\u05dd" value={String(employees.filter(e => e.status === "\u05e4\u05e2\u05d9\u05dc").length)} subtitle="\u05e6\u05d5\u05d5\u05ea" />
+            <KPI title="\u05e8\u05db\u05d1\u05d9\u05dd" value={String(vehicles.length)} subtitle="\u05e6\u05d9 \u05e8\u05db\u05d1\u05d9\u05dd" />
+            <KPI title="\u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd \u05e4\u05e2\u05d9\u05dc\u05d9\u05dd" value={String(activeProjects.length)} subtitle="\u05d1\u05d1\u05d9\u05e6\u05d5\u05e2" />
+            <KPI title="\u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e4\u05ea\u05d5\u05d7\u05d5\u05ea" value={String(openServiceCalls.length)} subtitle="\u05dc\u05d8\u05d9\u05e4\u05d5\u05dc" />
+          </div>
+          <div className="grid-1-1">
+            <div className="card">
+              <h3 className="card-title">\ud83d\udd27 \u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e9\u05d9\u05e8\u05d5\u05ea \u05e4\u05ea\u05d5\u05d7\u05d5\u05ea</h3>
+              {openServiceCalls.length === 0 ? <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>\u05d0\u05d9\u05df \u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e4\u05ea\u05d5\u05d7\u05d5\u05ea \ud83c\udf89</div>
+              : openServiceCalls.slice(0, 5).map(s => (
+                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontWeight: 700 }}>{s.issue}</span><Badge value={s.urgency} /></div>
+                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name} \u00b7 {s.status}</div>
+                </div>
+              ))}
+            </div>
+            <div className="card">
+              <h3 className="card-title">\ud83d\udcc1 \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd \u05e4\u05e2\u05d9\u05dc\u05d9\u05dd</h3>
+              {activeProjects.length === 0 ? <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>\u05d0\u05d9\u05df \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd \u05e4\u05e2\u05d9\u05dc\u05d9\u05dd</div>
+              : activeProjects.slice(0, 5).map(p => (
+                <div key={p.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700 }}>{p.name}</div>
+                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{p.client_name || "-"}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!loading && tab === "vehicles" && (
+        <div className="card">
+          <div className="section-top"><div><h3 className="card-title" style={{ margin: 0 }}>\ud83d\ude97 \u05e8\u05db\u05d1\u05d9\u05dd</h3></div><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05d4\u05d5\u05e1\u05e3 \u05e8\u05db\u05d1</button></div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>\u05dc\u05d5\u05d7\u05d9\u05ea \u05e8\u05d9\u05e9\u05d5\u05d9 *</label><input className="input" value={vehicleForm.license_plate} onChange={e => setVehicleForm({...vehicleForm, license_plate: e.target.value})} placeholder="12-345-67" /></div>
+                <div className="field"><label>\u05d3\u05d2\u05dd</label><input className="input" value={vehicleForm.model} onChange={e => setVehicleForm({...vehicleForm, model: e.target.value})} /></div>
+                <div className="field"><label>\u05e9\u05e0\u05d4</label><input className="input" value={vehicleForm.year} onChange={e => setVehicleForm({...vehicleForm, year: e.target.value})} /></div>
+                <div className="field"><label>\u05e1\u05d8\u05d8\u05d5\u05e1</label><select className="input" value={vehicleForm.status} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})}><option>\u05e4\u05e2\u05d9\u05dc</option><option>\u05d1\u05ea\u05d9\u05e7\u05d5\u05df</option><option>\u05de\u05d5\u05e9\u05d1\u05ea</option></select></div>
+                <div className="field"><label>\u05ea\u05d0\u05e8\u05d9\u05da \u05d8\u05e1\u05d8 \u05d0\u05d7\u05e8\u05d5\u05df</label><input className="input" type="date" value={vehicleForm.test_date} onChange={e => setVehicleForm({...vehicleForm, test_date: e.target.value})} /></div>
+                <div className="field"><label>\u05ea\u05d0\u05e8\u05d9\u05da \u05d8\u05e1\u05d8 \u05d4\u05d1\u05d0</label><input className="input" type="date" value={vehicleForm.next_test_date} onChange={e => setVehicleForm({...vehicleForm, next_test_date: e.target.value})} /></div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}><button className="btn btn-primary" onClick={saveVehicle} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button></div>
+            </div>
+          )}
+          {vehicles.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\ude97</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05e8\u05db\u05d1\u05d9\u05dd \u05e2\u05d3\u05d9\u05d9\u05df</div></div>
+          : (
+            <div style={{ display: "grid", gap: 12 }}>
+              {vehicles.map(v => {
+                const nextTest = v.next_test_date ? new Date(v.next_test_date) : null;
+                const daysToTest = nextTest ? Math.ceil((nextTest.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                const testAlert = daysToTest !== null && daysToTest <= 30;
+                return (
+                  <div key={v.id} style={{ border: `1px solid ${testAlert ? "#fca5a5" : "#e8eef6"}`, borderRadius: 16, padding: 16, background: testAlert ? "#fff7f7" : "#fff" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                          <span style={{ fontSize: 18, fontWeight: 900 }}>\ud83d\ude97 {v.license_plate}</span>
+                          <Badge value={v.status} />
+                          {testAlert && <span style={{ background: "#dc2626", color: "#fff", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>\u26a0\ufe0f \u05d8\u05e1\u05d8 \u05d1\u05e7\u05e8\u05d5\u05d1!</span>}
+                        </div>
+                        <div style={{ fontSize: 14, color: "#64748b" }}>{v.model || "-"} \u00b7 {v.year || "-"}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <button className="btn btn-secondary" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => setSelectedVehicle(v)}>\ud83d\udd27 \u05d8\u05d9\u05e4\u05d5\u05dc\u05d9\u05dd</button>
+                        {v.garage_doc_url ? (
+                          <a href={v.garage_doc_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>\ud83d\udcc4 \u05de\u05e1\u05de\u05da</a>
+                        ) : (
+                          <label style={{ cursor: "pointer" }}>
+                            <span className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>{uploadingVehicleId === v.id ? "\u05de\u05e2\u05dc\u05d4..." : "\ud83d\udcce \u05de\u05e1\u05de\u05da"}</span>
+                            <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadGarageDoc(v.id, e.target.files[0])} />
+                          </label>
+                        )}
+                        <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_vehicles", v.id)}>\u05de\u05d7\u05e7</button>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 24, marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
+                      <div><div style={{ fontSize: 11, color: "#94a3b8" }}>\u05d8\u05e1\u05d8 \u05d0\u05d7\u05e8\u05d5\u05df</div><div style={{ fontSize: 14, fontWeight: 700 }}>{v.test_date ? new Date(v.test_date).toLocaleDateString("he-IL") : "-"}</div></div>
+                      <div><div style={{ fontSize: 11, color: "#94a3b8" }}>\u05d8\u05e1\u05d8 \u05d4\u05d1\u05d0</div><div style={{ fontSize: 14, fontWeight: 700, color: testAlert ? "#dc2626" : "#0f172a" }}>{nextTest ? `${new Date(v.next_test_date).toLocaleDateString("he-IL")} (${(daysToTest || 0) <= 0 ? "\u26a0\ufe0f \u05e2\u05d1\u05e8!" : (daysToTest || 0) + " \u05d9\u05de\u05d9\u05dd"})` : "-"}</div></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!loading && tab === "employees" && (
+        <div className="card">
+          <div className="section-top"><div><h3 className="card-title" style={{ margin: 0 }}>\ud83d\udc77 \u05e2\u05d5\u05d1\u05d3\u05d9\u05dd</h3></div><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05d4\u05d5\u05e1\u05e3 \u05e2\u05d5\u05d1\u05d3</button></div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>\u05e9\u05dd *</label><input className="input" value={employeeForm.name} onChange={e => setEmployeeForm({...employeeForm, name: e.target.value})} placeholder="\u05d9\u05e9\u05e8\u05d0\u05dc \u05d9\u05e9\u05e8\u05d0\u05dc\u05d9" /></div>
+                <div className="field"><label>\u05d8\u05dc\u05e4\u05d5\u05df</label><input className="input" value={employeeForm.phone} onChange={e => setEmployeeForm({...employeeForm, phone: e.target.value})} /></div>
+                <div className="field"><label>\u05ea\u05e4\u05e7\u05d9\u05d3</label><input className="input" value={employeeForm.role} onChange={e => setEmployeeForm({...employeeForm, role: e.target.value})} /></div>
+                <div className="field"><label>\u05e1\u05d8\u05d8\u05d5\u05e1</label><select className="input" value={employeeForm.status} onChange={e => setEmployeeForm({...employeeForm, status: e.target.value})}><option>\u05e4\u05e2\u05d9\u05dc</option><option>\u05d7\u05d5\u05e4\u05e9\u05d4</option><option>\u05dc\u05d0 \u05e4\u05e2\u05d9\u05dc</option></select></div>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveEmployee} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button></div>
+            </div>
+          )}
+          {employees.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\udc77</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05e2\u05d5\u05d1\u05d3\u05d9\u05dd \u05e2\u05d3\u05d9\u05d9\u05df</div></div>
+          : <div className="table-wrap"><table><thead><tr><th>\u05e9\u05dd</th><th>\u05d8\u05dc\u05e4\u05d5\u05df</th><th>\u05ea\u05e4\u05e7\u05d9\u05d3</th><th>\u05e1\u05d8\u05d8\u05d5\u05e1</th><th>\u05e4\u05e2\u05d5\u05dc\u05d5\u05ea</th></tr></thead><tbody>{employees.map(e => (<tr key={e.id}><td style={{ fontWeight: 800 }}>{e.name}</td><td>{e.phone || "-"}</td><td>{e.role || "-"}</td><td><Badge value={e.status} /></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_employees", e.id)}>\u05de\u05d7\u05e7</button></td></tr>))}</tbody></table></div>}
+        </div>
+      )}
+
+      {!loading && tab === "clients" && (
+        <div className="card">
+          <div className="section-top"><div><h3 className="card-title" style={{ margin: 0 }}>\ud83e\udd1d \u05dc\u05e7\u05d5\u05d7\u05d5\u05ea</h3></div><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05d4\u05d5\u05e1\u05e3 \u05dc\u05e7\u05d5\u05d7</button></div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>\u05e9\u05dd *</label><input className="input" value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} placeholder="\u05d7\u05d1\u05e8\u05ea ABC" /></div>
+                <div className="field"><label>\u05d8\u05dc\u05e4\u05d5\u05df</label><input className="input" value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone: e.target.value})} /></div>
+                <div className="field"><label>\u05d0\u05d9\u05de\u05d9\u05d9\u05dc</label><input className="input" value={clientForm.email} onChange={e => setClientForm({...clientForm, email: e.target.value})} /></div>
+                <div className="field"><label>\u05db\u05ea\u05d5\u05d1\u05ea</label><input className="input" value={clientForm.address} onChange={e => setClientForm({...clientForm, address: e.target.value})} /></div>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveClient} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button></div>
+            </div>
+          )}
+          {clients.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83e\udd1d</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05dc\u05e7\u05d5\u05d7\u05d5\u05ea \u05e2\u05d3\u05d9\u05d9\u05df</div></div>
+          : <div className="table-wrap"><table><thead><tr><th>\u05e9\u05dd</th><th>\u05d8\u05dc\u05e4\u05d5\u05df</th><th>\u05d0\u05d9\u05de\u05d9\u05d9\u05dc</th><th>\u05db\u05ea\u05d5\u05d1\u05ea</th><th>\u05e4\u05e2\u05d5\u05dc\u05d5\u05ea</th></tr></thead><tbody>{clients.map(c => (<tr key={c.id}><td style={{ fontWeight: 800 }}>{c.name}</td><td>{c.phone || "-"}</td><td>{c.email || "-"}</td><td>{c.address || "-"}</td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_clients", c.id)}>\u05de\u05d7\u05e7</button></td></tr>))}</tbody></table></div>}
+        </div>
+      )}
+
+      {!loading && tab === "projects" && (
+        <div className="card">
+          <div className="section-top"><div><h3 className="card-title" style={{ margin: 0 }}>\ud83d\udcc1 \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd</h3></div><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8 \u05d7\u05d3\u05e9</button></div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>\u05e9\u05dd \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8 *</label><input className="input" value={projectForm.name} onChange={e => setProjectForm({...projectForm, name: e.target.value})} /></div>
+                <div className="field"><label>\u05dc\u05e7\u05d5\u05d7</label><select className="input" value={projectForm.client_name} onChange={e => setProjectForm({...projectForm, client_name: e.target.value})}><option value="">\u05d1\u05d7\u05e8 \u05dc\u05e7\u05d5\u05d7</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
+                <div className="field"><label>\u05e1\u05d8\u05d8\u05d5\u05e1</label><select className="input" value={projectForm.status} onChange={e => setProjectForm({...projectForm, status: e.target.value})}><option>\u05e4\u05e2\u05d9\u05dc</option><option>\u05d4\u05d5\u05e9\u05dc\u05dd</option><option>\u05de\u05d5\u05e9\u05d4\u05d4</option></select></div>
+                <div className="field"><label>\u05d4\u05ea\u05d7\u05dc\u05d4</label><input className="input" type="date" value={projectForm.start_date} onChange={e => setProjectForm({...projectForm, start_date: e.target.value})} /></div>
+                <div className="field"><label>\u05e1\u05d9\u05d5\u05dd</label><input className="input" type="date" value={projectForm.end_date} onChange={e => setProjectForm({...projectForm, end_date: e.target.value})} /></div>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveProject} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button></div>
+            </div>
+          )}
+          {projects.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\udcc1</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd \u05e2\u05d3\u05d9\u05d9\u05df</div></div>
+          : <div className="table-wrap"><table><thead><tr><th>\u05e9\u05dd \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8</th><th>\u05dc\u05e7\u05d5\u05d7</th><th>\u05d4\u05ea\u05d7\u05dc\u05d4</th><th>\u05e1\u05d9\u05d5\u05dd</th><th>\u05e1\u05d8\u05d8\u05d5\u05e1</th><th>\u05e4\u05e2\u05d5\u05dc\u05d5\u05ea</th></tr></thead><tbody>{projects.map(p => (<tr key={p.id}><td style={{ fontWeight: 800 }}>{p.name}</td><td>{p.client_name || "-"}</td><td>{p.start_date ? new Date(p.start_date).toLocaleDateString("he-IL") : "-"}</td><td>{p.end_date ? new Date(p.end_date).toLocaleDateString("he-IL") : "-"}</td><td><Badge value={p.status} /></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_projects", p.id)}>\u05de\u05d7\u05e7</button></td></tr>))}</tbody></table></div>}
+        </div>
+      )}
+
+      {!loading && tab === "service" && (
+        <div className="card">
+          <div className="section-top"><div><h3 className="card-title" style={{ margin: 0 }}>\ud83d\udd27 \u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e9\u05d9\u05e8\u05d5\u05ea</h3></div><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05e7\u05e8\u05d9\u05d0\u05d4 \u05d7\u05d3\u05e9\u05d4</button></div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>\u05dc\u05e7\u05d5\u05d7</label><select className="input" value={serviceCallForm.client_name} onChange={e => setServiceCallForm({...serviceCallForm, client_name: e.target.value})}><option value="">\u05d1\u05d7\u05e8 \u05dc\u05e7\u05d5\u05d7</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
+                <div className="field"><label>\u05e0\u05d5\u05e9\u05d0 *</label><input className="input" value={serviceCallForm.issue} onChange={e => setServiceCallForm({...serviceCallForm, issue: e.target.value})} /></div>
+                <div className="field"><label>\u05d3\u05d7\u05d9\u05e4\u05d5\u05ea</label><select className="input" value={serviceCallForm.urgency} onChange={e => setServiceCallForm({...serviceCallForm, urgency: e.target.value})}><option>\u05e0\u05de\u05d5\u05db\u05d4</option><option>\u05d1\u05d9\u05e0\u05d5\u05e0\u05d9\u05ea</option><option>\u05d2\u05d1\u05d5\u05d4\u05d4</option></select></div>
+                <div className="field"><label>\u05d0\u05d7\u05e8\u05d0\u05d9</label><select className="input" value={serviceCallForm.assigned_to} onChange={e => setServiceCallForm({...serviceCallForm, assigned_to: e.target.value})}><option value="">\u05d1\u05d7\u05e8 \u05e2\u05d5\u05d1\u05d3</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveServiceCall} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button></div>
+            </div>
+          )}
+          {serviceCalls.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\udd27</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e9\u05d9\u05e8\u05d5\u05ea</div></div>
+          : <div className="table-wrap"><table><thead><tr><th>\u05ea\u05d0\u05e8\u05d9\u05da</th><th>\u05dc\u05e7\u05d5\u05d7</th><th>\u05e0\u05d5\u05e9\u05d0</th><th>\u05d3\u05d7\u05d9\u05e4\u05d5\u05ea</th><th>\u05d0\u05d7\u05e8\u05d0\u05d9</th><th>\u05e1\u05d8\u05d8\u05d5\u05e1</th><th>\u05e4\u05e2\u05d5\u05dc\u05d5\u05ea</th></tr></thead><tbody>{serviceCalls.map(s => (<tr key={s.id}><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td><td>{s.client_name || "-"}</td><td style={{ fontWeight: 700 }}>{s.issue}</td><td><Badge value={s.urgency} /></td><td>{s.assigned_to || "-"}</td><td><select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}><option>\u05d7\u05d3\u05e9\u05d4</option><option>\u05d1\u05d8\u05d9\u05e4\u05d5\u05dc</option><option>\u05d4\u05d5\u05e9\u05dc\u05dd</option></select></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>\u05de\u05d7\u05e7</button></td></tr>))}</tbody></table></div>}
+        </div>
+      )}
+
+      {!loading && tab === "worklogs" && (
+        <div className="card">
+          <div className="section-top"><div><h3 className="card-title" style={{ margin: 0 }}>\ud83d\udccb \u05d9\u05d5\u05de\u05e0\u05d9 \u05e2\u05d1\u05d5\u05d3\u05d4</h3></div><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05d9\u05d5\u05de\u05df \u05d7\u05d3\u05e9</button></div>
+          {showForm && (
+            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 14 }}>
+              <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>\ud83d\udccb \u05d9\u05d5\u05de\u05df \u05e2\u05d1\u05d5\u05d3\u05d4 \u05d7\u05d3\u05e9</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field"><label>\u05de\u05de\u05dc\u05d0 \u05d4\u05d9\u05d5\u05de\u05df</label><input className="input" value={workLogForm.filled_by} onChange={e => setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="\u05e9\u05dd \u05d4\u05de\u05de\u05dc\u05d0" /></div>
+                <div className="field"><label>\u05ea\u05d0\u05e8\u05d9\u05da</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
+                <div className="field"><label>\u05e1\u05e0\u05d9\u05e3 / \u05d0\u05ea\u05e8</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="\u05e9\u05dd \u05d4\u05e1\u05e0\u05d9\u05e3" /></div>
+                <div className="field"><label>\u05e9\u05e2\u05d5\u05ea</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
+                <div className="field"><label>\u05e4\u05e8\u05d5\u05d9\u05e7\u05d8</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">\u05d1\u05d7\u05e8 \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8</option>{projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select></div>
+                <div className="field"><label>\ud83d\udcc4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4</label><select className="input" value={workLogForm.performa} onChange={e => setWorkLogForm({...workLogForm, performa: e.target.value})}><option value="\u05dc\u05d0 \u05d8\u05d5\u05e4\u05dc">\u274c \u05dc\u05d0 \u05d8\u05d5\u05e4\u05dc</option><option value="\u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4">\u2705 \u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4</option></select></div>
+              </div>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13, color: "#475569", marginBottom: 8 }}>\ud83d\udc77 \u05e2\u05d5\u05d1\u05d3\u05d9\u05dd \u05e9\u05d1\u05d9\u05e6\u05e2\u05d5 \u05d0\u05ea \u05d4\u05e2\u05d1\u05d5\u05d3\u05d4:</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                  {employees.filter(e => e.status === "\u05e4\u05e2\u05d9\u05dc").map(e => {
+                    const selected = workLogForm.employee_name.split(",").map(s => s.trim()).includes(e.name);
+                    return (
+                      <button key={e.id} type="button"
+                        style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #c9a227" : "1px solid #e2e8f0", background: selected ? "#fef9ec" : "#f8fafc", color: selected ? "#92710d" : "#475569" }}
+                        onClick={() => {
+                          const current = workLogForm.employee_name ? workLogForm.employee_name.split(",").map(s => s.trim()).filter(Boolean) : [];
+                          const updated = selected ? current.filter(n => n !== e.name) : [...current, e.name];
+                          setWorkLogForm({...workLogForm, employee_name: updated.join(", ")});
+                        }}>{selected ? "\u2713 " : ""}{e.name}</button>
+                    );
+                  })}
+                </div>
+                <input className="input" value={workLogForm.workers} onChange={e => setWorkLogForm({...workLogForm, workers: e.target.value})} placeholder="\u05d4\u05d5\u05e1\u05e3 \u05e2\u05d5\u05d1\u05d3 \u05d9\u05d3\u05e0\u05d9\u05ea..." />
+              </div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "#475569" }}>\ud83d\udcdd \u05e4\u05d9\u05e8\u05d5\u05d8 \u05d4\u05e2\u05d1\u05d5\u05d3\u05d4 (\u05e2\u05d3 10 \u05e9\u05d5\u05e8\u05d5\u05ea):</div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {([1,2,3,4,5,6,7,8,9,10] as number[]).map(n => (
+                  <div key={n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 700, minWidth: 24 }}>{n}.</span>
+                    <input className="input" style={{ flex: 1 }} value={(workLogForm as any)[`line${n}`]} onChange={e => setWorkLogForm({...workLogForm, [`line${n}`]: e.target.value})} placeholder={`\u05e9\u05d5\u05e8\u05d4 ${n}...`} />
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={saveWorkLog} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\ud83d\udcbe \u05e9\u05de\u05d5\u05e8 \u05d9\u05d5\u05de\u05df"}</button>
+                <button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button>
+              </div>
+            </div>
+          )}
+          {workLogs.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\udccb</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05d9\u05d5\u05de\u05e0\u05d9 \u05e2\u05d1\u05d5\u05d3\u05d4</div></div>
+          : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {workLogs.map(w => (
+                <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: "14px 18px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: "#0f172a" }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</div>
+                      <div style={{ fontSize: 14, color: "#64748b", marginTop: 2 }}>{w.branch ? `\ud83d\udccd ${w.branch}` : ""}{w.project_name ? `  \u00b7  \ud83e\udd1d ${w.project_name}` : ""}</div>
+                      {w.filled_by && <div style={{ fontSize: 13, color: "#94a3b8" }}>\u05de\u05de\u05dc\u05d0: {w.filled_by}</div>}
+                    </div>
+                    <span style={{ background: w.performa === "\u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4" ? "#dcfce7" : "#fee2e2", color: w.performa === "\u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>
+                      {w.performa === "\u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4" ? "\u2705 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4" : "\u274c \u05dc\u05d0 \u05d8\u05d5\u05e4\u05dc"}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setSelectedWorkLog(w)}>\ud83d\udcc4 \u05e4\u05ea\u05d7 \u05d9\u05d5\u05de\u05df</button>
+                    <select value={w.performa || "\u05dc\u05d0 \u05d8\u05d5\u05e4\u05dc"} onChange={async e => { await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id); await load(); }} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: w.performa === "\u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4" ? "#dcfce7" : "#fee2e2" }}>
+                      <option value="\u05dc\u05d0 \u05d8\u05d5\u05e4\u05dc">\u274c \u05dc\u05d0 \u05d8\u05d5\u05e4\u05dc</option>
+                      <option value="\u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4">\u2705 \u05d9\u05e6\u05d0\u05d4 \u05e4\u05e8\u05e4\u05d5\u05e8\u05de\u05d4</option>
+                    </select>
+                    <button className="btn btn-outline" style={{ fontSize: 12, padding: "6px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>\u05de\u05d7\u05e7</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+function SidebarNav({ activePage, setActivePage, isActive, userRole }: { activePage: string; setActivePage: (p: string) => void; isActive: (k: string) => boolean; userRole: string }) {
+  const [openGroup, setOpenGroup] = useState<string | null>("property");
+  if (userRole === "tenant") return (<>{[{ key: "tenantPortal", label: "🏠 הבית שלי" }, { key: "requests", label: "🔧 קריאות שירות" }].map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</>);
+  if (userRole === "owner") return (<>{[{ key: "dashboard", label: "🏠 סיכום" }, { key: "apartments", label: "🚪 הדירות שלי" }, { key: "leases", label: "📋 חוזים" }].map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</>);
+  if (userRole === "ngs_worker") return <button className={`nav-btn ${isActive("ngs") ? "active" : ""}`} onClick={() => setActivePage("ngs")}>🏗 נ.ג.ש מור</button>;
+  const propertyItems = [
+    { key: "owners", label: "👤 בעלי נכסים" }, { key: "buildings", label: "🏢 מבנים" },
+    { key: "apartments", label: "🚪 דירות" }, { key: "requests", label: "🔧 קריאות שירות" },
+    { key: "leases", label: "📋 חוזים" }, { key: "workcontracts", label: "📝 חוזי עבודה" },
+    { key: "documents", label: "📄 מסמכים" },
+  ];
+  const isPropertyActive = propertyItems.some(i => isActive(i.key));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
+      <div>
+        <button className={`nav-btn ${isActive("dashboard") ? "active" : ""}`} onClick={() => setActivePage("dashboard")}>🏠 דשבורד</button>
+        <div style={{ marginTop: 4 }}>
+          <button onClick={() => setOpenGroup(openGroup === "property" ? null : "property")} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", background: isPropertyActive ? "rgba(213,181,122,0.15)" : openGroup === "property" ? "rgba(255,255,255,0.05)" : "transparent", border: "none", cursor: "pointer", color: isPropertyActive || openGroup === "property" ? "#d5b57a" : "#94a3b8", fontWeight: 700, fontSize: 14, borderRadius: 12, marginBottom: 2 }}>
+            <span>🏢 ניהול נכסים</span><span style={{ fontSize: 11, transform: openGroup === "property" ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▾</span>
+          </button>
+          {openGroup === "property" && (<div style={{ paddingRight: 10, borderRight: "2px solid rgba(213,181,122,0.25)", marginRight: 10, marginBottom: 4 }}>{propertyItems.map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} style={{ fontSize: 13, padding: "8px 12px" }} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</div>)}
+        </div>
+        <button className={`nav-btn ${isActive("ngs") ? "active" : ""}`} style={{ marginTop: 4 }} onClick={() => setActivePage("ngs")}>🏗 נ.ג.ש מור</button>
+      </div>
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10, marginTop: 10 }}>
+        <button className={`nav-btn ${isActive("users") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("users")}>👥 משתמשים</button>
+        <button className={`nav-btn ${isActive("settings") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("settings")}>⚙️ הגדרות</button>
+      </div>
+    </div>
+  );
+}
+
+function getNavIcon(key: string) {
+  const icons: Record<string, string> = { dashboard: "🏠", owners: "👤", buildings: "🏢", apartments: "🚪", requests: "🔧", leases: "📋", documents: "📄", tenantPortal: "🏠", settings: "⚙️", users: "👥", workcontracts: "📝", ngs: "🏗" };
+  return icons[key] || "•";
+}
 
 function getNavItemsForRole(role: string) {
-  if (role === "tenant") {
-    return [
-      { key: "tenantPortal", label: "הבית שלי" },
-      { key: "requests", label: "קריאות שירות" },
-    ];
-  }
-  if (role === "owner") {
-    return [
-      { key: "dashboard", label: "סיכום" },
-      { key: "apartments", label: "הדירות שלי" },
-      { key: "leases", label: "חוזים" },
-    ];
-  }
+  if (role === "tenant") return [{ key: "tenantPortal", label: "הבית שלי" }, { key: "requests", label: "קריאות שירות" }];
+  if (role === "owner") return [{ key: "dashboard", label: "סיכום" }, { key: "apartments", label: "הדירות שלי" }, { key: "leases", label: "חוזים" }];
+  if (role === "ngs_worker") return [{ key: "ngs", label: "🏗 נ.ג.ש מור" }];
   return navItems;
 }
 
 function getRoleLabel(role: string) {
   if (role === "tenant") return "דייר";
   if (role === "owner") return "בעל נכס";
+  if (role === "ngs_worker") return 'עובד נג"ש';
   return "מנהל מערכת";
 }
-
-// ─── Root App ─────────────────────────────────────────────────────────────────
 
 export default function Home() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -2368,46 +2899,37 @@ export default function Home() {
   const [authMode, setAuthMode] = useState<"login" | "register" | "forgot">("login");
   const [resetEmail, setResetEmail] = useState("");
   const [resetSent, setResetSent] = useState(false);
-
-  async function handleForgotPassword() {
-    if (!resetEmail) return;
-    setLoginLoading(true);
-    await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: "https://property-os-ten.vercel.app"
-    });
-    setResetSent(true);
-    setLoginLoading(false);
-  }
   const [regForm, setRegForm] = useState({ full_name: "", phone: "", role: "tenant" });
   const [regError, setRegError] = useState("");
   const [regSuccess, setRegSuccess] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
+  const [selectedApartmentId, setSelectedApartmentId] = useState<string>("");
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<any>("");
+  const [selectedOwnerId, setSelectedOwnerId] = useState(1);
 
+  async function handleForgotPassword() {
+    if (!resetEmail) return;
+    setLoginLoading(true);
+    await supabase.auth.resetPasswordForEmail(resetEmail, { redirectTo: "https://property-os-ten.vercel.app" });
+    setResetSent(true);
+    setLoginLoading(false);
+  }
 
   async function handleLogin() {
     setLoginLoading(true);
     setLoginError("");
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setLoginError("אימייל או סיסמה שגויים");
-      setLoginLoading(false);
-      return;
-    }
-    // Load profile
+    if (error) { setLoginError("אימייל או סיסמה שגויים"); setLoginLoading(false); return; }
     const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
     if (profile) {
-      if (profile.status === "ממתין לאישור") {
-        setPendingApproval(true);
-        await supabase.auth.signOut();
-        setLoginLoading(false);
-        return;
-      }
+      if (profile.status === "ממתין לאישור") { setPendingApproval(true); await supabase.auth.signOut(); setLoginLoading(false); return; }
       setUserProfile(profile);
       setUserRole(profile.role || "admin");
       if (profile.role === "tenant") setActivePage("tenantPortal");
+      else if (profile.role === "ngs_worker") setActivePage("ngs");
       else setActivePage("dashboard");
     } else {
-      // Admin user - no profile needed
       setUserRole("admin");
       setActivePage("dashboard");
     }
@@ -2417,85 +2939,31 @@ export default function Home() {
 
   async function handleRegister() {
     setRegError("");
-    if (!email || !password || !regForm.full_name) {
-      setRegError("יש למלא את כל השדות");
-      return;
-    }
+    if (!email || !password || !regForm.full_name) { setRegError("יש למלא את כל השדות"); return; }
     setLoginLoading(true);
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      setRegError(error.message);
-      setLoginLoading(false);
-      return;
-    }
+    if (error) { setRegError(error.message); setLoginLoading(false); return; }
     if (data.user) {
-      await supabase.from("profiles").insert({
-        id: data.user.id,
-        full_name: regForm.full_name,
-        phone: regForm.phone,
-        role: regForm.role,
-        status: "ממתין לאישור"
-      });
+      await supabase.from("profiles").insert({ id: data.user.id, full_name: regForm.full_name, phone: regForm.phone, role: regForm.role, status: "ממתין לאישור" });
     }
     setRegSuccess(true);
     setLoginLoading(false);
   }
-  const [selectedApartmentId, setSelectedApartmentId] = useState<string>("");
-  const [selectedBuildingId, setSelectedBuildingId] = useState<any>("");
-  const [selectedOwnerId, setSelectedOwnerId] = useState(1);
 
   function openApartment(id: string) { setSelectedApartmentId(id); setActivePage("apartmentDetails"); }
   function openBuilding(id: any) { setSelectedBuildingId(id); setActivePage("buildingDetails"); }
   function openOwner(id: number) { setSelectedOwnerId(id); setActivePage("ownerDetails"); }
 
   function renderContent() {
-    // Tenant view
     if (userRole === "tenant") {
       switch (activePage) {
         case "tenantPortal": return <TenantPortal userProfile={userProfile} />;
-        case "requests": return (
-          <div style={{ display: "grid", gap: 18 }}>
-            <div className="card">
-              <h3 className="card-title">הקריאות שלי</h3>
-              <div className="table-wrap">
-                <table>
-                  <thead><tr><th>תאריך</th><th>תקלה</th><th>סטטוס</th></tr></thead>
-                  <tbody>
-                    {serviceRequests.map(item => (
-                      <tr key={item.id}><td>{item.apartment}</td><td>{item.issue}</td><td><span className={badgeClass(item.status)}>{item.status}</span></td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="card">
-              <h3 className="card-title">פתיחת קריאה חדשה</h3>
-              <div style={{ display: "grid", gap: 12, maxWidth: 620 }}>
-                <input className="search" style={{ width: "100%" }} placeholder="נושא התקלה" />
-                <textarea placeholder="תיאור התקלה" style={{ width: "100%", minHeight: 120, border: "1px solid #dbe3ee", borderRadius: 16, padding: 14, resize: "vertical", fontFamily: "inherit" }} />
-                <button className="btn btn-primary" style={{ width: "fit-content" }}>שלח קריאה</button>
-              </div>
-            </div>
-          </div>
-        );
+        case "requests": return <div style={{ display: "grid", gap: 18 }}><div className="card"><h3 className="card-title">הקריאות שלי</h3><div className="table-wrap"><table><thead><tr><th>תאריך</th><th>תקלה</th><th>סטטוס</th></tr></thead><tbody>{serviceRequests.map(item => (<tr key={item.id}><td>{item.apartment}</td><td>{item.issue}</td><td><span className={badgeClass(item.status)}>{item.status}</span></td></tr>))}</tbody></table></div></div></div>;
         default: return <TenantPortal userProfile={userProfile} />;
       }
     }
-
-    // Owner view
-    if (userRole === "owner") {
-      switch (activePage) {
-        case "dashboard": return <OwnerDashboard userProfile={userProfile} />;
-        default: return <OwnerDashboard userProfile={userProfile} />;
-      }
-    }
-
-    // NGS Worker view
-    if (userRole === "ngs_worker") {
-      return <NGSDashboard />;
-    }
-
-    // Admin view
+    if (userRole === "owner") return <OwnerDashboard userProfile={userProfile} />;
+    if (userRole === "ngs_worker") return <NGSDashboard />;
     switch (activePage) {
       case "dashboard": return <Dashboard openApartment={openApartment} openBuilding={openBuilding} />;
       case "owners": return <Owners openOwner={openOwner} />;
@@ -2506,7 +2974,7 @@ export default function Home() {
       case "apartmentDetails": return <ApartmentDetails apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} />;
       case "requests": return <ServiceRequests />;
       case "leases": return <Leases />;
-      case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר, הסכמי ניהול וכל מסמך שקשור לבעל נכס, דירה או חוזה." />;
+      case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר והסכמי ניהול." />;
       case "tenantPortal": return <TenantPortal userProfile={userProfile} />;
       case "settings": return <Settings userEmail={email} />;
       case "users": return <UsersManagement />;
@@ -2524,7 +2992,7 @@ export default function Home() {
             <div>
               <div className="eyebrow"><span className="dot" />נג"ש מור הנדסה</div>
               <h1 className="login-title">מערכת ניהול משולבת לנג"ש מור הנדסה</h1>
-              <div className="login-sub">פלטפורמה מתקדמת לניהול רכבים, עובדים, לקוחות, פרויקטים, קריאות שירות ויומני עבודה — הכל במקום אחד.</div>
+              <div className="login-sub">פלטפורמה מתקדמת לניהול רכבים, עובדים, לקוחות, פרויקטים, קריאות שירות ויומני עבודה.</div>
               <div className="hero-grid">
                 {[["🚗","צי רכבים"],["👷","ניהול עובדים"],["📁","פרויקטים"],["📋","יומני עבודה"]].map(([icon, label]) => (
                   <div key={label} className="hero-stat"><div className="num" style={{fontSize:32}}>{icon}</div><div className="label">{label}</div></div>
@@ -2538,14 +3006,13 @@ export default function Home() {
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
                   <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
                   <h2 style={{ marginBottom: 8 }}>ממתין לאישור</h2>
-                  <p style={{ color: "#64748b" }}>הבקשה שלך נשלחה למנהל המערכת. תקבל הודעה כשתאושר.</p>
+                  <p style={{ color: "#64748b" }}>הבקשה שלך נשלחה. תקבל הודעה כשתאושר.</p>
                   <button className="btn btn-outline" style={{ marginTop: 16 }} onClick={() => setPendingApproval(false)}>חזרה להתחברות</button>
                 </div>
               ) : regSuccess ? (
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
                   <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-                  <h2 style={{ marginBottom: 8 }}>הבקשה נשלחה!</h2>
-                  <p style={{ color: "#64748b" }}>המנהל יאשר את הבקשה שלך בקרוב.</p>
+                  <h2>הבקשה נשלחה!</h2>
                   <button className="btn btn-primary" style={{ marginTop: 16, width: "100%" }} onClick={() => { setRegSuccess(false); setAuthMode("login"); }}>חזרה להתחברות</button>
                 </div>
               ) : authMode === "login" ? (
@@ -2558,53 +3025,36 @@ export default function Home() {
                   <div style={{ marginTop: 12, textAlign: "center" }}>
                     <button className="btn-link" style={{ fontSize: 13, color: "#64748b" }} onClick={() => setAuthMode("forgot")}>שכחתי סיסמה</button>
                   </div>
-                  <div style={{ marginTop: 8, textAlign: "center", color: "#64748b", fontSize: 14 }}>
-                    אין לך חשבון?{" "}
-                    <button className="btn-link" onClick={() => setAuthMode("register")}>הירשם כאן</button>
-                  </div>
+                  <div style={{ marginTop: 8, textAlign: "center", color: "#64748b", fontSize: 14 }}>אין לך חשבון?{" "}<button className="btn-link" onClick={() => setAuthMode("register")}>הירשם כאן</button></div>
                 </>
               ) : authMode === "forgot" ? (
                 <>
                   {resetSent ? (
                     <div style={{ textAlign: "center", padding: "20px 0" }}>
                       <div style={{ fontSize: 48, marginBottom: 16 }}>📧</div>
-                      <h2 style={{ marginBottom: 8 }}>האימייל נשלח!</h2>
-                      <p style={{ color: "#64748b" }}>בדוק את תיבת הדואר שלך ולחץ על הקישור לאיפוס הסיסמה.</p>
+                      <h2>האימייל נשלח!</h2>
                       <button className="btn btn-primary" style={{ marginTop: 16, width: "100%" }} onClick={() => { setResetSent(false); setAuthMode("login"); }}>חזרה להתחברות</button>
                     </div>
                   ) : (
                     <>
                       <h1>שחזור סיסמה</h1>
-                      <p style={{ color: "#64748b" }}>הזן את האימייל שלך ונשלח לך קישור לאיפוס הסיסמה</p>
                       <div className="field"><label>אימייל</label><input className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="your@email.com" /></div>
                       <button className="btn btn-primary" style={{ width: "100%", height: 52, marginTop: 8 }} onClick={handleForgotPassword} disabled={loginLoading}>{loginLoading ? "שולח..." : "שלח קישור לאיפוס"}</button>
-                      <div style={{ marginTop: 16, textAlign: "center" }}>
-                        <button className="btn-link" style={{ color: "#64748b", fontSize: 14 }} onClick={() => setAuthMode("login")}>חזרה להתחברות</button>
-                      </div>
+                      <div style={{ marginTop: 16, textAlign: "center" }}><button className="btn-link" style={{ color: "#64748b", fontSize: 14 }} onClick={() => setAuthMode("login")}>חזרה להתחברות</button></div>
                     </>
                   )}
                 </>
               ) : (
                 <>
                   <h1>הרשמה למערכת</h1>
-                  <p>מלא את הפרטים ומנהל יאשר את הגישה שלך</p>
                   <div className="field"><label>שם מלא *</label><input className="input" value={regForm.full_name} onChange={e => setRegForm({...regForm, full_name: e.target.value})} placeholder="ישראל ישראלי" /></div>
                   <div className="field"><label>אימייל *</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" /></div>
                   <div className="field"><label>סיסמה *</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="לפחות 6 תווים" /></div>
                   <div className="field"><label>טלפון</label><input className="input" value={regForm.phone} onChange={e => setRegForm({...regForm, phone: e.target.value})} placeholder="052-1234567" /></div>
-                  <div className="field">
-                    <label>תפקיד</label>
-                    <select className="input" value={regForm.role} onChange={e => setRegForm({...regForm, role: e.target.value})}>
-                      <option value="tenant">דייר</option>
-                      <option value="owner">בעל נכס</option>
-                    </select>
-                  </div>
+                  <div className="field"><label>תפקיד</label><select className="input" value={regForm.role} onChange={e => setRegForm({...regForm, role: e.target.value})}><option value="tenant">דייר</option><option value="owner">בעל נכס</option></select></div>
                   {regError && <div style={{color:"#dc2626", marginBottom:10, fontSize:14}}>{regError}</div>}
                   <button className="btn btn-primary" style={{ width: "100%", height: 52 }} onClick={handleRegister} disabled={loginLoading}>{loginLoading ? "שולח..." : "שלח בקשת הצטרפות"}</button>
-                  <div style={{ marginTop: 16, textAlign: "center", color: "#64748b", fontSize: 14 }}>
-                    יש לך כבר חשבון?{" "}
-                    <button className="btn-link" onClick={() => setAuthMode("login")}>התחבר כאן</button>
-                  </div>
+                  <div style={{ marginTop: 16, textAlign: "center", color: "#64748b", fontSize: 14 }}>יש לך כבר חשבון?{" "}<button className="btn-link" onClick={() => setAuthMode("login")}>התחבר כאן</button></div>
                 </>
               )}
             </div>
@@ -2615,7 +3065,6 @@ export default function Home() {
   }
 
   const navItemsForRole = getNavItemsForRole(userRole);
-
   function isActive(key: string) {
     return activePage === key ||
       (activePage === "apartmentDetails" && key === "apartments") ||
@@ -2651,1005 +3100,6 @@ export default function Home() {
         </div>
         {renderContent()}
       </main>
-    </div>
-  );
-
-function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId: string; licensePlate: string; onClose: () => void }) {
-  const [services, setServices] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [uploadingId, setUploadingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ service_type: "", date: "", notes: "" });
-  async function load() {
-    setLoading(true);
-    const { data } = await supabase.from("ngs_vehicle_services").select("*").eq("vehicle_id", vehicleId).order("date", { ascending: false });
-    setServices(data || []);
-    setLoading(false);
-  }
-  useState(() => { load(); });
-  async function addService() {
-    if (!form.service_type || !form.date) return;
-    setSaving(true);
-    await supabase.from("ngs_vehicle_services").insert({ vehicle_id: vehicleId, ...form });
-    setForm({ service_type: "", date: "", notes: "" });
-    setShowForm(false);
-    await load();
-    setSaving(false);
-  }
-  async function uploadDoc(serviceId: string, file: File) {
-    setUploadingId(serviceId);
-    const ext = file.name.split(".").pop();
-    const path = `vehicle-services/${serviceId}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
-    if (!error) {
-      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
-      await supabase.from("ngs_vehicle_services").update({ document_url: urlData.publicUrl }).eq("id", serviceId);
-      await load();
-    }
-    setUploadingId(null);
-  }
-  async function deleteService(id: string) {
-    if (!confirm("למחוק?")) return;
-    await supabase.from("ngs_vehicle_services").delete().eq("id", id);
-    await load();
-  }
-  const serviceTypes = ["טיפול שמן", "טסט", "גלגלים", "בלמים", "מצבר", "מזגן", "תיקון כללי", "אחר"];
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>🔧 היסטוריית טיפולים</h3><div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>רכב: {licensePlate}</div></div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => setShowForm(!showForm)}>+ טיפול חדש</button>
-            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#64748b" }}>×</button>
-          </div>
-        </div>
-        {showForm && (
-          <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e8eef6" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-              <div className="field"><label>סוג טיפול *</label><select className="input" value={form.service_type} onChange={e => setForm({...form, service_type: e.target.value})}><option value="">בחר סוג</option>{serviceTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
-              <div className="field"><label>תאריך *</label><input className="input" type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
-              <div className="field" style={{ gridColumn: "span 2" }}><label>הערות</label><input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="פרטים נוספים..." /></div>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn btn-primary" onClick={addService} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
-              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
-            </div>
-          </div>
-        )}
-        <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
-          {loading ? <div style={{ padding: 30, textAlign: "center" }}>טוען...</div> : services.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין טיפולים עדיין</div></div>
-          ) : (
-            <div style={{ display: "grid", gap: 10 }}>
-              {services.map(s => (
-                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 14 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontWeight: 800 }}>🔧 {s.service_type}</span>
-                        <span style={{ fontSize: 13, color: "#64748b" }}>{s.date ? new Date(s.date).toLocaleDateString("he-IL") : "-"}</span>
-                      </div>
-                      {s.notes && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.notes}</div>}
-                    </div>
-                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      {s.document_url ? (
-                        <a href={s.document_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "3px 10px" }}>📄 פתח</a>
-                      ) : (
-                        <label style={{ cursor: "pointer" }}>
-                          <span className="btn btn-outline" style={{ fontSize: 12, padding: "3px 10px" }}>{uploadingId === s.id ? "מעלה..." : "📎 העלה"}</span>
-                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadDoc(s.id, e.target.files[0])} />
-                        </label>
-                      )}
-                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "#dc2626" }} onClick={() => deleteService(s.id)}>מחק</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NGSDashboard() {
-  const [tab, setTab] = useState("overview");
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [serviceCalls, setServiceCalls] = useState<any[]>([]);
-  const [workLogs, setWorkLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [uploadingVehicleId, setUploadingVehicleId] = useState<string | null>(null);
-
-  const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "\u05e4\u05e2\u05d9\u05dc", test_date: "", next_test_date: "", notes: "" });
-  const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "\u05e4\u05e2\u05d9\u05dc" });
-  const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
-  const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "\u05e4\u05e2\u05d9\u05dc", start_date: "", end_date: "", description: "" });
-  const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "\u05d1\u05d9\u05e0\u05d5\u05e0\u05d9\u05ea", status: "\u05d7\u05d3\u05e9\u05d4", assigned_to: "", notes: "" });
-  const [workLogForm, setWorkLogForm] = useState({ employee_name: "", date: "", hours: "", project_name: "", description: "" });
-
-  async function load() {
-    setLoading(true);
-    const [v, e, c, p, s, w] = await Promise.all([
-      supabase.from("ngs_vehicles").select("*").order("created_at", { ascending: false }),
-      supabase.from("ngs_employees").select("*").order("name"),
-      supabase.from("ngs_clients").select("*").order("name"),
-      supabase.from("ngs_projects").select("*").order("created_at", { ascending: false }),
-      supabase.from("ngs_service_calls").select("*").order("created_at", { ascending: false }),
-      supabase.from("ngs_work_logs").select("*").order("date", { ascending: false }),
-    ]);
-    setVehicles(v.data || []);
-    setEmployees(e.data || []);
-    setClients(c.data || []);
-    setProjects(p.data || []);
-    setServiceCalls(s.data || []);
-    setWorkLogs(w.data || []);
-    setLoading(false);
-  }
-
-  useState(() => { load(); });
-
-  async function saveVehicle() {
-    if (!vehicleForm.license_plate) return;
-    setSaving(true);
-    await supabase.from("ngs_vehicles").insert({ ...vehicleForm, test_date: vehicleForm.test_date || null, next_test_date: vehicleForm.next_test_date || null });
-    setVehicleForm({ license_plate: "", model: "", year: "", status: "\u05e4\u05e2\u05d9\u05dc", test_date: "", next_test_date: "", notes: "" });
-    setShowForm(false);
-    await load();
-    setSaving(false);
-  }
-
-  async function uploadGarageDoc(vehicleId: string, file: File) {
-    setUploadingVehicleId(vehicleId);
-    const ext = file.name.split(".").pop();
-    const path = `garage-docs/${vehicleId}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
-    if (!error) {
-      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(path);
-      await supabase.from("ngs_vehicles").update({ garage_doc_url: urlData.publicUrl }).eq("id", vehicleId);
-      await load();
-    }
-    setUploadingVehicleId(null);
-  }
-
-  async function saveEmployee() {
-    if (!employeeForm.name) return;
-    setSaving(true);
-    await supabase.from("ngs_employees").insert(employeeForm);
-    setEmployeeForm({ name: "", phone: "", role: "", status: "\u05e4\u05e2\u05d9\u05dc" });
-    setShowForm(false);
-    await load();
-    setSaving(false);
-  }
-
-  async function saveClient() {
-    if (!clientForm.name) return;
-    setSaving(true);
-    await supabase.from("ngs_clients").insert(clientForm);
-    setClientForm({ name: "", phone: "", email: "", address: "", notes: "" });
-    setShowForm(false);
-    await load();
-    setSaving(false);
-  }
-
-  async function saveProject() {
-    if (!projectForm.name) return;
-    setSaving(true);
-    await supabase.from("ngs_projects").insert({ ...projectForm, start_date: projectForm.start_date || null, end_date: projectForm.end_date || null });
-    setProjectForm({ client_name: "", name: "", status: "\u05e4\u05e2\u05d9\u05dc", start_date: "", end_date: "", description: "" });
-    setShowForm(false);
-    await load();
-    setSaving(false);
-  }
-
-  async function saveServiceCall() {
-    if (!serviceCallForm.issue) return;
-    setSaving(true);
-    await supabase.from("ngs_service_calls").insert(serviceCallForm);
-    setServiceCallForm({ client_name: "", issue: "", urgency: "\u05d1\u05d9\u05e0\u05d5\u05e0\u05d9\u05ea", status: "\u05d7\u05d3\u05e9\u05d4", assigned_to: "", notes: "" });
-    setShowForm(false);
-    await load();
-    setSaving(false);
-  }
-
-  async function saveWorkLog() {
-    if (!workLogForm.employee_name) return;
-    setSaving(true);
-    await supabase.from("ngs_work_logs").insert({ ...workLogForm, hours: parseFloat(workLogForm.hours) || 0 });
-    setWorkLogForm({ employee_name: "", date: "", hours: "", project_name: "", description: "" });
-    setShowForm(false);
-    await load();
-    setSaving(false);
-  }
-
-  async function updateServiceCallStatus(id: string, status: string) {
-    await supabase.from("ngs_service_calls").update({ status }).eq("id", id);
-    await load();
-  }
-
-  async function deleteItem(table: string, id: string) {
-    if (!confirm("\u05dc\u05de\u05d7\u05d5\u05e7?")) return;
-    await supabase.from(table).delete().eq("id", id);
-    await load();
-  }
-
-  const tabs = [
-    { key: "overview", label: "\ud83d\udcca \u05e1\u05e7\u05d9\u05e8\u05d4" },
-    { key: "vehicles", label: "\ud83d\ude97 \u05e8\u05db\u05d1\u05d9\u05dd" },
-    { key: "employees", label: "\ud83d\udc77 \u05e2\u05d5\u05d1\u05d3\u05d9\u05dd" },
-    { key: "clients", label: "\ud83e\udd1d \u05dc\u05e7\u05d5\u05d7\u05d5\u05ea" },
-    { key: "projects", label: "\ud83d\udcc1 \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd" },
-    { key: "service", label: "\ud83d\udd27 \u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e9\u05d9\u05e8\u05d5\u05ea" },
-    { key: "worklogs", label: "\ud83d\udccb \u05d9\u05d5\u05de\u05e0\u05d9 \u05e2\u05d1\u05d5\u05d3\u05d4" },
-  ];
-
-  const openServiceCalls = serviceCalls.filter(s => s.status !== "\u05d4\u05d5\u05e9\u05dc\u05dd");
-  const activeProjects = projects.filter(p => p.status === "\u05e4\u05e2\u05d9\u05dc");
-
-  return (
-    <div style={{ display: "grid", gap: 18 }}>
-      <div className="card" style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", color: "#fff", border: "none" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 4 }}>\u05de\u05d7\u05dc\u05e7\u05ea \u05d7\u05d1\u05e8\u05d4</div>
-            <h2 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>\ud83c\udfd7 \u05e0.\u05d2.\u05e9 \u05de\u05d5\u05e8 \u05d4\u05e0\u05d3\u05e1\u05d4</h2>
-            <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 14 }}>\u05e0\u05d9\u05d4\u05d5\u05dc \u05e8\u05db\u05d1\u05d9\u05dd, \u05e2\u05d5\u05d1\u05d3\u05d9\u05dd, \u05dc\u05e7\u05d5\u05d7\u05d5\u05ea \u05d5\u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd</div>
-          </div>
-          <div style={{ display: "flex", gap: 16 }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{employees.filter(e => e.status === "\u05e4\u05e2\u05d9\u05dc").length}</div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>\u05e2\u05d5\u05d1\u05d3\u05d9\u05dd</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{vehicles.length}</div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>\u05e8\u05db\u05d1\u05d9\u05dd</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: openServiceCalls.length > 0 ? "#dc2626" : "#16a34a" }}>{openServiceCalls.length}</div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>\u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e4\u05ea\u05d5\u05d7\u05d5\u05ea</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="tab-bar">
-        {tabs.map(t => (
-          <button key={t.key} className={`tab-btn ${tab === t.key ? "active" : ""}`} onClick={() => { setTab(t.key); setShowForm(false); }}>{t.label}</button>
-        ))}
-      </div>
-
-      {loading && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>\u05d8\u05d5\u05e2\u05df...</div>}
-
-      {!loading && tab === "overview" && (
-        <div style={{ display: "grid", gap: 18 }}>
-          <div className="kpi-grid" style={{ gridTemplateColumns: "repeat(4, minmax(0,1fr))" }}>
-            <KPI title="\u05e2\u05d5\u05d1\u05d3\u05d9\u05dd \u05e4\u05e2\u05d9\u05dc\u05d9\u05dd" value={String(employees.filter(e => e.status === "\u05e4\u05e2\u05d9\u05dc").length)} subtitle="\u05e6\u05d5\u05d5\u05ea" />
-            <KPI title="\u05e8\u05db\u05d1\u05d9\u05dd" value={String(vehicles.length)} subtitle="\u05e6\u05d9 \u05e8\u05db\u05d1\u05d9\u05dd" />
-            <KPI title="\u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd \u05e4\u05e2\u05d9\u05dc\u05d9\u05dd" value={String(activeProjects.length)} subtitle="\u05d1\u05d1\u05d9\u05e6\u05d5\u05e2" />
-            <KPI title="\u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e4\u05ea\u05d5\u05d7\u05d5\u05ea" value={String(openServiceCalls.length)} subtitle="\u05dc\u05d8\u05d9\u05e4\u05d5\u05dc" />
-          </div>
-          <div className="grid-1-1">
-            <div className="card">
-              <h3 className="card-title">\ud83d\udd27 \u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e9\u05d9\u05e8\u05d5\u05ea \u05e4\u05ea\u05d5\u05d7\u05d5\u05ea</h3>
-              {openServiceCalls.length === 0 ? (
-                <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>\u05d0\u05d9\u05df \u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e4\u05ea\u05d5\u05d7\u05d5\u05ea \ud83c\udf89</div>
-              ) : openServiceCalls.slice(0, 5).map(s => (
-                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, marginBottom: 8 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontWeight: 700 }}>{s.issue}</span><Badge value={s.urgency} /></div>
-                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name} \u00b7 {s.status}</div>
-                </div>
-              ))}
-            </div>
-            <div className="card">
-              <h3 className="card-title">\ud83d\udcc1 \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd \u05e4\u05e2\u05d9\u05dc\u05d9\u05dd</h3>
-              {activeProjects.length === 0 ? (
-                <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>\u05d0\u05d9\u05df \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd \u05e4\u05e2\u05d9\u05dc\u05d9\u05dd</div>
-              ) : activeProjects.slice(0, 5).map(p => (
-                <div key={p.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, marginBottom: 8 }}>
-                  <div style={{ fontWeight: 700 }}>{p.name}</div>
-                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{p.client_name || "-"}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {!loading && tab === "vehicles" && (
-        <div className="card">
-          <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>\ud83d\ude97 \u05e8\u05db\u05d1\u05d9\u05dd</h3><div className="muted">\u05e0\u05d9\u05d4\u05d5\u05dc \u05e6\u05d9 \u05d4\u05e8\u05db\u05d1\u05d9\u05dd</div></div>
-            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05d4\u05d5\u05e1\u05e3 \u05e8\u05db\u05d1</button>
-          </div>
-          {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                <div className="field"><label>\u05dc\u05d5\u05d7\u05d9\u05ea \u05e8\u05d9\u05e9\u05d5\u05d9 *</label><input className="input" value={vehicleForm.license_plate} onChange={e => setVehicleForm({...vehicleForm, license_plate: e.target.value})} placeholder="12-345-67" /></div>
-                <div className="field"><label>\u05d3\u05d2\u05dd</label><input className="input" value={vehicleForm.model} onChange={e => setVehicleForm({...vehicleForm, model: e.target.value})} placeholder="\u05d8\u05d5\u05d9\u05d5\u05d8\u05d4 \u05d4\u05d9\u05d9\u05d0\u05e1" /></div>
-                <div className="field"><label>\u05e9\u05e0\u05d4</label><input className="input" value={vehicleForm.year} onChange={e => setVehicleForm({...vehicleForm, year: e.target.value})} placeholder="2022" /></div>
-                <div className="field"><label>\u05e1\u05d8\u05d8\u05d5\u05e1</label><select className="input" value={vehicleForm.status} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})}><option>\u05e4\u05e2\u05d9\u05dc</option><option>\u05d1\u05ea\u05d9\u05e7\u05d5\u05df</option><option>\u05de\u05d5\u05e9\u05d1\u05ea</option></select></div>
-                <div className="field"><label>\ud83d\udd0d \u05ea\u05d0\u05e8\u05d9\u05da \u05d8\u05e1\u05d8 \u05d0\u05d7\u05e8\u05d5\u05df</label><input className="input" type="date" value={vehicleForm.test_date} onChange={e => setVehicleForm({...vehicleForm, test_date: e.target.value})} /></div>
-                <div className="field"><label>\ud83d\udcc5 \u05ea\u05d0\u05e8\u05d9\u05da \u05d8\u05e1\u05d8 \u05d4\u05d1\u05d0</label><input className="input" type="date" value={vehicleForm.next_test_date} onChange={e => setVehicleForm({...vehicleForm, next_test_date: e.target.value})} /></div>
-                <div className="field"><label>\u05d4\u05e2\u05e8\u05d5\u05ea</label><input className="input" value={vehicleForm.notes} onChange={e => setVehicleForm({...vehicleForm, notes: e.target.value})} placeholder="\u05d4\u05e2\u05e8\u05d5\u05ea..." /></div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn btn-primary" onClick={saveVehicle} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button>
-                <button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button>
-              </div>
-            </div>
-          )}
-          {vehicles.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\ude97</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05e8\u05db\u05d1\u05d9\u05dd \u05e2\u05d3\u05d9\u05d9\u05df</div></div>
-          ) : (
-            <div style={{ display: "grid", gap: 12 }}>
-              {vehicles.map(v => {
-                const nextTest = v.next_test_date ? new Date(v.next_test_date) : null;
-                const daysToTest = nextTest ? Math.ceil((nextTest.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
-                const testAlert = daysToTest !== null && daysToTest <= 30;
-                return (
-                  <div key={v.id} style={{ border: `1px solid ${testAlert ? "#fca5a5" : "#e8eef6"}`, borderRadius: 16, padding: 16, background: testAlert ? "#fff7f7" : "#fff" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                          <span style={{ fontSize: 18, fontWeight: 900 }}>\ud83d\ude97 {v.license_plate}</span>
-                          <Badge value={v.status} />
-                          {testAlert && <span style={{ background: "#dc2626", color: "#fff", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>\u26a0\ufe0f \u05d8\u05e1\u05d8 \u05d1\u05e7\u05e8\u05d5\u05d1!</span>}
-                        </div>
-                        <div style={{ fontSize: 14, color: "#64748b" }}>{v.model || "-"} \u00b7 {v.year || "-"}</div>
-                        {v.notes && <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>{v.notes}</div>}
-                      </div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                        {v.garage_doc_url ? (
-                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            <a href={v.garage_doc_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>\ud83d\udd27 \u05d8\u05d9\u05e4\u05d5\u05dc \u05de\u05d5\u05e1\u05da</a>
-                            <label style={{ cursor: "pointer", fontSize: 12 }}>\ud83d\udd04<input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadGarageDoc(v.id, e.target.files[0])} /></label>
-                          </div>
-                        ) : (
-                          <label style={{ cursor: "pointer" }}>
-                            <span className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>{uploadingVehicleId === v.id ? "\u05de\u05e2\u05dc\u05d4..." : "\ud83d\udcce \u05d4\u05e2\u05dc\u05d4 \u05d8\u05d9\u05e4\u05d5\u05dc \u05de\u05d5\u05e1\u05da"}</span>
-                            <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadGarageDoc(v.id, e.target.files[0])} />
-                          </label>
-                        )}
-                        <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_vehicles", v.id)}>\u05de\u05d7\u05e7</button>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 24, marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
-                      <div>
-                        <div style={{ fontSize: 11, color: "#94a3b8" }}>\u05d8\u05e1\u05d8 \u05d0\u05d7\u05e8\u05d5\u05df</div>
-                        <div style={{ fontSize: 14, fontWeight: 700 }}>{v.test_date ? new Date(v.test_date).toLocaleDateString("he-IL") : "-"}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 11, color: "#94a3b8" }}>\u05d8\u05e1\u05d8 \u05d4\u05d1\u05d0</div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: testAlert ? "#dc2626" : "#0f172a" }}>
-                          {nextTest ? `${new Date(v.next_test_date).toLocaleDateString("he-IL")} ${daysToTest !== null ? `(${daysToTest <= 0 ? "\u26a0\ufe0f \u05e2\u05d1\u05e8!" : daysToTest + " \u05d9\u05de\u05d9\u05dd"})` : ""}` : "-"}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {!loading && tab === "employees" && (
-        <div className="card">
-          <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>\ud83d\udc77 \u05e2\u05d5\u05d1\u05d3\u05d9\u05dd</h3><div className="muted">\u05e0\u05d9\u05d4\u05d5\u05dc \u05e6\u05d5\u05d5\u05ea</div></div>
-            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05d4\u05d5\u05e1\u05e3 \u05e2\u05d5\u05d1\u05d3</button>
-          </div>
-          {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
-                <div className="field"><label>\u05e9\u05dd *</label><input className="input" value={employeeForm.name} onChange={e => setEmployeeForm({...employeeForm, name: e.target.value})} placeholder="\u05d9\u05e9\u05e8\u05d0\u05dc \u05d9\u05e9\u05e8\u05d0\u05dc\u05d9" /></div>
-                <div className="field"><label>\u05d8\u05dc\u05e4\u05d5\u05df</label><input className="input" value={employeeForm.phone} onChange={e => setEmployeeForm({...employeeForm, phone: e.target.value})} placeholder="052-1234567" /></div>
-                <div className="field"><label>\u05ea\u05e4\u05e7\u05d9\u05d3</label><input className="input" value={employeeForm.role} onChange={e => setEmployeeForm({...employeeForm, role: e.target.value})} placeholder="\u05d8\u05db\u05e0\u05d0\u05d9" /></div>
-                <div className="field"><label>\u05e1\u05d8\u05d8\u05d5\u05e1</label><select className="input" value={employeeForm.status} onChange={e => setEmployeeForm({...employeeForm, status: e.target.value})}><option>\u05e4\u05e2\u05d9\u05dc</option><option>\u05d7\u05d5\u05e4\u05e9\u05d4</option><option>\u05dc\u05d0 \u05e4\u05e2\u05d9\u05dc</option></select></div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn btn-primary" onClick={saveEmployee} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button>
-                <button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button>
-              </div>
-            </div>
-          )}
-          {employees.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\udc77</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05e2\u05d5\u05d1\u05d3\u05d9\u05dd \u05e2\u05d3\u05d9\u05d9\u05df</div></div>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>\u05e9\u05dd</th><th>\u05d8\u05dc\u05e4\u05d5\u05df</th><th>\u05ea\u05e4\u05e7\u05d9\u05d3</th><th>\u05e1\u05d8\u05d8\u05d5\u05e1</th><th>\u05e4\u05e2\u05d5\u05dc\u05d5\u05ea</th></tr></thead>
-                <tbody>
-                  {employees.map(e => (
-                    <tr key={e.id}>
-                      <td style={{ fontWeight: 800 }}>{e.name}</td>
-                      <td>{e.phone || "-"}</td>
-                      <td>{e.role || "-"}</td>
-                      <td><Badge value={e.status} /></td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_employees", e.id)}>\u05de\u05d7\u05e7</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!loading && tab === "clients" && (
-        <div className="card">
-          <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>\ud83e\udd1d \u05dc\u05e7\u05d5\u05d7\u05d5\u05ea</h3><div className="muted">\u05e0\u05d9\u05d4\u05d5\u05dc \u05dc\u05e7\u05d5\u05d7\u05d5\u05ea</div></div>
-            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05d4\u05d5\u05e1\u05e3 \u05dc\u05e7\u05d5\u05d7</button>
-          </div>
-          {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                <div className="field"><label>\u05e9\u05dd *</label><input className="input" value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} placeholder="\u05d7\u05d1\u05e8\u05ea ABC" /></div>
-                <div className="field"><label>\u05d8\u05dc\u05e4\u05d5\u05df</label><input className="input" value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone: e.target.value})} placeholder="03-1234567" /></div>
-                <div className="field"><label>\u05d0\u05d9\u05de\u05d9\u05d9\u05dc</label><input className="input" value={clientForm.email} onChange={e => setClientForm({...clientForm, email: e.target.value})} placeholder="abc@company.com" /></div>
-                <div className="field"><label>\u05db\u05ea\u05d5\u05d1\u05ea</label><input className="input" value={clientForm.address} onChange={e => setClientForm({...clientForm, address: e.target.value})} placeholder="\u05ea\u05dc \u05d0\u05d1\u05d9\u05d1" /></div>
-                <div className="field"><label>\u05d4\u05e2\u05e8\u05d5\u05ea</label><input className="input" value={clientForm.notes} onChange={e => setClientForm({...clientForm, notes: e.target.value})} placeholder="\u05d4\u05e2\u05e8\u05d5\u05ea..." /></div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn btn-primary" onClick={saveClient} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button>
-                <button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button>
-              </div>
-            </div>
-          )}
-          {clients.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83e\udd1d</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05dc\u05e7\u05d5\u05d7\u05d5\u05ea \u05e2\u05d3\u05d9\u05d9\u05df</div></div>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>\u05e9\u05dd</th><th>\u05d8\u05dc\u05e4\u05d5\u05df</th><th>\u05d0\u05d9\u05de\u05d9\u05d9\u05dc</th><th>\u05db\u05ea\u05d5\u05d1\u05ea</th><th>\u05e4\u05e2\u05d5\u05dc\u05d5\u05ea</th></tr></thead>
-                <tbody>
-                  {clients.map(c => (
-                    <tr key={c.id}>
-                      <td style={{ fontWeight: 800 }}>{c.name}</td>
-                      <td>{c.phone || "-"}</td>
-                      <td>{c.email || "-"}</td>
-                      <td>{c.address || "-"}</td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_clients", c.id)}>\u05de\u05d7\u05e7</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!loading && tab === "projects" && (
-        <div className="card">
-          <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>\ud83d\udcc1 \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd</h3><div className="muted">\u05e0\u05d9\u05d4\u05d5\u05dc \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd</div></div>
-            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8 \u05d7\u05d3\u05e9</button>
-          </div>
-          {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                <div className="field"><label>\u05e9\u05dd \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8 *</label><input className="input" value={projectForm.name} onChange={e => setProjectForm({...projectForm, name: e.target.value})} placeholder="\u05e9\u05dd \u05d4\u05e4\u05e8\u05d5\u05d9\u05e7\u05d8" /></div>
-                <div className="field"><label>\u05dc\u05e7\u05d5\u05d7</label><select className="input" value={projectForm.client_name} onChange={e => setProjectForm({...projectForm, client_name: e.target.value})}><option value="">\u05d1\u05d7\u05e8 \u05dc\u05e7\u05d5\u05d7</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
-                <div className="field"><label>\u05e1\u05d8\u05d8\u05d5\u05e1</label><select className="input" value={projectForm.status} onChange={e => setProjectForm({...projectForm, status: e.target.value})}><option>\u05e4\u05e2\u05d9\u05dc</option><option>\u05d4\u05d5\u05e9\u05dc\u05dd</option><option>\u05de\u05d5\u05e9\u05d4\u05d4</option></select></div>
-                <div className="field"><label>\u05d4\u05ea\u05d7\u05dc\u05d4</label><input className="input" type="date" value={projectForm.start_date} onChange={e => setProjectForm({...projectForm, start_date: e.target.value})} /></div>
-                <div className="field"><label>\u05e1\u05d9\u05d5\u05dd</label><input className="input" type="date" value={projectForm.end_date} onChange={e => setProjectForm({...projectForm, end_date: e.target.value})} /></div>
-                <div className="field"><label>\u05ea\u05d9\u05d0\u05d5\u05e8</label><input className="input" value={projectForm.description} onChange={e => setProjectForm({...projectForm, description: e.target.value})} placeholder="\u05ea\u05d9\u05d0\u05d5\u05e8..." /></div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn btn-primary" onClick={saveProject} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button>
-                <button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button>
-              </div>
-            </div>
-          )}
-          {projects.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\udcc1</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8\u05d9\u05dd \u05e2\u05d3\u05d9\u05d9\u05df</div></div>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>\u05e9\u05dd \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8</th><th>\u05dc\u05e7\u05d5\u05d7</th><th>\u05d4\u05ea\u05d7\u05dc\u05d4</th><th>\u05e1\u05d9\u05d5\u05dd</th><th>\u05e1\u05d8\u05d8\u05d5\u05e1</th><th>\u05e4\u05e2\u05d5\u05dc\u05d5\u05ea</th></tr></thead>
-                <tbody>
-                  {projects.map(p => (
-                    <tr key={p.id}>
-                      <td style={{ fontWeight: 800 }}>{p.name}</td>
-                      <td>{p.client_name || "-"}</td>
-                      <td>{p.start_date ? new Date(p.start_date).toLocaleDateString("he-IL") : "-"}</td>
-                      <td>{p.end_date ? new Date(p.end_date).toLocaleDateString("he-IL") : "-"}</td>
-                      <td><Badge value={p.status} /></td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_projects", p.id)}>\u05de\u05d7\u05e7</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!loading && tab === "service" && (
-        <div className="card">
-          <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>\ud83d\udd27 \u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e9\u05d9\u05e8\u05d5\u05ea</h3><div className="muted">\u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05dc\u05dc\u05e7\u05d5\u05d7\u05d5\u05ea</div></div>
-            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05e7\u05e8\u05d9\u05d0\u05d4 \u05d7\u05d3\u05e9\u05d4</button>
-          </div>
-          {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                <div className="field"><label>\u05dc\u05e7\u05d5\u05d7</label><select className="input" value={serviceCallForm.client_name} onChange={e => setServiceCallForm({...serviceCallForm, client_name: e.target.value})}><option value="">\u05d1\u05d7\u05e8 \u05dc\u05e7\u05d5\u05d7</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
-                <div className="field"><label>\u05e0\u05d5\u05e9\u05d0 *</label><input className="input" value={serviceCallForm.issue} onChange={e => setServiceCallForm({...serviceCallForm, issue: e.target.value})} placeholder="\u05ea\u05d9\u05d0\u05d5\u05e8 \u05d4\u05d1\u05e2\u05d9\u05d4" /></div>
-                <div className="field"><label>\u05d3\u05d7\u05d9\u05e4\u05d5\u05ea</label><select className="input" value={serviceCallForm.urgency} onChange={e => setServiceCallForm({...serviceCallForm, urgency: e.target.value})}><option>\u05e0\u05de\u05d5\u05db\u05d4</option><option>\u05d1\u05d9\u05e0\u05d5\u05e0\u05d9\u05ea</option><option>\u05d2\u05d1\u05d5\u05d4\u05d4</option></select></div>
-                <div className="field"><label>\u05d0\u05d7\u05e8\u05d0\u05d9</label><select className="input" value={serviceCallForm.assigned_to} onChange={e => setServiceCallForm({...serviceCallForm, assigned_to: e.target.value})}><option value="">\u05d1\u05d7\u05e8 \u05e2\u05d5\u05d1\u05d3</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
-                <div className="field"><label>\u05d4\u05e2\u05e8\u05d5\u05ea</label><input className="input" value={serviceCallForm.notes} onChange={e => setServiceCallForm({...serviceCallForm, notes: e.target.value})} placeholder="\u05d4\u05e2\u05e8\u05d5\u05ea..." /></div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn btn-primary" onClick={saveServiceCall} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button>
-                <button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button>
-              </div>
-            </div>
-          )}
-          {serviceCalls.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\udd27</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05e7\u05e8\u05d9\u05d0\u05d5\u05ea \u05e9\u05d9\u05e8\u05d5\u05ea</div></div>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>\u05ea\u05d0\u05e8\u05d9\u05da</th><th>\u05dc\u05e7\u05d5\u05d7</th><th>\u05e0\u05d5\u05e9\u05d0</th><th>\u05d3\u05d7\u05d9\u05e4\u05d5\u05ea</th><th>\u05d0\u05d7\u05e8\u05d0\u05d9</th><th>\u05e1\u05d8\u05d8\u05d5\u05e1</th><th>\u05e4\u05e2\u05d5\u05dc\u05d5\u05ea</th></tr></thead>
-                <tbody>
-                  {serviceCalls.map(s => (
-                    <tr key={s.id}>
-                      <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td>
-                      <td>{s.client_name || "-"}</td>
-                      <td style={{ fontWeight: 700 }}>{s.issue}</td>
-                      <td><Badge value={s.urgency} /></td>
-                      <td>{s.assigned_to || "-"}</td>
-                      <td><select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}><option>\u05d7\u05d3\u05e9\u05d4</option><option>\u05d1\u05d8\u05d9\u05e4\u05d5\u05dc</option><option>\u05d4\u05d5\u05e9\u05dc\u05dd</option></select></td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>\u05de\u05d7\u05e7</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!loading && tab === "worklogs" && (
-        <div className="card">
-          <div className="section-top">
-            <div><h3 className="card-title" style={{ margin: 0 }}>\ud83d\udccb \u05d9\u05d5\u05de\u05e0\u05d9 \u05e2\u05d1\u05d5\u05d3\u05d4</h3><div className="muted">\u05de\u05e2\u05e7\u05d1 \u05e9\u05e2\u05d5\u05ea</div></div>
-            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ \u05d9\u05d5\u05de\u05df \u05d7\u05d3\u05e9</button>
-          </div>
-          {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
-                <div className="field"><label>\u05e2\u05d5\u05d1\u05d3 *</label><select className="input" value={workLogForm.employee_name} onChange={e => setWorkLogForm({...workLogForm, employee_name: e.target.value})}><option value="">\u05d1\u05d7\u05e8 \u05e2\u05d5\u05d1\u05d3</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
-                <div className="field"><label>\u05ea\u05d0\u05e8\u05d9\u05da</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
-                <div className="field"><label>\u05e9\u05e2\u05d5\u05ea</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
-                <div className="field"><label>\u05e4\u05e8\u05d5\u05d9\u05e7\u05d8</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">\u05d1\u05d7\u05e8 \u05e4\u05e8\u05d5\u05d9\u05e7\u05d8</option>{projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select></div>
-                <div className="field" style={{ gridColumn: "span 2" }}><label>\u05ea\u05d9\u05d0\u05d5\u05e8</label><input className="input" value={workLogForm.description} onChange={e => setWorkLogForm({...workLogForm, description: e.target.value})} placeholder="\u05ea\u05d9\u05d0\u05d5\u05e8 \u05d4\u05e2\u05d1\u05d5\u05d3\u05d4..." /></div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn btn-primary" onClick={saveWorkLog} disabled={saving}>{saving ? "\u05e9\u05d5\u05de\u05e8..." : "\u05e9\u05de\u05d5\u05e8"}</button>
-                <button className="btn btn-outline" onClick={() => setShowForm(false)}>\u05d1\u05d9\u05d8\u05d5\u05dc</button>
-              </div>
-            </div>
-          )}
-          {workLogs.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>\ud83d\udccb</div><div style={{ fontWeight: 700, marginTop: 8 }}>\u05d0\u05d9\u05df \u05d9\u05d5\u05de\u05e0\u05d9 \u05e2\u05d1\u05d5\u05d3\u05d4</div></div>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>\u05ea\u05d0\u05e8\u05d9\u05da</th><th>\u05e2\u05d5\u05d1\u05d3</th><th>\u05e9\u05e2\u05d5\u05ea</th><th>\u05e4\u05e8\u05d5\u05d9\u05e7\u05d8</th><th>\u05ea\u05d9\u05d0\u05d5\u05e8</th><th>\u05e4\u05e2\u05d5\u05dc\u05d5\u05ea</th></tr></thead>
-                <tbody>
-                  {workLogs.map(w => (
-                    <tr key={w.id}>
-                      <td>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</td>
-                      <td style={{ fontWeight: 700 }}>{w.employee_name}</td>
-                      <td style={{ fontWeight: 700, color: "#16a34a" }}>{w.hours} \u05e9\u05f3</td>
-                      <td>{w.project_name || "-"}</td>
-                      <td>{w.description || "-"}</td>
-                      <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>\u05de\u05d7\u05e7</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// \u2500\u2500\u2500 Role helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-
-}
-function SidebarNav({ activePage, setActivePage, isActive, userRole }: { activePage: string; setActivePage: (p: string) => void; isActive: (k: string) => boolean; userRole: string }) {
-  const [openGroup, setOpenGroup] = useState<string | null>("property");
-
-  if (userRole === "tenant") {
-    return (
-      <>
-        {[{ key: "tenantPortal", label: "🏠 הבית שלי" }, { key: "requests", label: "🔧 קריאות שירות" }].map(item => (
-          <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>
-        ))}
-      </>
-    );
-  }
-  if (userRole === "owner") {
-    return (
-      <>
-        {[{ key: "dashboard", label: "🏠 סיכום" }, { key: "apartments", label: "🚪 הדירות שלי" }, { key: "leases", label: "📋 חוזים" }].map(item => (
-          <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>
-        ))}
-      </>
-    );
-  }
-  if (userRole === "ngs_worker") {
-    return <button className={`nav-btn ${isActive("ngs") ? "active" : ""}`} onClick={() => setActivePage("ngs")}>🏗 נ.ג.ש מור</button>;
-  }
-  const propertyItems = [
-    { key: "owners", label: "👤 בעלי נכסים" },
-    { key: "buildings", label: "🏢 מבנים" },
-    { key: "apartments", label: "🚪 דירות" },
-    { key: "requests", label: "🔧 קריאות שירות" },
-    { key: "leases", label: "📋 חוזים" },
-    { key: "workcontracts", label: "📝 חוזי עבודה" },
-    { key: "documents", label: "📄 מסמכים" },
-  ];
-  const isPropertyActive = propertyItems.some(i => isActive(i.key));
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
-      <div>
-        <button className={`nav-btn ${isActive("dashboard") ? "active" : ""}`} onClick={() => setActivePage("dashboard")}>🏠 דשבורד</button>
-        <div style={{ marginTop: 4 }}>
-          <button onClick={() => setOpenGroup(openGroup === "property" ? null : "property")}
-            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", background: isPropertyActive ? "rgba(213,181,122,0.15)" : openGroup === "property" ? "rgba(255,255,255,0.05)" : "transparent", border: "none", cursor: "pointer", color: isPropertyActive || openGroup === "property" ? "#d5b57a" : "#94a3b8", fontWeight: 700, fontSize: 14, borderRadius: 12, marginBottom: 2 }}>
-            <span>🏢 ניהול נכסים</span>
-            <span style={{ fontSize: 11, transition: "transform 0.2s", transform: openGroup === "property" ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
-          </button>
-          {openGroup === "property" && (
-            <div style={{ paddingRight: 10, borderRight: "2px solid rgba(213,181,122,0.25)", marginRight: 10, marginBottom: 4 }}>
-              {propertyItems.map(item => (
-                <button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} style={{ fontSize: 13, padding: "8px 12px" }} onClick={() => setActivePage(item.key)}>{item.label}</button>
-              ))}
-            </div>
-          )}
-        </div>
-        <button className={`nav-btn ${isActive("ngs") ? "active" : ""}`} style={{ marginTop: 4 }} onClick={() => setActivePage("ngs")}>🏗 נ.ג.ש מור</button>
-      </div>
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10, marginTop: 10 }}>
-        <button className={`nav-btn ${isActive("users") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("users")}>👥 משתמשים</button>
-        <button className={`nav-btn ${isActive("settings") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("settings")}>⚙️ הגדרות</button>
-      </div>
-    </div>
-  );
-}
-
-function getNavIcon(key: string) {
-  const icons: Record<string, string> = {
-    dashboard: "🏠", owners: "👤", buildings: "🏢", apartments: "🚪",
-    requests: "🔧", leases: "📋", documents: "📄", tenantPortal: "🏠",
-    settings: "⚙️", users: "👥", workcontracts: "📝", ngs: "🏗",
-  };
-  return icons[key] || "•";
-}
-
-function getNavItemsForRole(role: string) {
-  if (role === "tenant") return [{ key: "tenantPortal", label: "הבית שלי" }, { key: "requests", label: "קריאות שירות" }];
-  if (role === "owner") return [{ key: "dashboard", label: "סיכום" }, { key: "apartments", label: "הדירות שלי" }, { key: "leases", label: "חוזים" }];
-  if (role === "ngs_worker") return [{ key: "ngs", label: "🏗 נ.ג.ש מור" }];
-  return navItems;
-}
-
-function getRoleLabel(role: string) {
-  if (role === "tenant") return "דייר";
-  if (role === "owner") return "בעל נכס";
-  if (role === "ngs_worker") return 'עובד נג"ש';
-  return "מנהל מערכת";
-}
-
-
-export default function Home() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [activePage, setActivePage] = useState("dashboard");
-  const [loginError, setLoginError] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [userRole, setUserRole] = useState("admin");
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [authMode, setAuthMode] = useState<"login" | "register" | "forgot">("login");
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetSent, setResetSent] = useState(false);
-
-  async function handleForgotPassword() {
-    if (!resetEmail) return;
-    setLoginLoading(true);
-    await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: "https://property-os-ten.vercel.app"
-    });
-    setResetSent(true);
-    setLoginLoading(false);
-  }
-  const [regForm, setRegForm] = useState({ full_name: "", phone: "", role: "tenant" });
-  const [regError, setRegError] = useState("");
-  const [regSuccess, setRegSuccess] = useState(false);
-  const [pendingApproval, setPendingApproval] = useState(false);
-
-
-  async function handleLogin() {
-    setLoginLoading(true);
-    setLoginError("");
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setLoginError("אימייל או סיסמה שגויים");
-      setLoginLoading(false);
-      return;
-    }
-    // Load profile
-    const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-    if (profile) {
-      if (profile.status === "ממתין לאישור") {
-        setPendingApproval(true);
-        await supabase.auth.signOut();
-        setLoginLoading(false);
-        return;
-      }
-      setUserProfile(profile);
-      setUserRole(profile.role || "admin");
-      if (profile.role === "tenant") setActivePage("tenantPortal");
-      else if (profile.role === "ngs_worker") setActivePage("ngs");
-      else setActivePage("dashboard");
-    } else {
-      // Admin user - no profile needed
-      setUserRole("admin");
-      setActivePage("dashboard");
-    }
-    setLoggedIn(true);
-    setLoginLoading(false);
-  }
-
-  async function handleRegister() {
-    setRegError("");
-    if (!email || !password || !regForm.full_name) {
-      setRegError("יש למלא את כל השדות");
-      return;
-    }
-    setLoginLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      setRegError(error.message);
-      setLoginLoading(false);
-      return;
-    }
-    if (data.user) {
-      await supabase.from("profiles").insert({
-        id: data.user.id,
-        full_name: regForm.full_name,
-        phone: regForm.phone,
-        role: regForm.role,
-        status: "ממתין לאישור"
-      });
-    }
-    setRegSuccess(true);
-    setLoginLoading(false);
-  }
-  const [selectedApartmentId, setSelectedApartmentId] = useState<string>("");
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [selectedBuildingId, setSelectedBuildingId] = useState<any>("");
-  const [selectedOwnerId, setSelectedOwnerId] = useState(1);
-
-  function openApartment(id: string) { setSelectedApartmentId(id); setActivePage("apartmentDetails"); }
-  function openBuilding(id: any) { setSelectedBuildingId(id); setActivePage("buildingDetails"); }
-  function openOwner(id: number) { setSelectedOwnerId(id); setActivePage("ownerDetails"); }
-
-  function renderContent() {
-    // Tenant view
-    if (userRole === "tenant") {
-      switch (activePage) {
-        case "tenantPortal": return <TenantPortal userProfile={userProfile} />;
-        case "requests": return (
-          <div style={{ display: "grid", gap: 18 }}>
-            <div className="card">
-              <h3 className="card-title">הקריאות שלי</h3>
-              <div className="table-wrap">
-                <table>
-                  <thead><tr><th>תאריך</th><th>תקלה</th><th>סטטוס</th></tr></thead>
-                  <tbody>
-                    {serviceRequests.map(item => (
-                      <tr key={item.id}><td>{item.apartment}</td><td>{item.issue}</td><td><span className={badgeClass(item.status)}>{item.status}</span></td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="card">
-              <h3 className="card-title">פתיחת קריאה חדשה</h3>
-              <div style={{ display: "grid", gap: 12, maxWidth: 620 }}>
-                <input className="search" style={{ width: "100%" }} placeholder="נושא התקלה" />
-                <textarea placeholder="תיאור התקלה" style={{ width: "100%", minHeight: 120, border: "1px solid #dbe3ee", borderRadius: 16, padding: 14, resize: "vertical", fontFamily: "inherit" }} />
-                <button className="btn btn-primary" style={{ width: "fit-content" }}>שלח קריאה</button>
-              </div>
-            </div>
-          </div>
-        );
-        default: return <TenantPortal userProfile={userProfile} />;
-      }
-    }
-
-    // Owner view
-    if (userRole === "owner") {
-      switch (activePage) {
-        case "dashboard": return <OwnerDashboard userProfile={userProfile} />;
-        default: return <OwnerDashboard userProfile={userProfile} />;
-      }
-    }
-
-    // NGS Worker view
-    if (userRole === "ngs_worker") return <NGSDashboard />;
-
-    // Admin view
-    switch (activePage) {
-      case "dashboard": return <Dashboard openApartment={openApartment} openBuilding={openBuilding} />;
-      case "owners": return <Owners openOwner={openOwner} />;
-      case "ownerDetails": return <OwnerDetails ownerId={selectedOwnerId} back={() => setActivePage("owners")} />;
-      case "buildings": return <Buildings openBuilding={openBuilding} />;
-      case "buildingDetails": return <BuildingDetails buildingId={selectedBuildingId} back={() => setActivePage("buildings")} openApartment={openApartment} />;
-      case "apartments": return <Apartments openApartment={openApartment} />;
-      case "apartmentDetails": return <ApartmentDetails apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} />;
-      case "requests": return <ServiceRequests />;
-      case "leases": return <Leases />;
-      case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר, הסכמי ניהול וכל מסמך שקשור לבעל נכס, דירה או חוזה." />;
-      case "tenantPortal": return <TenantPortal userProfile={userProfile} />;
-      case "settings": return <Settings userEmail={email} />;
-      case "users": return <UsersManagement />;
-      case "workcontracts": return <WorkContracts />;
-      case "ngs": return <NGSDashboard />;
-      default: return null;
-    }
-  }
-
-  if (!loggedIn) {
-    return (
-      <section className="login-shell">
-        <div className="login-wrap">
-          <div className="login-left">
-            <div>
-              <div className="eyebrow"><span className="dot" />GM · ניהול נכסים</div>
-              <h1 className="login-title">שליטה מלאה על המבנים, היחידות, הקריאות וההכנסות שלך</h1>
-              <div className="login-sub">מערכת יוקרתית לניהול נכסים שמתאימה במיוחד לעבודה שלך: כמה יחידות באותו בניין, בכמה קומות שונות, עם מעקב על תפוסה, חוזים, קריאות שירות, ההכנסה האישית שלך וגם רווחיות לבעלי הנכסים.</div>
-              <div className="hero-grid">
-                {[["47","יחידות במערכת"],["6","קריאות פתוחות"],["12","בעלי נכסים פעילים"],["6,840 ₪","הכנסה חודשית"]].map(([num, label]) => (
-                  <div key={label} className="hero-stat"><div className="num">{num}</div><div className="label">{label}</div></div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="login-right">
-            <div className="login-card">
-              {pendingApproval ? (
-                <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
-                  <h2 style={{ marginBottom: 8 }}>ממתין לאישור</h2>
-                  <p style={{ color: "#64748b" }}>הבקשה שלך נשלחה למנהל המערכת. תקבל הודעה כשתאושר.</p>
-                  <button className="btn btn-outline" style={{ marginTop: 16 }} onClick={() => setPendingApproval(false)}>חזרה להתחברות</button>
-                </div>
-              ) : regSuccess ? (
-                <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-                  <h2 style={{ marginBottom: 8 }}>הבקשה נשלחה!</h2>
-                  <p style={{ color: "#64748b" }}>המנהל יאשר את הבקשה שלך בקרוב.</p>
-                  <button className="btn btn-primary" style={{ marginTop: 16, width: "100%" }} onClick={() => { setRegSuccess(false); setAuthMode("login"); }}>חזרה להתחברות</button>
-                </div>
-              ) : authMode === "login" ? (
-                <>
-                  <h1>כניסה למערכת</h1>
-                  <p>התחבר עם האימייל והסיסמה שלך</p>
-                  <div className="field"><label>אימייל</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" /></div>
-                  <div className="field"><label>סיסמה</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" /></div>
-                  {loginError && <div style={{color:"#dc2626", marginBottom:10, fontSize:14}}>{loginError}</div>}
-                  <button className="btn btn-primary" style={{ width: "100%", height: 52 }} onClick={handleLogin} disabled={loginLoading}>{loginLoading ? "מתחבר..." : "התחבר"}</button>
-                  <div style={{ marginTop: 12, textAlign: "center" }}>
-                    <button className="btn-link" style={{ fontSize: 13, color: "#64748b" }} onClick={() => setAuthMode("forgot")}>שכחתי סיסמה</button>
-                  </div>
-                  <div style={{ marginTop: 8, textAlign: "center", color: "#64748b", fontSize: 14 }}>
-                    אין לך חשבון?{" "}
-                    <button className="btn-link" onClick={() => setAuthMode("register")}>הירשם כאן</button>
-                  </div>
-                </>
-              ) : authMode === "forgot" ? (
-                <>
-                  {resetSent ? (
-                    <div style={{ textAlign: "center", padding: "20px 0" }}>
-                      <div style={{ fontSize: 48, marginBottom: 16 }}>📧</div>
-                      <h2 style={{ marginBottom: 8 }}>האימייל נשלח!</h2>
-                      <p style={{ color: "#64748b" }}>בדוק את תיבת הדואר שלך ולחץ על הקישור לאיפוס הסיסמה.</p>
-                      <button className="btn btn-primary" style={{ marginTop: 16, width: "100%" }} onClick={() => { setResetSent(false); setAuthMode("login"); }}>חזרה להתחברות</button>
-                    </div>
-                  ) : (
-                    <>
-                      <h1>שחזור סיסמה</h1>
-                      <p style={{ color: "#64748b" }}>הזן את האימייל שלך ונשלח לך קישור לאיפוס הסיסמה</p>
-                      <div className="field"><label>אימייל</label><input className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="your@email.com" /></div>
-                      <button className="btn btn-primary" style={{ width: "100%", height: 52, marginTop: 8 }} onClick={handleForgotPassword} disabled={loginLoading}>{loginLoading ? "שולח..." : "שלח קישור לאיפוס"}</button>
-                      <div style={{ marginTop: 16, textAlign: "center" }}>
-                        <button className="btn-link" style={{ color: "#64748b", fontSize: 14 }} onClick={() => setAuthMode("login")}>חזרה להתחברות</button>
-                      </div>
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  <h1>הרשמה למערכת</h1>
-                  <p>מלא את הפרטים ומנהל יאשר את הגישה שלך</p>
-                  <div className="field"><label>שם מלא *</label><input className="input" value={regForm.full_name} onChange={e => setRegForm({...regForm, full_name: e.target.value})} placeholder="ישראל ישראלי" /></div>
-                  <div className="field"><label>אימייל *</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" /></div>
-                  <div className="field"><label>סיסמה *</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="לפחות 6 תווים" /></div>
-                  <div className="field"><label>טלפון</label><input className="input" value={regForm.phone} onChange={e => setRegForm({...regForm, phone: e.target.value})} placeholder="052-1234567" /></div>
-                  <div className="field">
-                    <label>תפקיד</label>
-                    <select className="input" value={regForm.role} onChange={e => setRegForm({...regForm, role: e.target.value})}>
-                      <option value="tenant">דייר</option>
-                      <option value="owner">בעל נכס</option>
-                    </select>
-                  </div>
-                  {regError && <div style={{color:"#dc2626", marginBottom:10, fontSize:14}}>{regError}</div>}
-                  <button className="btn btn-primary" style={{ width: "100%", height: 52 }} onClick={handleRegister} disabled={loginLoading}>{loginLoading ? "שולח..." : "שלח בקשת הצטרפות"}</button>
-                  <div style={{ marginTop: 16, textAlign: "center", color: "#64748b", fontSize: 14 }}>
-                    יש לך כבר חשבון?{" "}
-                    <button className="btn-link" onClick={() => setAuthMode("login")}>התחבר כאן</button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  const navItemsForRole = getNavItemsForRole(userRole);
-  function isActive(key: string) {
-    return activePage === key ||
-      (activePage === "apartmentDetails" && key === "apartments") ||
-      (activePage === "buildingDetails" && key === "buildings") ||
-      (activePage === "ownerDetails" && key === "owners");
-  }
-  return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-icon">🏢</div>
-          <div><small>GM</small><strong>ניהול נכסים</strong></div>
-        </div>
-        <nav className="nav">
-          <SidebarNav activePage={activePage} setActivePage={setActivePage} isActive={isActive} userRole={userRole} />
-        </nav>
-        <div className="side-card">
-          <div className="avatar">{email[0]?.toUpperCase()}</div>
-          <div>
-            <div className="name">{email}</div>
-            <div className="role">{getRoleLabel(userRole)}</div>
-          </div>
-        </div>
-      </aside>
-      <main className="main">
-        <div className="topbar">
-          <div><h1>שלום מנהל מערכת</h1><div className="sub">תצוגה מוקדמת מלאה של המערכת</div></div>
-          <div className="top-actions">
-            <input className="search" placeholder="חיפוש מהיר..." />
-            <button className="btn btn-dark">הוספה מהירה</button>
-          </div>
-        </div>
-        {renderContent()}
-      </main>
 
       <nav className="mobile-bottom-nav">
         {navItemsForRole.slice(0, 4).map((item) => (
@@ -3670,8 +3120,7 @@ export default function Home() {
             <div style={{ width: 36, height: 4, background: "#e2e8f0", borderRadius: 2, margin: "0 auto 16px" }} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, padding: "0 8px" }}>
               {navItemsForRole.slice(4).map((item) => (
-                <button key={item.key}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: isActive(item.key) ? "#fef9ec" : "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: isActive(item.key) ? "#c9a227" : "#475569" }}
+                <button key={item.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: isActive(item.key) ? "#fef9ec" : "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: isActive(item.key) ? "#c9a227" : "#475569" }}
                   onClick={() => { setActivePage(item.key); setShowMobileMenu(false); }}>
                   <span style={{ fontSize: 22 }}>{getNavIcon(item.key)}</span>
                   <span style={{ fontSize: 11, fontWeight: 600, textAlign: "center" }}>{item.label}</span>
