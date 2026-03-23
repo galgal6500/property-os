@@ -1159,6 +1159,25 @@ function ServiceRequests() {
   return (
     <div style={{ display: "grid", gap: 18 }}>
       <div className="card">
+        {/* סיכום קריאות */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20, padding: "16px", background: "linear-gradient(135deg, #1e293b, #0f172a)", borderRadius: 16 }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: "#fff" }}>{requests.length}</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>סה״כ קריאות</div>
+          </div>
+          <div style={{ textAlign: "center", borderRight: "1px solid rgba(255,255,255,0.1)", borderLeft: "1px solid rgba(255,255,255,0.1)" }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: "#f59e0b" }}>{requests.filter(r => r.status === "חדשה").length}</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>חדשות</div>
+          </div>
+          <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.1)" }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: "#60a5fa" }}>{requests.filter(r => r.status === "בטיפול" || r.status === "ממתין לבעל מקצוע").length}</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>בטיפול</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: "#4ade80" }}>{requests.filter(r => r.status === "הושלם").length}</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>הושלמו</div>
+          </div>
+        </div>
         <div className="section-top">
           <div><h2 className="card-title">קריאות שירות</h2><div className="muted">ניהול כל הקריאות, תיקונים ובעלי מקצוע</div></div>
           <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ קריאה חדשה</button>
@@ -2924,7 +2943,7 @@ function NGSDashboard() {
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                 <div className="field"><label>שם פרויקט *</label><input className="input" value={projectForm.name} onChange={e => setProjectForm({...projectForm, name: e.target.value})} /></div>
-                <div className="field"><label>לקוח</label><select className="input" value={projectForm.client_name} onChange={e => setProjectForm({...projectForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
+                <div className="field"><label>לקוח</label><select className="input" value={projectForm.client_name} onChange={e => setProjectForm({...projectForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">✏️ אחר</option></select></div>
                 <div className="field"><label>סטטוס</label><select className="input" value={projectForm.status} onChange={e => setProjectForm({...projectForm, status: e.target.value})}><option>פעיל</option><option>הושלם</option><option>מושהה</option></select></div>
                 <div className="field"><label>התחלה</label><input className="input" type="date" value={projectForm.start_date} onChange={e => setProjectForm({...projectForm, start_date: e.target.value})} /></div>
                 <div className="field"><label>סיום</label><input className="input" type="date" value={projectForm.end_date} onChange={e => setProjectForm({...projectForm, end_date: e.target.value})} /></div>
@@ -2951,7 +2970,7 @@ function NGSDashboard() {
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                <div className="field"><label>לקוח</label><select className="input" value={serviceCallForm.client_name} onChange={e => setServiceCallForm({...serviceCallForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
+                <div className="field"><label>לקוח</label><select className="input" value={serviceCallForm.client_name} onChange={e => setServiceCallForm({...serviceCallForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">✏️ אחר</option></select></div>
                 <div className="field"><label>נושא *</label><input className="input" value={serviceCallForm.issue} onChange={e => setServiceCallForm({...serviceCallForm, issue: e.target.value})} /></div>
                 <div className="field"><label>דחיפות</label><select className="input" value={serviceCallForm.urgency} onChange={e => setServiceCallForm({...serviceCallForm, urgency: e.target.value})}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select></div>
                 <div className="field"><label>אחראי</label><select className="input" value={serviceCallForm.assigned_to} onChange={e => setServiceCallForm({...serviceCallForm, assigned_to: e.target.value})}><option value="">בחר עובד</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
@@ -2982,7 +3001,7 @@ function NGSDashboard() {
               <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>📋 יומן עבודה חדש</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                 <div className="field"><label>ממלא היומן</label><input className="input" value={workLogForm.filled_by} onChange={e => setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="שם הממלא" /></div>
-                <div className="field"><label>לקוח</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
+                <div className="field"><label>לקוח</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">✏️ אחר</option></select></div>
                 <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
                 <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} placeholder="8" step="0.5" /></div>
                 <div className="field"><label>תאריך</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
