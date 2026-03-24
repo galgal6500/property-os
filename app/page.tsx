@@ -2759,6 +2759,21 @@ function NGSDashboard() {
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveServiceCall} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
+          {serviceCalls.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16, background: "#1e293b", borderRadius: 16, padding: "14px 20px" }}>
+              {[
+                { label: "סה״כ", value: serviceCalls.length, color: "#d5b57a" },
+                { label: "חדשות", value: serviceCalls.filter(s => s.status === "חדשה").length, color: "#60a5fa" },
+                { label: "בטיפול", value: serviceCalls.filter(s => s.status === "בטיפול").length, color: "#fbbf24" },
+                { label: "הושלמו", value: serviceCalls.filter(s => s.status === "הושלם").length, color: "#34d399" },
+              ].map(item => (
+                <div key={item.label} style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: item.color }}>{item.value}</div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>{item.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
           {serviceCalls.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
           : <div className="table-wrap"><table><thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>{serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).map(s => (<tr key={s.id}><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td><td>{s.client_name || "-"}</td><td style={{ fontWeight: 700 }}>{s.issue}</td><td><Badge value={s.urgency} /></td><td>{s.assigned_to || "-"}</td><td><select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}><option>חדשה</option><option>בטיפול</option><option>הושלם</option></select></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td></tr>))}</tbody></table></div>}
         </div>
@@ -2834,6 +2849,24 @@ function NGSDashboard() {
                   </div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setSelectedWorkLog(w)}>📄 פתח יומן</button>
+                    <button className="btn btn-outline" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => {
+                      const lines = [1,2,3,4,5,6,7,8,9,10].map(n => w[`line${n}`]).filter(Boolean);
+                      const workers = [w.employee_name, w.workers].filter(Boolean).join(", ");
+                      const win = window.open("", "_blank");
+                      if (win) {
+                        win.document.write(`<html dir="rtl"><head><title>יומן עבודה #${w.serial_number}</title><style>body{font-family:Arial,sans-serif;padding:32px;direction:rtl}h2{font-size:22px;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px}td,th{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f1f5f9}@media print{button{display:none}}</style></head><body>`);
+                        win.document.write(`<h2>📋 יומן עבודה #${w.serial_number}</h2>`);
+                        win.document.write(`<p>תאריך: ${w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"} | לקוח: ${w.project_name || "-"} | סניף: ${w.branch || "-"}</p>`);
+                        win.document.write(`<p>עובדים: ${workers || "-"} | שעות: ${w.hours || "-"} | ממלא: ${w.filled_by || "-"}</p>`);
+                        win.document.write(`<table><thead><tr><th>#</th><th>פירוט עבודה</th></tr></thead><tbody>`);
+                        lines.forEach((l, i) => win.document.write(`<tr><td>${i+1}</td><td>${l}</td></tr>`));
+                        win.document.write(`</tbody></table>`);
+                        if (w.client_notes) win.document.write(`<p><strong>הערות ללקוח:</strong> ${w.client_notes}</p>`);
+                        win.document.write(`<p>פרפורמה: ${w.performa || "לא טופל"}</p>`);
+                        win.document.write(`<br/><button onclick="window.print()">🖨️ הדפס</button></body></html>`);
+                        win.document.close();
+                      }
+                    }}>🖨️ הדפס</button>
                     <select value={w.performa || "לא טופל"} onChange={async e => { await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id); await load(); }} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2" }}>
                       <option value="לא טופל">❌ לא טופל</option>
                       <option value="יצאה פרפורמה">✅ יצאה פרפורמה</option>
