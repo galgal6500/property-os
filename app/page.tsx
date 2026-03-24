@@ -99,16 +99,16 @@ const tenantPortalData = {
 
 const navItems = [
   { key: "dashboard", label: "דשבורד" },
-  { key: "owners", label: "בעלי נכסים" },
-  { key: "buildings", label: "מבנים" },
   { key: "apartments", label: "דירות" },
   { key: "requests", label: "קריאות שירות" },
+  { key: "ngs", label: "נג״ש מור" },
+  { key: "owners", label: "בעלי נכסים" },
+  { key: "buildings", label: "מבנים" },
   { key: "leases", label: "חוזים" },
-  { key: "documents", label: "מסמכים" },
-  { key: "tenantPortal", label: "פורטל דייר" },
-  { key: "settings", label: "הגדרות" },
-  { key: "users", label: "משתמשים" },
   { key: "workcontracts", label: "חוזי עבודה" },
+  { key: "documents", label: "מסמכים" },
+  { key: "users", label: "משתמשים" },
+  { key: "settings", label: "הגדרות" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
