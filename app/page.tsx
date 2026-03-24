@@ -1170,6 +1170,23 @@ function ServiceRequests() {
           </div>
         )}
 
+        {!loading && requests.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 16, background: "#1e293b", borderRadius: 16, padding: "14px 20px" }}>
+            {[
+              { label: 'סה״כ', value: requests.length, color: "#d5b57a" },
+              { label: "חדשות", value: requests.filter(r => r.status === "חדשה").length, color: "#60a5fa" },
+              { label: "בטיפול", value: requests.filter(r => r.status === "בטיפול").length, color: "#fbbf24" },
+              { label: "ממתין לבעל מקצוע", value: requests.filter(r => r.status === "ממתין לבעל מקצוע").length, color: "#f87171" },
+              { label: "הושלמו", value: requests.filter(r => r.status === "הושלם").length, color: "#34d399" },
+            ].map(item => (
+              <div key={item.label} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: item.color }}>{item.value}</div>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="chips" style={{ marginBottom: 16 }}>
           {["הכל", "חדשה", "בטיפול", "ממתין לבעל מקצוע", "הושלם"].map(f => (
             <button key={f} className={`btn ${filter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setFilter(f)}>{f}</button>
