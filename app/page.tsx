@@ -1125,6 +1125,20 @@ function ServiceRequests() {
     await load();
   }
 
+  async function transferToNgs(r: any) {
+    const apartment = r.apartments?.buildings?.name ? `${r.apartments.buildings.name} / ${r.apartments.apartment_number}` : "";
+    await supabase.from("ngs_service_calls").insert({
+      issue: r.issue,
+      client_name: apartment,
+      urgency: r.urgency,
+      status: "חדשה",
+      notes: r.description || "",
+    });
+    await supabase.from("service_requests").update({ status: "בטיפול" }).eq("id", r.id);
+    await load();
+    alert("✅ הקריאה הועברה לנג\"ש בהצלחה!");
+  }
+
   const filtered = filter === "הכל" ? requests : requests.filter(r => r.status === filter);
 
   return (
@@ -1219,7 +1233,10 @@ function ServiceRequests() {
                         <option>חדשה</option><option>בטיפול</option><option>ממתין לבעל מקצוע</option><option>הושלם</option>
                       </select>
                     </td>
-                    <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteRequest(r.id)}>מחק</button></td>
+                    <td style={{ display: "flex", gap: 6 }}>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#c9a227", borderColor: "#c9a227" }} onClick={() => transferToNgs(r)}>🏗 העבר לנג"ש</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteRequest(r.id)}>מחק</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
