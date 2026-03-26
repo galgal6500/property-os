@@ -1133,6 +1133,7 @@ function ServiceRequests() {
       urgency: r.urgency,
       status: "חדשה",
       notes: r.description || "",
+      source_request_id: r.id,
     });
     await supabase.from("service_requests").update({ status: "בטיפול" }).eq("id", r.id);
     await load();
@@ -2527,7 +2528,15 @@ function NGSDashboard() {
     setShowForm(false); await load(); setSaving(false);
   }
   async function updateServiceCallStatus(id: string, status: string) {
-    await supabase.from("ngs_service_calls").update({ status }).eq("id", id); await load();
+    await supabase.from("ngs_service_calls").update({ status }).eq("id", id);
+    // אם הושלם — עדכן גם בניהול נכסים
+    if (status === "הושלם") {
+      const { data: ngsCall } = await supabase.from("ngs_service_calls").select("source_request_id").eq("id", id).single();
+      if (ngsCall?.source_request_id) {
+        await supabase.from("service_requests").update({ status: "הושלם" }).eq("id", ngsCall.source_request_id);
+      }
+    }
+    await load();
   }
   async function deleteItem(table: string, id: string) {
     if (!confirm("למחוק?")) return;
