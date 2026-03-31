@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -192,7 +192,7 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string
   const [leaseForm, setLeaseForm] = useState({ apartment_id: "", tenant_name: "", start_date: "", end_date: "", rent_amount: "", deposit: "" });
   const [reqForm, setReqForm] = useState({ apartment_id: "", issue: "", urgency: "בינונית", vendor: "", cost: "" });
 
-  useState(() => {
+  useEffect(() => {
     supabase.from("apartments").select("id, apartment_number, buildings(name)").then(({ data }) => setDbApts(data || []));
     supabase.from("buildings").select("*").then(({ data }) => setDbBlds(data || []));
 
@@ -229,7 +229,7 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string
       setRecentRequests(requests.data || []);
       setVacantList(vacant.data || []);
     });
-  });
+  }, []);
 
   async function saveOwner() {
     if (!ownerForm.name) return;
@@ -438,7 +438,7 @@ function Owners({ openOwner }: { openOwner: (id: number) => void }) {
     setLoading(false);
   }
 
-  useState(() => { load(); });
+  useEffect(() => { load(); }, []);
 
   async function addOwner() {
     if (!form.name) return;
@@ -814,27 +814,30 @@ function UsersManagement() {
     setLoading(false);
   }
 
-  useState(() => { load(); });
+  useEffect(() => { load(); }, []);
 
   async function addUser() {
     setFormError(""); setFormSuccess("");
     if (!form.full_name || !form.email || !form.password) { setFormError("יש למלא שם, אימייל וסיסמה"); return; }
     setSaving(true);
     try {
-      const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": serviceKey!, "Authorization": `Bearer ${serviceKey}` },
-        body: JSON.stringify({ email: form.email, password: form.password, email_confirm: true }),
+      const { data, error } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
       });
-      const newUser = await res.json();
-      if (newUser.id) {
-        await supabase.from("profiles").insert({ id: newUser.id, full_name: form.full_name, phone: form.phone, role: form.role, status: "מאושר" });
-        setFormSuccess(`✅ המשתמש "${form.full_name}" נוסף בהצלחה!`);
+      if (error) { setFormError(error.message); setSaving(false); return; }
+      if (data.user) {
+        const { error: profileError } = await supabase.from("profiles").insert({
+          id: data.user.id,
+          full_name: form.full_name,
+          phone: form.phone,
+          role: form.role,
+          status: "מאושר",
+        });
+        if (profileError) { setFormError(profileError.message); setSaving(false); return; }
+        setFormSuccess(`✅ המשתמש "${form.full_name}" נוסף! סיסמה: ${form.password}`);
         setForm({ full_name: "", email: "", password: "Aa123456!", role: "ngs_worker", phone: "" });
         await load();
-      } else {
-        setFormError(newUser.message || "שגיאה ביצירת המשתמש");
       }
     } catch (e) {
       setFormError("שגיאה ביצירת המשתמש");
@@ -1016,7 +1019,7 @@ function Leases() {
     setLoading(false);
   }
 
-  useState(() => { load(); });
+  useEffect(() => { load(); }, []);
 
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -1193,7 +1196,7 @@ function ServiceRequests() {
     setLoading(false);
   }
 
-  useState(() => { load(); });
+  useEffect(() => { load(); }, []);
 
   async function addRequest() {
     if (!form.issue) return;
@@ -1368,7 +1371,7 @@ function Buildings({ openBuilding }: { openBuilding: (id: any) => void }) {
     setLoading(false);
   }
 
-  useState(() => { loadBuildings(); });
+  useEffect(() => { loadBuildings(); }, []);
 
   async function addBuilding() {
     if (!newName || !newCity) return;
@@ -1603,7 +1606,7 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
     setLoading(false);
   }
 
-  useState(() => { load(); });
+  useEffect(() => { load(); }, []);
 
   async function addApartment() {
     if (!form.building_id || !form.apartment_number) return;
@@ -1756,7 +1759,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
   const [editForm, setEditForm] = useState<any>(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     async function load() {
       setLoading(true);
       const { data: a } = await supabase.from("apartments").select("*, buildings(name, city)").eq("id", apartmentId).single();
@@ -1781,7 +1784,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
       setLoading(false);
     }
     load();
-  });
+  }, [apartmentId]);
 
   async function uploadDoc(leaseId: string, file: File) {
     setUploadingId(leaseId);
@@ -2144,7 +2147,7 @@ function WorkContracts() {
     setLoading(false);
   }
 
-  useState(() => { load(); });
+  useEffect(() => { load(); }, []);
 
   async function addContract() {
     if (!form.owner_name) return;
@@ -2254,7 +2257,7 @@ function OwnerDashboard({ userProfile }: { userProfile: any }) {
   const [ownerWorkContracts, setOwnerWorkContracts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useState(() => {
+  useEffect(() => {
     async function load() {
       setLoading(true);
       const ownerName = userProfile?.full_name || "";
@@ -2280,7 +2283,7 @@ function OwnerDashboard({ userProfile }: { userProfile: any }) {
       setLoading(false);
     }
     load();
-  });
+  }, []);
 
   if (loading) return <div style={{ padding: 60, textAlign: "center", color: "#64748b" }}>טוען...</div>;
 
@@ -2476,7 +2479,7 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
     setServices(data || []);
     setLoading(false);
   }
-  useState(() => { load(); });
+  useEffect(() => { load(); }, []);
   async function addService() {
     if (!form.service_type || !form.date) return;
     setSaving(true);
@@ -2576,7 +2579,7 @@ function NGSDashboard() {
     setProjects(p.data || []); setServiceCalls(s.data || []); setWorkLogs(w.data || []);
     setLoading(false);
   }
-  useState(() => { load(); });
+  useEffect(() => { load(); }, []);
 
   async function saveVehicle() {
     if (!vehicleForm.license_plate) return; setSaving(true);
@@ -3106,18 +3109,61 @@ export default function Home() {
   }
 
   async function handleLogin() {
-    setLoginLoading(true); setLoginError("");
+    setLoginLoading(true);
+    setLoginError("");
+    setPendingApproval(false);
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { setLoginError("אימייל או סיסמה שגויים"); setLoginLoading(false); return; }
-    const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-    if (profile) {
-      if (profile.status === "ממתין לאישור") { setPendingApproval(true); await supabase.auth.signOut(); setLoginLoading(false); return; }
-      setUserProfile(profile); setUserRole(profile.role || "admin");
-      if (profile.role === "tenant") setActivePage("tenantPortal");
-      else if (profile.role === "ngs_worker") setActivePage("ngs");
-      else setActivePage("dashboard");
-    } else { setUserRole("admin"); setActivePage("dashboard"); }
-    setLoggedIn(true); setLoginLoading(false);
+
+    if (error) {
+      setLoginError("אימייל או סיסמה שגויים");
+      setLoginLoading(false);
+      return;
+    }
+
+    const userId = data.user?.id;
+    if (!userId) {
+      setLoginError("לא נמצא משתמש");
+      setLoginLoading(false);
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (profileError) {
+      setLoginError(profileError.message);
+      setLoginLoading(false);
+      return;
+    }
+
+    if (!profile) {
+      setUserRole("admin");
+      setActivePage("dashboard");
+      setLoggedIn(true);
+      setLoginLoading(false);
+      return;
+    }
+
+    if (profile.status === "ממתין לאישור") {
+      setPendingApproval(true);
+      await supabase.auth.signOut();
+      setLoginLoading(false);
+      return;
+    }
+
+    setUserProfile(profile);
+    setUserRole(profile.role || "admin");
+
+    if (profile.role === "tenant") setActivePage("tenantPortal");
+    else if (profile.role === "ngs_worker") setActivePage("ngs");
+    else setActivePage("dashboard");
+
+    setLoggedIn(true);
+    setLoginLoading(false);
   }
 
   async function handleRegister() {
