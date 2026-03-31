@@ -796,6 +796,8 @@ function UsersManagement() {
   const [form, setForm] = useState({ full_name: "", email: "", password: "Aa123456!", role: "ngs_worker", phone: "" });
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState("");
 
   // הרשאות לפי תפקיד
   const rolePermissions: Record<string, string> = {
@@ -843,6 +845,13 @@ function UsersManagement() {
       setFormError("שגיאה ביצירת המשתמש");
     }
     setSaving(false);
+  }
+
+  async function saveName(id: string) {
+    if (!editingNameValue.trim()) return;
+    await supabase.from("profiles").update({ full_name: editingNameValue.trim() }).eq("id", id);
+    setEditingNameId(null);
+    await load();
   }
 
   async function rejectUser(id: string) {
@@ -961,7 +970,27 @@ function UsersManagement() {
               <tbody>
                 {approved.map(u => (
                   <tr key={u.id}>
-                    <td style={{ fontWeight: 700 }}>{u.full_name}</td>
+                    <td style={{ fontWeight: 700 }}>
+                      {editingNameId === u.id ? (
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <input
+                            className="input"
+                            style={{ padding: "4px 8px", fontSize: 13, width: 140 }}
+                            value={editingNameValue}
+                            onChange={e => setEditingNameValue(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter") saveName(u.id); if (e.key === "Escape") setEditingNameId(null); }}
+                            autoFocus
+                          />
+                          <button className="btn btn-primary" style={{ fontSize: 11, padding: "3px 10px" }} onClick={() => saveName(u.id)}>✓</button>
+                          <button className="btn btn-outline" style={{ fontSize: 11, padding: "3px 8px" }} onClick={() => setEditingNameId(null)}>✕</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span>{u.full_name}</span>
+                          <button onClick={() => { setEditingNameId(u.id); setEditingNameValue(u.full_name || ""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#94a3b8" }}>✏️</button>
+                        </div>
+                      )}
+                    </td>
                     <td>{u.phone || "-"}</td>
                     <td>
                       <select style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
@@ -3237,7 +3266,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         <div className="card">
           <div className="section-top"><h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה</h3><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ יומן חדש</button></div>
           <div className="chips" style={{ marginBottom: 12, marginTop: 8 }}>
-            {["הכל", "לא טופל", "יצאה פרפורמה"].map(f => (<button key={f} className={`btn ${workLogFilter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setWorkLogFilter(f)}>{f}</button>))}
+            {!isWorker && ["הכל", "לא טופל", "יצאה פרפורמה"].map(f => (<button key={f} className={`btn ${workLogFilter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setWorkLogFilter(f)}>{f}</button>))}
           </div>
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 14 }}>
