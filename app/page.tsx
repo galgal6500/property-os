@@ -2549,7 +2549,16 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
   async function addTask() {
     if (!form.title) return;
     setSaving(true);
-    await supabase.from("ngs_tasks").insert({ ...form, status: "פתוח", created_by: workerName || "מנהל" });
+    const assignedTo = isWorker ? workerName : form.assigned_to;
+    await supabase.from("ngs_tasks").insert({
+      title: form.title,
+      description: form.description,
+      assigned_to: assignedTo,
+      priority: form.priority,
+      due_date: form.due_date || null,
+      status: "פתוח",
+      created_by: workerName || "מנהל",
+    });
     setForm({ title: "", description: "", assigned_to: "all", priority: "רגילה", due_date: "" });
     setShowForm(false);
     onRefresh();
@@ -2569,7 +2578,6 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
 
   const open = tasks.filter(t => t.status === "פתוח");
   const done = tasks.filter(t => t.status === "הושלם");
-
   const priorityColor: Record<string, string> = { "דחופה": "#dc2626", "גבוהה": "#f59e0b", "רגילה": "#3b82f6", "נמוכה": "#94a3b8" };
 
   return (
@@ -2578,22 +2586,24 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
         <div className="section-top">
           <div>
             <h3 className="card-title" style={{ margin: 0 }}>✅ {isWorker ? "המשימות שלי" : "משימות"}</h3>
-            <div className="muted" style={{ marginTop: 4 }}>{isWorker ? "משימות שהוקצו לך" : "ניהול משימות לעובדים"}</div>
+            <div className="muted" style={{ marginTop: 4 }}>{isWorker ? "משימות שהוקצו לך + משימות שפתחת לעצמך" : "ניהול משימות לעובדים"}</div>
           </div>
-          {!isWorker && <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ משימה חדשה</button>}
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ {isWorker ? "משימה חדשה" : "משימה חדשה"}</button>
         </div>
 
-        {!isWorker && showForm && (
+        {showForm && (
           <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 12 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="field"><label>כותרת משימה *</label><input className="input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="תאר את המשימה..." /></div>
-              <div className="field">
-                <label>שייך לעובד</label>
-                <select className="input" value={form.assigned_to} onChange={e => setForm({...form, assigned_to: e.target.value})}>
-                  <option value="all">👥 כל העובדים</option>
-                  {employees.filter(e => e.status === "פעיל").map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
-                </select>
-              </div>
+              {!isWorker && (
+                <div className="field">
+                  <label>שייך לעובד</label>
+                  <select className="input" value={form.assigned_to} onChange={e => setForm({...form, assigned_to: e.target.value})}>
+                    <option value="all">👥 כל העובדים</option>
+                    {employees.filter(e => e.status === "פעיל").map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
+                  </select>
+                </div>
+              )}
               <div className="field">
                 <label>עדיפות</label>
                 <select className="input" value={form.priority} onChange={e => setForm({...form, priority: e.target.value})}>
@@ -2603,6 +2613,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
               <div className="field"><label>תאריך יעד</label><input className="input" type="date" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})} /></div>
               <div className="field" style={{ gridColumn: "span 2" }}><label>תיאור</label><textarea className="input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} placeholder="פרטים נוספים..." /></div>
             </div>
+            {isWorker && <div style={{ fontSize: 13, color: "#64748b", background: "#f1f5f9", borderRadius: 10, padding: "8px 12px" }}>💡 המשימה תיווצר על שמך — המנהל יוכל לראות אותה</div>}
             <div style={{ display: "flex", gap: 10 }}>
               <button className="btn btn-primary" onClick={addTask} disabled={saving}>{saving ? "שומר..." : "➕ צור משימה"}</button>
               <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
@@ -2610,7 +2621,6 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
           </div>
         )}
 
-        {/* משימות פתוחות */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#0f172a" }}>📋 פתוחות ({open.length})</div>
           {open.length === 0 ? (
@@ -2618,12 +2628,13 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {open.map(t => (
-                <div key={t.id} style={{ border: `2px solid ${priorityColor[t.priority] || "#e2e8f0"}20`, borderRight: `4px solid ${priorityColor[t.priority] || "#e2e8f0"}`, borderRadius: 14, padding: 16, background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                <div key={t.id} style={{ borderRight: `4px solid ${priorityColor[t.priority] || "#e2e8f0"}`, borderRadius: 14, padding: 16, background: "#fff", border: `1px solid #e8eef6`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 800, fontSize: 15 }}>{t.title}</span>
                       <span style={{ background: `${priorityColor[t.priority]}20`, color: priorityColor[t.priority], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{t.priority}</span>
-                      {t.assigned_to !== "all" ? <span style={{ fontSize: 12, color: "#64748b" }}>👤 {t.assigned_to}</span> : <span style={{ fontSize: 12, color: "#64748b" }}>👥 כולם</span>}
+                      {t.assigned_to === "all" ? <span style={{ fontSize: 12, color: "#64748b" }}>👥 כולם</span> : <span style={{ fontSize: 12, color: "#64748b" }}>👤 {t.assigned_to}</span>}
+                      {t.created_by && t.created_by !== "מנהל" && <span style={{ fontSize: 11, color: "#94a3b8" }}>נפתח ע"י: {t.created_by}</span>}
                     </div>
                     {t.description && <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>{t.description}</div>}
                     {t.due_date && <div style={{ fontSize: 12, color: new Date(t.due_date) < new Date() ? "#dc2626" : "#64748b" }}>📅 יעד: {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
@@ -2638,7 +2649,6 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
           )}
         </div>
 
-        {/* משימות שהושלמו */}
         {done.length > 0 && (
           <div>
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#16a34a" }}>✅ הושלמו ({done.length})</div>
@@ -2777,9 +2787,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     setWorkLogForm({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
     setShowForm(false); await load(); setSaving(false);
   }
-  async function updateServiceCallStatus(id: string, status: string) {
-    await supabase.from("ngs_service_calls").update({ status }).eq("id", id);
-    // אם הושלם — עדכן גם בניהול נכסים
+  async function updateServiceCallStatus(id: string, status: string, completedBy?: string) {
+    const updateData: any = { status };
+    if (status === "הושלם" && completedBy) updateData.completed_by = completedBy;
+    await supabase.from("ngs_service_calls").update(updateData).eq("id", id);
     if (status === "הושלם") {
       const { data: ngsCall } = await supabase.from("ngs_service_calls").select("source_request_id").eq("id", id).single();
       if (ngsCall?.source_request_id) {
@@ -2794,6 +2805,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   }
 
   const tabs = isWorker ? [
+    { key: "overview", label: "🏠 סקירה" },
     { key: "worklogs", label: "📋 יומני עבודה" },
     { key: "service", label: "🔧 קריאות שירות" },
     { key: "vehicles", label: "🚗 הרכב שלי" },
@@ -2877,7 +2889,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
       {loading && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>}
 
-      {!loading && tab === "overview" && (
+      {!loading && tab === "overview" && !isWorker && (
         <div style={{ display: "grid", gap: 18 }}>
           <div className="kpi-grid">
             <KPI title="עובדים פעילים" value={String(employees.filter(e => e.status === "פעיל").length)} subtitle="צוות" />
@@ -2906,6 +2918,104 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {!loading && tab === "overview" && isWorker && (
+        <div style={{ display: "grid", gap: 18 }}>
+          {/* כרטיס ברוך הבא */}
+          <div style={{ background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", borderRadius: 24, padding: "32px 36px", color: "#fff", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: -40, left: -40, width: 200, height: 200, background: "rgba(213,181,122,0.08)", borderRadius: "50%" }} />
+            <div style={{ position: "absolute", bottom: -60, right: -20, width: 250, height: 250, background: "rgba(213,181,122,0.05)", borderRadius: "50%" }} />
+            <div style={{ position: "relative" }}>
+              <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>ברוך הבא 👋</div>
+              <h1 style={{ margin: "0 0 6px", fontSize: 32, fontWeight: 900 }}>{workerName}</h1>
+              <div style={{ color: "#94a3b8", fontSize: 15 }}>עובד נג"ש מור הנדסה</div>
+              <div style={{ display: "flex", gap: 24, marginTop: 28 }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: "#d5b57a" }}>{workLogs.length}</div>
+                  <div style={{ fontSize: 12, color: "#94a3b8" }}>יומנים</div>
+                </div>
+                <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#f87171" : "#34d399" }}>{serviceCalls.filter(s => s.status !== "הושלם").length}</div>
+                  <div style={{ fontSize: 12, color: "#94a3b8" }}>קריאות פתוחות</div>
+                </div>
+                <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#fbbf24" : "#34d399" }}>{tasks.filter(t => t.status === "פתוח").length}</div>
+                  <div style={{ fontSize: 12, color: "#94a3b8" }}>משימות פתוחות</div>
+                </div>
+                {vehicles.length > 0 && <>
+                  <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: "#60a5fa" }}>{vehicles[0]?.license_plate || "-"}</div>
+                    <div style={{ fontSize: 12, color: "#94a3b8" }}>הרכב שלי</div>
+                  </div>
+                </>}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid-1-1">
+            {/* משימות פתוחות */}
+            <div className="card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <h3 className="card-title" style={{ margin: 0 }}>✅ המשימות שלי</h3>
+                <button className="btn btn-outline" style={{ fontSize: 12 }} onClick={() => setTab("tasks")}>הכל</button>
+              </div>
+              {tasks.filter(t => t.status === "פתוח").length === 0 ? (
+                <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין משימות פתוחות 🎉</div>
+              ) : tasks.filter(t => t.status === "פתוח").slice(0, 4).map(t => (
+                <div key={t.id} style={{ borderRight: `3px solid ${t.priority === "דחופה" ? "#dc2626" : t.priority === "גבוהה" ? "#f59e0b" : "#3b82f6"}`, padding: "10px 14px", marginBottom: 8, background: "#f8fafc", borderRadius: "0 10px 10px 0" }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{t.title}</div>
+                  {t.due_date && <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>📅 {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
+                </div>
+              ))}
+            </div>
+
+            {/* קריאות שירות */}
+            <div className="card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <h3 className="card-title" style={{ margin: 0 }}>🔧 קריאות שירות</h3>
+                <button className="btn btn-outline" style={{ fontSize: 12 }} onClick={() => setTab("service")}>הכל</button>
+              </div>
+              {serviceCalls.filter(s => s.status !== "הושלם").length === 0 ? (
+                <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין קריאות פתוחות 🎉</div>
+              ) : serviceCalls.filter(s => s.status !== "הושלם").slice(0, 4).map(s => (
+                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 10, padding: "10px 14px", marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{s.issue}</span>
+                    <Badge value={s.urgency} />
+                  </div>
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{s.client_name || "-"}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* יומנים אחרונים */}
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה אחרונים</h3>
+              <button className="btn btn-outline" style={{ fontSize: 12 }} onClick={() => setTab("worklogs")}>הכל</button>
+            </div>
+            {workLogs.length === 0 ? (
+              <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין יומני עבודה עדיין</div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
+                {workLogs.slice(0, 6).map(w => (
+                  <div key={w.id} style={{ background: "#f8fafc", borderRadius: 12, padding: 14, cursor: "pointer" }} onClick={() => setSelectedWorkLog(w)}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 8px" }}>#{w.serial_number}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>{w.project_name || w.branch || "-"}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -3084,7 +3194,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           ) : (
             <div className="table-wrap">
               <table>
-                <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>פעולות</th>}</tr></thead>
+                <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>טופל ע"י</th>}{!isWorker && <th>פעולות</th>}</tr></thead>
                 <tbody>
                   {serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).map(s => (
                     <tr key={s.id}>
@@ -3098,7 +3208,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                           <button
                             className="btn btn-outline"
                             style={{ fontSize: 12, padding: "4px 12px", background: s.status === "הושלם" ? "#dcfce7" : "", color: s.status === "הושלם" ? "#16a34a" : "" }}
-                            onClick={() => s.status !== "הושלם" && updateServiceCallStatus(s.id, "הושלם")}
+                            onClick={() => s.status !== "הושלם" && updateServiceCallStatus(s.id, "הושלם", workerName)}
                             disabled={s.status === "הושלם"}>
                             {s.status === "הושלם" ? "✅ טופל" : "סמן טופל"}
                           </button>
@@ -3108,6 +3218,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                           </select>
                         )}
                       </td>
+                      {!isWorker && <td style={{ fontSize: 13, color: s.completed_by ? "#16a34a" : "#94a3b8", fontWeight: s.completed_by ? 700 : 400 }}>{s.completed_by || "-"}</td>}
                       {!isWorker && <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td>}
                     </tr>
                   ))}
@@ -3186,9 +3297,11 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       <div style={{ fontSize: 14, color: "#64748b", marginTop: 2 }}>{w.branch ? `📍 ${w.branch}` : ""}{w.project_name ? ` · 🤝 ${w.project_name}` : ""}</div>
                       {w.filled_by && <div style={{ fontSize: 13, color: "#94a3b8" }}>ממלא: {w.filled_by}</div>}
                     </div>
-                    <span style={{ background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: w.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>
-                      {w.performa === "יצאה פרפורמה" ? "✅ פרפורמה" : "❌ לא טופל"}
-                    </span>
+                    {!isWorker && (
+                      <span style={{ background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: w.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>
+                        {w.performa === "יצאה פרפורמה" ? "✅ פרפורמה" : "❌ לא טופל"}
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setSelectedWorkLog(w)}>📄 פתח יומן</button>
@@ -3205,16 +3318,17 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                         lines.forEach((l, i) => win.document.write(`<tr><td>${i+1}</td><td>${l}</td></tr>`));
                         win.document.write(`</tbody></table>`);
                         if (w.client_notes) win.document.write(`<p><strong>הערות ללקוח:</strong> ${w.client_notes}</p>`);
-                        win.document.write(`<p>פרפורמה: ${w.performa || "לא טופל"}</p>`);
                         win.document.write(`<br/><button onclick="window.print()">🖨️ הדפס</button></body></html>`);
                         win.document.close();
                       }
                     }}>🖨️ הדפס</button>
-                    <select value={w.performa || "לא טופל"} onChange={async e => { await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id); await load(); }} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2" }}>
-                      <option value="לא טופל">❌ לא טופל</option>
-                      <option value="יצאה פרפורמה">✅ יצאה פרפורמה</option>
-                    </select>
-                    <button className="btn btn-outline" style={{ fontSize: 12, padding: "6px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>
+                    {!isWorker && (
+                      <select value={w.performa || "לא טופל"} onChange={async e => { await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id); await load(); }} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2" }}>
+                        <option value="לא טופל">❌ לא טופל</option>
+                        <option value="יצאה פרפורמה">✅ יצאה פרפורמה</option>
+                      </select>
+                    )}
+                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "6px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>}
                   </div>
                 </div>
               ))}
@@ -3487,7 +3601,7 @@ export default function Home() {
       </aside>
       <main className="main">
         <div className="topbar">
-          <div><h1>שלום {userProfile?.full_name || email.split("@")[0]}</h1><div className="sub">{getRoleLabel(userRole)}</div></div>
+          <div><h1>שלום {userProfile?.full_name?.split(" ")[0] || email.split("@")[0]} 👋</h1><div className="sub">{getRoleLabel(userRole)}</div></div>
           <div className="top-actions"><input className="search" placeholder="חיפוש מהיר..." /><button className="btn btn-dark">הוספה מהירה</button></div>
         </div>
         {renderContent()}
