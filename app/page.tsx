@@ -2541,14 +2541,140 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
   );
 }
 
-function NGSDashboard() {
-  const [tab, setTab] = useState("overview");
+function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks: any[]; employees: any[]; isWorker: boolean; workerName: string; onRefresh: () => void }) {
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ title: "", description: "", assigned_to: "all", priority: "רגילה", due_date: "" });
+
+  async function addTask() {
+    if (!form.title) return;
+    setSaving(true);
+    await supabase.from("ngs_tasks").insert({ ...form, status: "פתוח", created_by: workerName || "מנהל" });
+    setForm({ title: "", description: "", assigned_to: "all", priority: "רגילה", due_date: "" });
+    setShowForm(false);
+    onRefresh();
+    setSaving(false);
+  }
+
+  async function updateTaskStatus(id: string, status: string) {
+    await supabase.from("ngs_tasks").update({ status }).eq("id", id);
+    onRefresh();
+  }
+
+  async function deleteTask(id: string) {
+    if (!confirm("למחוק את המשימה?")) return;
+    await supabase.from("ngs_tasks").delete().eq("id", id);
+    onRefresh();
+  }
+
+  const open = tasks.filter(t => t.status === "פתוח");
+  const done = tasks.filter(t => t.status === "הושלם");
+
+  const priorityColor: Record<string, string> = { "דחופה": "#dc2626", "גבוהה": "#f59e0b", "רגילה": "#3b82f6", "נמוכה": "#94a3b8" };
+
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <div className="card">
+        <div className="section-top">
+          <div>
+            <h3 className="card-title" style={{ margin: 0 }}>✅ {isWorker ? "המשימות שלי" : "משימות"}</h3>
+            <div className="muted" style={{ marginTop: 4 }}>{isWorker ? "משימות שהוקצו לך" : "ניהול משימות לעובדים"}</div>
+          </div>
+          {!isWorker && <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ משימה חדשה</button>}
+        </div>
+
+        {!isWorker && showForm && (
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="field"><label>כותרת משימה *</label><input className="input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="תאר את המשימה..." /></div>
+              <div className="field">
+                <label>שייך לעובד</label>
+                <select className="input" value={form.assigned_to} onChange={e => setForm({...form, assigned_to: e.target.value})}>
+                  <option value="all">👥 כל העובדים</option>
+                  {employees.filter(e => e.status === "פעיל").map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label>עדיפות</label>
+                <select className="input" value={form.priority} onChange={e => setForm({...form, priority: e.target.value})}>
+                  <option>דחופה</option><option>גבוהה</option><option>רגילה</option><option>נמוכה</option>
+                </select>
+              </div>
+              <div className="field"><label>תאריך יעד</label><input className="input" type="date" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})} /></div>
+              <div className="field" style={{ gridColumn: "span 2" }}><label>תיאור</label><textarea className="input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} placeholder="פרטים נוספים..." /></div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-primary" onClick={addTask} disabled={saving}>{saving ? "שומר..." : "➕ צור משימה"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+
+        {/* משימות פתוחות */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#0f172a" }}>📋 פתוחות ({open.length})</div>
+          {open.length === 0 ? (
+            <div style={{ padding: 20, textAlign: "center", color: "#64748b", background: "#f8fafc", borderRadius: 12 }}>אין משימות פתוחות 🎉</div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {open.map(t => (
+                <div key={t.id} style={{ border: `2px solid ${priorityColor[t.priority] || "#e2e8f0"}20`, borderRight: `4px solid ${priorityColor[t.priority] || "#e2e8f0"}`, borderRadius: 14, padding: 16, background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                      <span style={{ fontWeight: 800, fontSize: 15 }}>{t.title}</span>
+                      <span style={{ background: `${priorityColor[t.priority]}20`, color: priorityColor[t.priority], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{t.priority}</span>
+                      {t.assigned_to !== "all" ? <span style={{ fontSize: 12, color: "#64748b" }}>👤 {t.assigned_to}</span> : <span style={{ fontSize: 12, color: "#64748b" }}>👥 כולם</span>}
+                    </div>
+                    {t.description && <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>{t.description}</div>}
+                    {t.due_date && <div style={{ fontSize: 12, color: new Date(t.due_date) < new Date() ? "#dc2626" : "#64748b" }}>📅 יעד: {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 14px" }} onClick={() => updateTaskStatus(t.id, "הושלם")}>✅ סיימתי</button>
+                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "5px 10px", color: "#dc2626" }} onClick={() => deleteTask(t.id)}>מחק</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* משימות שהושלמו */}
+        {done.length > 0 && (
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#16a34a" }}>✅ הושלמו ({done.length})</div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {done.map(t => (
+                <div key={t.id} style={{ border: "1px solid #dcfce7", borderRadius: 14, padding: 14, background: "#f0fdf4", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: 0.8 }}>
+                  <div>
+                    <span style={{ fontWeight: 700, textDecoration: "line-through", color: "#64748b" }}>{t.title}</span>
+                    {t.assigned_to !== "all" && <span style={{ fontSize: 12, color: "#94a3b8", marginRight: 10 }}>👤 {t.assigned_to}</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => updateTaskStatus(t.id, "פתוח")}>פתח מחדש</button>}
+                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteTask(t.id)}>מחק</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?: string }) {
+  const isWorker = userRole === "ngs_worker";
+  const workerName = userProfile?.full_name || "";
+
+  const [tab, setTab] = useState(isWorker ? "worklogs" : "overview");
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [serviceCalls, setServiceCalls] = useState<any[]>([]);
   const [workLogs, setWorkLogs] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -2567,16 +2693,38 @@ function NGSDashboard() {
 
   async function load() {
     setLoading(true);
-    const [v, e, c, p, s, w] = await Promise.all([
+    const [v, e, c, p, s, w, t] = await Promise.all([
       supabase.from("ngs_vehicles").select("*").order("created_at", { ascending: false }),
       supabase.from("ngs_employees").select("*").order("name"),
       supabase.from("ngs_clients").select("*").order("name"),
       supabase.from("ngs_projects").select("*").order("created_at", { ascending: false }),
       supabase.from("ngs_service_calls").select("*").order("created_at", { ascending: false }),
       supabase.from("ngs_work_logs").select("*").order("date", { ascending: false }),
+      supabase.from("ngs_tasks").select("*").order("created_at", { ascending: false }),
     ]);
-    setVehicles(v.data || []); setEmployees(e.data || []); setClients(c.data || []);
-    setProjects(p.data || []); setServiceCalls(s.data || []); setWorkLogs(w.data || []);
+
+    // סינון לפי עובד
+    const allVehicles = v.data || [];
+    const allWorkLogs = w.data || [];
+    const allTasks = t.data || [];
+
+    if (isWorker && workerName) {
+      // רכב שמשויך לעובד
+      setVehicles(allVehicles.filter((v: any) => v.driver === workerName));
+      // יומנים שלו בלבד
+      setWorkLogs(allWorkLogs.filter((l: any) =>
+        l.employee_name?.includes(workerName) || l.filled_by === workerName
+      ));
+      // משימות שמשויכות אליו או לכולם
+      setTasks(allTasks.filter((t: any) => t.assigned_to === "all" || t.assigned_to === workerName));
+    } else {
+      setVehicles(allVehicles);
+      setWorkLogs(allWorkLogs);
+      setTasks(allTasks);
+    }
+
+    setEmployees(e.data || []); setClients(c.data || []);
+    setProjects(p.data || []); setServiceCalls(s.data || []);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -2645,11 +2793,20 @@ function NGSDashboard() {
     await supabase.from(table).delete().eq("id", id); await load();
   }
 
-  const tabs = [
-    { key: "overview", label: "📊 סקירה" }, { key: "vehicles", label: "🚗 רכבים" },
-    { key: "employees", label: "👷 עובדים" }, { key: "clients", label: "🤝 לקוחות" },
-    { key: "projects", label: "📁 פרויקטים" }, { key: "service", label: "🔧 קריאות שירות" },
+  const tabs = isWorker ? [
     { key: "worklogs", label: "📋 יומני עבודה" },
+    { key: "service", label: "🔧 קריאות שירות" },
+    { key: "vehicles", label: "🚗 הרכב שלי" },
+    { key: "tasks", label: "✅ המשימות שלי" },
+  ] : [
+    { key: "overview", label: "📊 סקירה" },
+    { key: "vehicles", label: "🚗 רכבים" },
+    { key: "employees", label: "👷 עובדים" },
+    { key: "clients", label: "🤝 לקוחות" },
+    { key: "projects", label: "📁 פרויקטים" },
+    { key: "service", label: "🔧 קריאות שירות" },
+    { key: "worklogs", label: "📋 יומני עבודה" },
+    { key: "tasks", label: "✅ משימות" },
   ];
   const openServiceCalls = serviceCalls.filter(s => s.status !== "הושלם");
   const activeProjects = projects.filter(p => p.status === "פעיל");
@@ -2887,11 +3044,14 @@ function NGSDashboard() {
 
       {!loading && tab === "service" && (
         <div className="card">
-          <div className="section-top"><h3 className="card-title" style={{ margin: 0 }}>🔧 קריאות שירות</h3><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ קריאה חדשה</button></div>
+          <div className="section-top">
+            <h3 className="card-title" style={{ margin: 0 }}>🔧 קריאות שירות</h3>
+            {!isWorker && <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ קריאה חדשה</button>}
+          </div>
           <div className="chips" style={{ marginBottom: 12, marginTop: 8 }}>
             {["הכל", "חדשה", "בטיפול", "הושלם"].map(f => (<button key={f} className={`btn ${serviceCallFilter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setServiceCallFilter(f)}>{f}</button>))}
           </div>
-          {showForm && (
+          {!isWorker && showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                 <div className="field"><label>לקוח</label><select className="input" value={serviceCallForm.client_name} onChange={e => setServiceCallForm({...serviceCallForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
@@ -2919,9 +3079,47 @@ function NGSDashboard() {
               ))}
             </div>
           )}
-          {serviceCalls.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
-          : <div className="table-wrap"><table><thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>{serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).map(s => (<tr key={s.id}><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td><td>{s.client_name || "-"}</td><td style={{ fontWeight: 700 }}>{s.issue}</td><td><Badge value={s.urgency} /></td><td>{s.assigned_to || "-"}</td><td><select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}><option>חדשה</option><option>בטיפול</option><option>הושלם</option></select></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td></tr>))}</tbody></table></div>}
+          {serviceCalls.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>פעולות</th>}</tr></thead>
+                <tbody>
+                  {serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).map(s => (
+                    <tr key={s.id}>
+                      <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td>
+                      <td>{s.client_name || "-"}</td>
+                      <td style={{ fontWeight: 700 }}>{s.issue}</td>
+                      <td><Badge value={s.urgency} /></td>
+                      <td>{s.assigned_to || "-"}</td>
+                      <td>
+                        {isWorker ? (
+                          <button
+                            className="btn btn-outline"
+                            style={{ fontSize: 12, padding: "4px 12px", background: s.status === "הושלם" ? "#dcfce7" : "", color: s.status === "הושלם" ? "#16a34a" : "" }}
+                            onClick={() => s.status !== "הושלם" && updateServiceCallStatus(s.id, "הושלם")}
+                            disabled={s.status === "הושלם"}>
+                            {s.status === "הושלם" ? "✅ טופל" : "סמן טופל"}
+                          </button>
+                        ) : (
+                          <select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
+                            <option>חדשה</option><option>בטיפול</option><option>הושלם</option>
+                          </select>
+                        )}
+                      </td>
+                      {!isWorker && <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
+      )}
+
+      {!loading && tab === "tasks" && (
+        <TasksTab tasks={tasks} employees={employees} isWorker={isWorker} workerName={workerName} onRefresh={load} />
       )}
 
       {!loading && tab === "worklogs" && (
@@ -3186,7 +3384,7 @@ export default function Home() {
       return <TenantPortal userProfile={userProfile} />;
     }
     if (userRole === "owner") return <OwnerDashboard userProfile={userProfile} />;
-    if (userRole === "ngs_worker") return <NGSDashboard />;
+    if (userRole === "ngs_worker") return <NGSDashboard userProfile={userProfile} userRole={userRole} />;
     switch (activePage) {
       case "dashboard": return <Dashboard openApartment={openApartment} openBuilding={openBuilding} />;
       case "owners": return <Owners openOwner={openOwner} />;
@@ -3202,7 +3400,7 @@ export default function Home() {
       case "settings": return <Settings userEmail={email} />;
       case "users": return <UsersManagement />;
       case "workcontracts": return <WorkContracts />;
-      case "ngs": return <NGSDashboard />;
+      case "ngs": return <NGSDashboard userProfile={userProfile} userRole={userRole} />;
       default: return null;
     }
   }
