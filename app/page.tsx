@@ -791,6 +791,19 @@ function UsersManagement() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [apts, setApts] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ full_name: "", email: "", password: "Aa123456!", role: "ngs_worker", phone: "" });
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
+
+  // הרשאות לפי תפקיד
+  const rolePermissions: Record<string, string> = {
+    admin: "גישה מלאה לכל המערכת",
+    ngs_worker: "רואה רק את מודול נג\"ש מור",
+    owner: "רואה רק את הדירות והחוזים שלו",
+    tenant: "רואה רק את הדירה וקריאות השירות שלו",
+  };
 
   async function load() {
     setLoading(true);
@@ -803,9 +816,30 @@ function UsersManagement() {
 
   useState(() => { load(); });
 
-  async function approveUser(id: string, role: string) {
-    await supabase.from("profiles").update({ status: "מאושר", role }).eq("id", id);
-    await load();
+  async function addUser() {
+    setFormError(""); setFormSuccess("");
+    if (!form.full_name || !form.email || !form.password) { setFormError("יש למלא שם, אימייל וסיסמה"); return; }
+    setSaving(true);
+    try {
+      const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": serviceKey!, "Authorization": `Bearer ${serviceKey}` },
+        body: JSON.stringify({ email: form.email, password: form.password, email_confirm: true }),
+      });
+      const newUser = await res.json();
+      if (newUser.id) {
+        await supabase.from("profiles").insert({ id: newUser.id, full_name: form.full_name, phone: form.phone, role: form.role, status: "מאושר" });
+        setFormSuccess(`✅ המשתמש "${form.full_name}" נוסף בהצלחה!`);
+        setForm({ full_name: "", email: "", password: "Aa123456!", role: "ngs_worker", phone: "" });
+        await load();
+      } else {
+        setFormError(newUser.message || "שגיאה ביצירת המשתמש");
+      }
+    } catch (e) {
+      setFormError("שגיאה ביצירת המשתמש");
+    }
+    setSaving(false);
   }
 
   async function rejectUser(id: string) {
@@ -822,24 +856,86 @@ function UsersManagement() {
   const pending = users.filter(u => u.status === "ממתין לאישור");
   const approved = users.filter(u => u.status === "מאושר");
 
+  const roleLabel: Record<string, string> = {
+    admin: "מנהל", ngs_worker: 'עובד נג"ש', owner: "בעל נכס", tenant: "דייר"
+  };
+
   return (
     <div style={{ display: "grid", gap: 18 }}>
+
+      {/* כרטיסי סיכום */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+        {[
+          { label: 'סה״כ משתמשים', value: users.length, color: "#d5b57a" },
+          { label: "מנהלים", value: users.filter(u => u.role === "admin").length, color: "#60a5fa" },
+          { label: 'עובדי נג"ש', value: users.filter(u => u.role === "ngs_worker").length, color: "#a78bfa" },
+          { label: "ממתינים", value: pending.length, color: "#f87171" },
+        ].map(item => (
+          <div key={item.label} style={{ background: "#1e293b", borderRadius: 16, padding: "16px 20px", textAlign: "center" }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: item.color }}>{item.value}</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{item.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* טופס הוספת משתמש */}
+      <div className="card">
+        <div className="section-top">
+          <div><h2 className="card-title">ניהול משתמשים</h2><div className="muted">הוספה, עריכת תפקידים והרשאות</div></div>
+          <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setFormError(""); setFormSuccess(""); }}>+ הוסף משתמש</button>
+        </div>
+
+        {showForm && (
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 14 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>👤 משתמש חדש</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="field"><label>שם מלא *</label><input className="input" value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} placeholder="ישראל ישראלי" /></div>
+              <div className="field"><label>אימייל *</label><input className="input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="user@email.com" /></div>
+              <div className="field"><label>סיסמה ראשונית</label><input className="input" value={form.password} onChange={e => setForm({...form, password: e.target.value})} /></div>
+              <div className="field"><label>טלפון</label><input className="input" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="050-0000000" /></div>
+              <div className="field" style={{ gridColumn: "span 2" }}>
+                <label>תפקיד והרשאות</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
+                  {[
+                    { value: "ngs_worker", label: '👷 עובד נג"ש', desc: 'רואה רק את מודול נג"ש' },
+                    { value: "admin", label: "👑 מנהל", desc: "גישה מלאה לכל המערכת" },
+                    { value: "owner", label: "🏠 בעל נכס", desc: "רואה רק את הנכסים שלו" },
+                    { value: "tenant", label: "🔑 דייר", desc: "רואה רק את הדירה שלו" },
+                  ].map(opt => (
+                    <div key={opt.value} onClick={() => setForm({...form, role: opt.value})}
+                      style={{ border: `2px solid ${form.role === opt.value ? "#c9a227" : "#e2e8f0"}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer", background: form.role === opt.value ? "#fef9ec" : "#fff" }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{opt.label}</div>
+                      <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{opt.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {formError && <div style={{ color: "#dc2626", fontSize: 14 }}>{formError}</div>}
+            {formSuccess && <div style={{ color: "#16a34a", fontSize: 14, fontWeight: 700 }}>{formSuccess}</div>}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-primary" onClick={addUser} disabled={saving}>{saving ? "יוצר..." : "➕ צור משתמש"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ממתינים לאישור */}
       {pending.length > 0 && (
         <div className="card">
-          <h3 className="card-title">⏳ בקשות ממתינות לאישור ({pending.length})</h3>
+          <h3 className="card-title">⏳ ממתינים לאישור ({pending.length})</h3>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>שם</th><th>אימייל</th><th>טלפון</th><th>תפקיד מבוקש</th><th>תאריך</th><th>פעולות</th></tr></thead>
+              <thead><tr><th>שם</th><th>תפקיד</th><th>תאריך</th><th>פעולות</th></tr></thead>
               <tbody>
                 {pending.map(u => (
                   <tr key={u.id} style={{ background: "#fffbeb" }}>
                     <td style={{ fontWeight: 700 }}>{u.full_name}</td>
-                    <td>{u.id}</td>
-                    <td>{u.phone || "-"}</td>
-                    <td><Badge value={u.role === "tenant" ? "דייר" : u.role === "owner" ? "בעל נכס" : u.role} /></td>
+                    <td><Badge value={roleLabel[u.role] || u.role} /></td>
                     <td>{new Date(u.created_at).toLocaleDateString("he-IL")}</td>
-                    <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button className="btn btn-primary" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => approveUser(u.id, u.role)}>✅ אשר</button>
+                    <td style={{ display: "flex", gap: 8 }}>
+                      <button className="btn btn-primary" style={{ fontSize: 12, padding: "4px 12px" }} onClick={async () => { await supabase.from("profiles").update({ status: "מאושר" }).eq("id", u.id); await load(); }}>✅ אשר</button>
                       <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626" }} onClick={() => rejectUser(u.id)}>❌ דחה</button>
                     </td>
                   </tr>
@@ -850,16 +946,15 @@ function UsersManagement() {
         </div>
       )}
 
+      {/* משתמשים מאושרים */}
       <div className="card">
-        <h3 className="card-title">✅ משתמשים מאושרים ({approved.length})</h3>
-        {loading ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
-        ) : approved.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>אין משתמשים מאושרים עדיין</div>
-        ) : (
+        <h3 className="card-title">✅ משתמשים פעילים ({approved.length})</h3>
+        {loading ? <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        : approved.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>אין משתמשים עדיין</div>
+        : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>דירה משויכת</th><th>פעולות</th></tr></thead>
+              <thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>הרשאות</th><th>דירה משויכת</th><th>פעולות</th></tr></thead>
               <tbody>
                 {approved.map(u => (
                   <tr key={u.id}>
@@ -869,18 +964,22 @@ function UsersManagement() {
                       <select style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
                         value={u.role || "tenant"}
                         onChange={e => supabase.from("profiles").update({ role: e.target.value }).eq("id", u.id).then(() => load())}>
+                        <option value="ngs_worker">עובד נג"ש</option>
                         <option value="tenant">דייר</option>
                         <option value="owner">בעל נכס</option>
                         <option value="admin">מנהל</option>
                       </select>
                     </td>
+                    <td style={{ fontSize: 12, color: "#64748b" }}>{rolePermissions[u.role] || "-"}</td>
                     <td>
-                      <select style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
-                        value={u.apartment_id || ""}
-                        onChange={e => assignApartment(u.id, e.target.value)}>
-                        <option value="">לא משויך</option>
-                        {apts.map((a: any) => <option key={a.id} value={a.id}>{a.buildings?.name} / {a.apartment_number}</option>)}
-                      </select>
+                      {u.role === "tenant" || u.role === "owner" ? (
+                        <select style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
+                          value={u.apartment_id || ""}
+                          onChange={e => assignApartment(u.id, e.target.value)}>
+                          <option value="">לא משויך</option>
+                          {apts.map((a: any) => <option key={a.id} value={a.id}>{a.buildings?.name} / {a.apartment_number}</option>)}
+                        </select>
+                      ) : <span style={{ color: "#94a3b8", fontSize: 13 }}>לא רלוונטי</span>}
                     </td>
                     <td>
                       <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626" }} onClick={() => rejectUser(u.id)}>הסר</button>
