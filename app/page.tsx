@@ -1905,6 +1905,7 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
   }
 
   return (
+    <>
     <div style={{ display: "grid", gap: 18 }}>
       <div className="card">
         <div className="section-top">
@@ -2008,7 +2009,6 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
       </div>
     </div>
 
-    {/* מודל הפקת דוח */}
     {showReportModal && (
       <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
         <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 580, maxHeight: "90vh", overflow: "auto", padding: 28 }}>
@@ -2080,6 +2080,7 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
         </div>
       </div>
     )}
+    </>
   );
 }
 
