@@ -3634,7 +3634,7 @@ export default function Home() {
           <div><h1>שלום {userProfile?.full_name?.split(" ")[0] || email.split("@")[0]} 👋</h1><div className="sub">{getRoleLabel(userRole)}</div></div>
           <div className="top-actions">
             <input className="search" placeholder="חיפוש מהיר..." />
-            <button className="btn btn-outline" onClick={() => window.location.reload()} title="רענן נתונים" style={{ fontSize: 18, padding: "8px 14px" }}>🔄</button>
+            <button className="btn btn-outline" onClick={() => { setActivePage(p => { const curr = p; setTimeout(() => setActivePage(curr), 10); return "___refresh___"; }); setTimeout(() => setActivePage(activePage), 50); }} title="רענן נתונים" style={{ fontSize: 18, padding: "8px 14px" }}>🔄</button>
             <button className="btn btn-outline" onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); }} style={{ color: "#dc2626", borderColor: "#dc2626" }}>התנתק</button>
           </div>
         </div>
@@ -3665,7 +3665,7 @@ export default function Home() {
               ))}
               {/* רענון והתנתקות במובייל */}
               <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: "#475569" }}
-                onClick={() => { setShowMobileMenu(false); window.location.reload(); }}>
+                onClick={() => { setShowMobileMenu(false); setActivePage(p => { setTimeout(() => setActivePage(p), 50); return "___refresh___"; }); }}>
                 <span style={{ fontSize: 22 }}>🔄</span>
                 <span style={{ fontSize: 11, fontWeight: 600 }}>רענון</span>
               </button>
