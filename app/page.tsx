@@ -1522,12 +1522,29 @@ function Buildings({ openBuilding }: { openBuilding: (id: any) => void }) {
 }
 
 function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any; back: () => void; openApartment: (id: any) => void }) {
-  const building = buildings.find((b) => b.id === buildingId) || buildings[0];
-  const units = apartments.filter((a) => a.buildingId === building.id);
-  const totalIncome = units.reduce((sum, u) => sum + (u.monthlyIncome || 0), 0);
-  const rentedUnits = units.filter((u) => u.status === "מושכר").length;
-  const vacantUnits = units.filter((u) => u.status === "פנוי").length;
-  const floors = Array.from(new Set(units.map((u) => u.floor))).sort((a, b) => a - b);
+  const [building, setBuilding] = useState<any>(null);
+  const [units, setUnits] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const { data: b } = await supabase.from("buildings").select("*").eq("id", buildingId).single();
+      const { data: apts } = await supabase.from("apartments").select("*").eq("building_id", buildingId).order("floor").order("apartment_number");
+      setBuilding(b);
+      setUnits(apts || []);
+      setLoading(false);
+    }
+    load();
+  }, [buildingId]);
+
+  if (loading) return <div style={{ padding: 60, textAlign: "center", color: "#64748b" }}>טוען...</div>;
+  if (!building) return <div style={{ padding: 60, textAlign: "center", color: "#dc2626" }}>לא נמצא מבנה</div>;
+
+  const totalIncome = units.reduce((sum, u) => sum + (u.fee_type === "percent" ? (u.rent_amount * (u.fee_value || 8)) / 100 : (u.fee_value || 0)), 0);
+  const rentedUnits = units.filter(u => u.status === "מושכר").length;
+  const vacantUnits = units.filter(u => u.status === "פנוי").length;
+  const floors = Array.from(new Set(units.map(u => u.floor))).sort((a: any, b: any) => a - b);
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
@@ -1535,69 +1552,65 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
         <div>
           <button className="back-link" onClick={back}>← חזרה לרשימת מבנים</button>
           <h2 style={{ margin: "8px 0", fontSize: 34 }}>{building.name}</h2>
-          <div className="muted">{building.city} · בניין עם כמה יחידות בכמה קומות</div>
-        </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button className="btn btn-primary">הוסף יחידה</button>
-          <button className="btn btn-secondary">הוסף קריאת שירות</button>
-          <button className="btn btn-outline">דוח מבנה</button>
+          <div className="muted">{building.city} · {building.floors} קומות</div>
         </div>
       </div>
 
       <div className="detail-kpis">
-        <KPI title="שם המבנה" value={building.name} subtitle="נכס מרכזי" />
+        <KPI title="שם המבנה" value={building.name} subtitle={building.city} />
         <KPI title='סה״כ יחידות' value={String(units.length)} subtitle="בבניין הזה" />
         <KPI title="יחידות מושכרות" value={String(rentedUnits)} subtitle="פעילות כרגע" />
         <KPI title="יחידות פנויות" value={String(vacantUnits)} subtitle="דורש שיווק" />
-        <KPI title="הכנסה חודשית" value={currency(totalIncome)} subtitle="מהבניין הזה" />
+        <KPI title="הכנסה חודשית" value={currency(totalIncome)} subtitle="עמלת ניהול" />
       </div>
 
       <div className="card">
         <h3 className="card-title">יחידות לפי קומה</h3>
-        <div className="muted" style={{ marginBottom: 16 }}>תצוגת בניין לפי קומות</div>
-        <div style={{ display: "grid", gap: 18 }}>
-          {floors.map((floor) => {
-            const floorUnits = units.filter((u) => u.floor === floor).sort((a, b) => a.apartmentNumber.localeCompare(b.apartmentNumber, "he"));
-            return (
-              <div key={floor} style={{ border: "1px solid #e8eef6", borderRadius: 20, padding: 18, background: "#fff" }}>
-                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>קומה {floor}</div>
-                <div style={{ display: "grid", gap: 12 }}>
-                  {floorUnits.map((unit) => (
-                    <div key={unit.id} style={{ border: "1px solid #e8eef6", borderRadius: 18, padding: 16, display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr 1fr auto", gap: 12, alignItems: "center", background: "#fbfcfe" }}>
-                      <div><div style={{ fontWeight: 800 }}>יחידה {unit.apartmentNumber}</div><div className="muted" style={{ marginTop: 6 }}>{unit.rooms} חדרים</div></div>
-                      <div><div style={{ fontSize: 13, color: "#64748b" }}>דייר</div><div style={{ fontWeight: 700, marginTop: 6 }}>{unit.tenant}</div></div>
-                      <div><div style={{ fontSize: 13, color: "#64748b" }}>חוזה עד</div><div style={{ fontWeight: 700, marginTop: 6 }}>{unit.leaseEnd}</div></div>
-                      <div><div style={{ fontSize: 13, color: "#64748b" }}>הכנסה</div><div style={{ fontWeight: 700, marginTop: 6 }}>{currency(unit.monthlyIncome)}</div></div>
-                      <div><div style={{ fontSize: 13, color: "#64748b" }}>סטטוס</div><div style={{ marginTop: 6 }}><Badge value={unit.status} /></div></div>
-                      <div><button className="btn btn-outline" onClick={() => openApartment(unit.id)}>פתח דירה</button></div>
-                    </div>
-                  ))}
+        {units.length === 0 ? (
+          <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>אין יחידות במבנה זה עדיין</div>
+        ) : (
+          <div style={{ display: "grid", gap: 18 }}>
+            {floors.map((floor: any) => {
+              const floorUnits = units.filter(u => u.floor === floor);
+              return (
+                <div key={floor} style={{ border: "1px solid #e8eef6", borderRadius: 20, padding: 18, background: "#fff" }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>קומה {floor}</div>
+                  <div style={{ display: "grid", gap: 12 }}>
+                    {floorUnits.map(unit => (
+                      <div key={unit.id} style={{ border: "1px solid #e8eef6", borderRadius: 18, padding: 16, display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr 1fr auto", gap: 12, alignItems: "center", background: "#fbfcfe" }}>
+                        <div><div style={{ fontWeight: 800 }}>יחידה {unit.apartment_number}</div><div className="muted" style={{ marginTop: 6 }}>{unit.rooms} חדרים</div></div>
+                        <div><div style={{ fontSize: 13, color: "#64748b" }}>דייר</div><div style={{ fontWeight: 700, marginTop: 6 }}>{unit.tenant_name || "-"}</div></div>
+                        <div><div style={{ fontSize: 13, color: "#64748b" }}>חוזה עד</div><div style={{ fontWeight: 700, marginTop: 6 }}>{unit.lease_end ? new Date(unit.lease_end).toLocaleDateString("he-IL") : "-"}</div></div>
+                        <div><div style={{ fontSize: 13, color: "#64748b" }}>שכירות</div><div style={{ fontWeight: 700, marginTop: 6 }}>{unit.rent_amount ? currency(unit.rent_amount) : "-"}</div></div>
+                        <div><div style={{ fontSize: 13, color: "#64748b" }}>סטטוס</div><div style={{ marginTop: 6 }}><Badge value={unit.status} /></div></div>
+                        <div><button className="btn btn-outline" onClick={() => openApartment(unit.id)}>פתח דירה</button></div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="card">
-        <h3 className="card-title">לוח תפוסה לבניין</h3>
-        <div className="muted" style={{ marginBottom: 16 }}>ירוק = מושכר, צהוב = פנוי, אדום = יש קריאה פתוחה</div>
+        <h3 className="card-title">לוח תפוסה</h3>
+        <div className="muted" style={{ marginBottom: 16 }}>🟢 מושכר · 🟡 פנוי</div>
         <div style={{ display: "grid", gap: 18 }}>
-          {[...floors].reverse().map((floor) => {
-            const floorUnits = units.filter((u) => u.floor === floor).sort((a, b) => a.apartmentNumber.localeCompare(b.apartmentNumber, "he"));
+          {[...floors].reverse().map((floor: any) => {
+            const floorUnits = units.filter(u => u.floor === floor);
             return (
               <div key={floor} className="building-floor-card">
                 <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 14 }}>קומה {floor}</div>
                 <div className="building-board-row">
-                  {floorUnits.map((unit) => {
-                    const color = unit.openRequests > 0 ? "#dc2626" : unit.status === "פנוי" ? "#eab308" : "#16a34a";
-                    return (
-                      <div key={unit.id} className="building-unit-box" onClick={() => openApartment(unit.id)} style={{ background: color }}>
-                        <div>יחידה {unit.apartmentNumber}</div>
-                        <div style={{ fontSize: 12, marginTop: 6 }}>{unit.tenant}</div>
-                      </div>
-                    );
-                  })}
+                  {floorUnits.map(unit => (
+                    <div key={unit.id} className="building-unit-box" onClick={() => openApartment(unit.id)}
+                      style={{ background: unit.status === "פנוי" ? "#eab308" : "#16a34a" }}>
+                      <div>יחידה {unit.apartment_number}</div>
+                      <div style={{ fontSize: 12, marginTop: 6 }}>{unit.tenant_name || "פנוי"}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             );
