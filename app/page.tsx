@@ -3450,7 +3450,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 <div className="field"><label>סטטוס</label><select className="input" value={vehicleForm.status} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})}><option>פעיל</option><option>בתיקון</option><option>מושבת</option></select></div>
                 <div className="field"><label>טסט אחרון</label><input className="input" type="date" value={vehicleForm.test_date} onChange={e => setVehicleForm({...vehicleForm, test_date: e.target.value})} /></div>
                 <div className="field"><label>טסט הבא</label><input className="input" type="date" value={vehicleForm.next_test_date} onChange={e => setVehicleForm({...vehicleForm, next_test_date: e.target.value})} /></div>
-                <div className="field"><label>👤 נהג</label><input className="input" value={vehicleForm.driver} onChange={e => setVehicleForm({...vehicleForm, driver: e.target.value})} placeholder="שם הנהג" /></div>
+                <div className="field"><label>👤 נהג</label><select className="input" value={vehicleForm.driver} onChange={e => setVehicleForm({...vehicleForm, driver: e.target.value})}><option value="">-- בחר נהג --</option>{employees.filter(e => e.status === "פעיל").map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveVehicle} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
@@ -3499,7 +3499,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   <div className="field"><label>סטטוס</label><select className="input" value={editingVehicle.status} onChange={e => setEditingVehicle({...editingVehicle, status: e.target.value})}><option>פעיל</option><option>בתיקון</option><option>מושבת</option></select></div>
                   <div className="field"><label>טסט אחרון</label><input className="input" type="date" value={editingVehicle.test_date} onChange={e => setEditingVehicle({...editingVehicle, test_date: e.target.value})} /></div>
                   <div className="field"><label>טסט הבא</label><input className="input" type="date" value={editingVehicle.next_test_date} onChange={e => setEditingVehicle({...editingVehicle, next_test_date: e.target.value})} /></div>
-                  <div className="field"><label>👤 נהג</label><input className="input" value={editingVehicle.driver} onChange={e => setEditingVehicle({...editingVehicle, driver: e.target.value})} placeholder="שם הנהג" /></div>
+                  <div className="field"><label>👤 נהג</label><select className="input" value={editingVehicle.driver || ""} onChange={e => setEditingVehicle({...editingVehicle, driver: e.target.value})}><option value="">-- בחר נהג --</option>{employees.filter(e => e.status === "פעיל").map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
                   <div className="field" style={{ gridColumn: "span 2" }}><label>הערות</label><input className="input" value={editingVehicle.notes} onChange={e => setEditingVehicle({...editingVehicle, notes: e.target.value})} /></div>
                 </div>
                 <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
