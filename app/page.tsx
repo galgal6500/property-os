@@ -1528,7 +1528,7 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
   const [showAddForm, setShowAddForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingUnit, setEditingUnit] = useState<any>(null);
-  const [addForm, setAddForm] = useState({ apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "" });
+  const [addForm, setAddForm] = useState({ apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", arnona_number: "", arnona_cost: "", arnona_payer: "דייר", electric_meter: "", electric_payer: "דייר", payment_method: "העברה בנקאית" });
 
   useEffect(() => {
     load();
@@ -1555,8 +1555,14 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
       rent_amount: parseFloat(addForm.rent_amount) || 0,
       owner_name: addForm.owner_name,
       tenant_name: addForm.tenant_name,
+      arnona_number: addForm.arnona_number,
+      arnona_cost: parseFloat(addForm.arnona_cost) || 0,
+      arnona_payer: addForm.arnona_payer,
+      electric_meter: addForm.electric_meter,
+      electric_payer: addForm.electric_payer,
+      payment_method: addForm.payment_method,
     });
-    setAddForm({ apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "" });
+    setAddForm({ apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", arnona_number: "", arnona_cost: "", arnona_payer: "דייר", electric_meter: "", electric_payer: "דייר", payment_method: "העברה בנקאית" });
     setShowAddForm(false);
     await load();
     setSaving(false);
@@ -1573,6 +1579,12 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
       rent_amount: parseFloat(editingUnit.rent_amount) || 0,
       owner_name: editingUnit.owner_name,
       tenant_name: editingUnit.tenant_name,
+      arnona_number: editingUnit.arnona_number || "",
+      arnona_cost: parseFloat(editingUnit.arnona_cost) || 0,
+      arnona_payer: editingUnit.arnona_payer || "דייר",
+      electric_meter: editingUnit.electric_meter || "",
+      electric_payer: editingUnit.electric_payer || "דייר",
+      payment_method: editingUnit.payment_method || "העברה בנקאית",
     }).eq("id", editingUnit.id);
     setEditingUnit(null);
     await load();
@@ -1616,6 +1628,22 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
             <div className="field"><label>שכר דירה ₪</label><input className="input" type="number" value={addForm.rent_amount} onChange={e => setAddForm({...addForm, rent_amount: e.target.value})} placeholder="5000" /></div>
             <div className="field"><label>בעל נכס</label><input className="input" value={addForm.owner_name} onChange={e => setAddForm({...addForm, owner_name: e.target.value})} placeholder="שם בעל הנכס" /></div>
             <div className="field"><label>דייר</label><input className="input" value={addForm.tenant_name} onChange={e => setAddForm({...addForm, tenant_name: e.target.value})} placeholder="שם הדייר" /></div>
+            <div className="field"><label>אמצעי תשלום</label><select className="input" value={addForm.payment_method} onChange={e => setAddForm({...addForm, payment_method: e.target.value})}><option>העברה בנקאית</option><option>מזומן</option><option>צ׳קים</option></select></div>
+          </div>
+          <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14, marginTop: 4 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "#475569" }}>🏛️ ארנונה</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="field"><label>מספר משלם ארנונה</label><input className="input" value={addForm.arnona_number} onChange={e => setAddForm({...addForm, arnona_number: e.target.value})} placeholder="123456" /></div>
+              <div className="field"><label>עלות ארנונה ₪/חודש</label><input className="input" type="number" value={addForm.arnona_cost} onChange={e => setAddForm({...addForm, arnona_cost: e.target.value})} placeholder="500" /></div>
+              <div className="field"><label>מי משלם ארנונה</label><select className="input" value={addForm.arnona_payer} onChange={e => setAddForm({...addForm, arnona_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
+            </div>
+          </div>
+          <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "#475569" }}>⚡ חשמל</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="field"><label>מספר מונה חשמל</label><input className="input" value={addForm.electric_meter} onChange={e => setAddForm({...addForm, electric_meter: e.target.value})} placeholder="12345678" /></div>
+              <div className="field"><label>מי משלם חשמל</label><select className="input" value={addForm.electric_payer} onChange={e => setAddForm({...addForm, electric_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
+            </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
             <button className="btn btn-primary" onClick={addUnit} disabled={saving}>{saving ? "שומר..." : "💾 שמור דירה"}</button>
@@ -1663,6 +1691,22 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
                               <div className="field"><label>שכר דירה ₪</label><input className="input" type="number" value={editingUnit.rent_amount || ""} onChange={e => setEditingUnit({...editingUnit, rent_amount: e.target.value})} /></div>
                               <div className="field"><label>בעל נכס</label><input className="input" value={editingUnit.owner_name || ""} onChange={e => setEditingUnit({...editingUnit, owner_name: e.target.value})} /></div>
                               <div className="field"><label>דייר</label><input className="input" value={editingUnit.tenant_name || ""} onChange={e => setEditingUnit({...editingUnit, tenant_name: e.target.value})} /></div>
+                              <div className="field"><label>אמצעי תשלום</label><select className="input" value={editingUnit.payment_method || "העברה בנקאית"} onChange={e => setEditingUnit({...editingUnit, payment_method: e.target.value})}><option>העברה בנקאית</option><option>מזומן</option><option>צ׳קים</option></select></div>
+                            </div>
+                            <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
+                              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "#475569" }}>🏛️ ארנונה</div>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                                <div className="field"><label>מספר משלם</label><input className="input" value={editingUnit.arnona_number || ""} onChange={e => setEditingUnit({...editingUnit, arnona_number: e.target.value})} /></div>
+                                <div className="field"><label>עלות ₪/חודש</label><input className="input" type="number" value={editingUnit.arnona_cost || ""} onChange={e => setEditingUnit({...editingUnit, arnona_cost: e.target.value})} /></div>
+                                <div className="field"><label>מי משלם</label><select className="input" value={editingUnit.arnona_payer || "דייר"} onChange={e => setEditingUnit({...editingUnit, arnona_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
+                              </div>
+                            </div>
+                            <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
+                              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "#475569" }}>⚡ חשמל</div>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                                <div className="field"><label>מספר מונה</label><input className="input" value={editingUnit.electric_meter || ""} onChange={e => setEditingUnit({...editingUnit, electric_meter: e.target.value})} /></div>
+                                <div className="field"><label>מי משלם</label><select className="input" value={editingUnit.electric_payer || "דייר"} onChange={e => setEditingUnit({...editingUnit, electric_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
+                              </div>
                             </div>
                             <div style={{ display: "flex", gap: 8 }}>
                               <button className="btn btn-primary" onClick={saveUnit} disabled={saving}>{saving ? "שומר..." : "💾 שמור"}</button>
@@ -1677,6 +1721,9 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
                               <div><div style={{ fontSize: 12, color: "#64748b" }}>דייר</div><div style={{ fontWeight: 600 }}>{unit.tenant_name || "-"}</div></div>
                               <div><div style={{ fontSize: 12, color: "#64748b" }}>בעל נכס</div><div style={{ fontWeight: 600 }}>{unit.owner_name || "-"}</div></div>
                               <div><div style={{ fontSize: 12, color: "#64748b" }}>שכירות</div><div style={{ fontWeight: 600 }}>{unit.rent_amount ? currency(unit.rent_amount) : "-"}</div></div>
+                              {unit.payment_method && <div><div style={{ fontSize: 12, color: "#64748b" }}>תשלום</div><div style={{ fontWeight: 600 }}>{unit.payment_method}</div></div>}
+                              {unit.arnona_number && <div><div style={{ fontSize: 12, color: "#64748b" }}>🏛️ ארנונה</div><div style={{ fontWeight: 600 }}>{unit.arnona_number} · {unit.arnona_cost ? currency(unit.arnona_cost) : ""} · {unit.arnona_payer}</div></div>}
+                              {unit.electric_meter && <div><div style={{ fontSize: 12, color: "#64748b" }}>⚡ מונה</div><div style={{ fontWeight: 600 }}>{unit.electric_meter} · {unit.electric_payer}</div></div>}
                               <Badge value={unit.status} />
                             </div>
                             <div style={{ display: "flex", gap: 6 }}>
@@ -2077,7 +2124,26 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
               <InfoBox label="טלפון דייר" value={apt.tenant_phone || "-"} />
               <InfoBox label="שכר דירה" value={apt.rent_amount ? currency(apt.rent_amount) : "-"} />
               <InfoBox label="עמלת ניהול" value={apt.fee_type === "percent" ? apt.fee_value + "%" : currency(apt.fee_value)} />
+              <InfoBox label="אמצעי תשלום" value={apt.payment_method || "-"} />
               <InfoBox label="הערות" value={apt.notes || "-"} />
+            </div>
+            {/* ארנונה וחשמל */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
+              <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontWeight: 700, marginBottom: 10, color: "#475569" }}>🏛️ ארנונה</div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  <InfoBox label="מספר משלם" value={apt.arnona_number || "-"} />
+                  <InfoBox label="עלות חודשית" value={apt.arnona_cost ? currency(apt.arnona_cost) : "-"} />
+                  <InfoBox label="מי משלם" value={apt.arnona_payer || "-"} />
+                </div>
+              </div>
+              <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontWeight: 700, marginBottom: 10, color: "#475569" }}>⚡ חשמל</div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  <InfoBox label="מספר מונה" value={apt.electric_meter || "-"} />
+                  <InfoBox label="מי משלם" value={apt.electric_payer || "-"} />
+                </div>
+              </div>
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
