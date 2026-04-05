@@ -1782,6 +1782,10 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportFilter, setReportFilter] = useState("הכל");
+  const [reportBuilding, setReportBuilding] = useState("הכל");
+  const [reportFields, setReportFields] = useState<string[]>(["address", "floor", "apartment_number", "owner_name", "tenant_name", "rent_amount", "lease_end", "status"]);
   const [form, setForm] = useState({
     building_id: "", apartment_number: "", floor: "0", rooms: "3",
     status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "",
@@ -1839,12 +1843,76 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
     return q && s;
   });
 
+  function generateReport() {
+    const today = new Date().toLocaleDateString("he-IL");
+    const thirtyDays = new Date(); thirtyDays.setDate(thirtyDays.getDate() + 30);
+
+    const allFields: Record<string, string> = {
+      address: "כתובת", floor: "קומה", apartment_number: "דירה", owner_name: "בעל נכס",
+      tenant_name: "דייר", tenant_phone: "טלפון דייר", rent_amount: "שכירות חודשית",
+      lease_end: "חוזה עד", status: "סטטוס", rooms: "חדרים", payment_method: "אמצעי תשלום",
+      arnona_number: "מספר ארנונה", arnona_cost: "עלות ארנונה", arnona_payer: "מי משלם ארנונה",
+      electric_meter: "מונה חשמל", electric_payer: "מי משלם חשמל", days_left: "ימים לסיום חוזה",
+    };
+
+    let rows = dbApartments;
+    if (reportFilter !== "הכל") rows = rows.filter(a => a.status === reportFilter);
+    if (reportBuilding !== "הכל") rows = rows.filter(a => a.buildings?.name === reportBuilding);
+
+    const headers = reportFields.map(f => allFields[f]);
+    const tableRows = rows.map(a => {
+      const daysLeft = a.lease_end ? Math.ceil((new Date(a.lease_end).getTime() - Date.now()) / (1000*60*60*24)) : null;
+      return reportFields.map(f => {
+        if (f === "address") return a.buildings?.name || "-";
+        if (f === "rent_amount") return a.rent_amount ? `${Number(a.rent_amount).toLocaleString("he-IL")} ₪` : "-";
+        if (f === "arnona_cost") return a.arnona_cost ? `${Number(a.arnona_cost).toLocaleString("he-IL")} ₪` : "-";
+        if (f === "lease_end") return a.lease_end ? new Date(a.lease_end).toLocaleDateString("he-IL") : "-";
+        if (f === "days_left") return daysLeft !== null ? (daysLeft < 0 ? "⚠️ פג תוקף!" : daysLeft + " ימים") : "-";
+        return a[f] || "-";
+      });
+    });
+
+    const totalRent = rows.reduce((s, a) => s + (a.rent_amount || 0), 0);
+    const title = `דוח דירות${reportFilter !== "הכל" ? ` — ${reportFilter}` : ""}${reportBuilding !== "הכל" ? ` | ${reportBuilding}` : ""}`;
+
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`
+      <html dir="rtl"><head><title>${title}</title>
+      <style>
+        body { font-family: Arial, sans-serif; direction: rtl; padding: 30px; color: #1e293b; }
+        h1 { font-size: 22px; margin-bottom: 4px; }
+        .meta { color: #64748b; font-size: 13px; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th { background: #1e293b; color: #d5b57a; padding: 10px 12px; text-align: right; font-size: 12px; }
+        td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .total { margin-top: 14px; font-weight: bold; font-size: 14px; padding: 10px 14px; background: #f1f5f9; border-radius: 8px; }
+        @media print { button { display: none; } }
+      </style></head><body>
+      <h1>🏠 ${title}</h1>
+      <div class="meta">תאריך הפקה: ${today} · סה״כ יחידות: ${rows.length}</div>
+      <button onclick="window.print()" style="background:#1e293b;color:white;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:14px">🖨️ הדפס / שמור PDF</button>
+      <table>
+        <thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>
+        <tbody>${tableRows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table>
+      <div class="total">סה״כ הכנסה חודשית: ${totalRent.toLocaleString("he-IL")} ₪</div>
+      </body></html>
+    `);
+    win.document.close();
+    setShowReportModal(false);
+  }
+
   return (
     <div style={{ display: "grid", gap: 18 }}>
       <div className="card">
         <div className="section-top">
           <div><h2 className="card-title" style={{ marginBottom: 6 }}>דירות</h2><div className="muted">ניהול כל הדירות, הדיירים, החוזים וההכנסה שלך במקום אחד</div></div>
-          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף דירה</button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="btn btn-outline" style={{ fontSize: 13 }} onClick={() => setShowReportModal(true)}>📊 הפק דוח</button>
+            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף דירה</button>
+          </div>
         </div>
 
         {showForm && (
@@ -1939,6 +2007,79 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
         )}
       </div>
     </div>
+
+    {/* מודל הפקת דוח */}
+    {showReportModal && (
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+        <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 580, maxHeight: "90vh", overflow: "auto", padding: 28 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>📊 הפקת דוח דירות</h2>
+            <button onClick={() => setShowReportModal(false)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#64748b" }}>×</button>
+          </div>
+
+          {/* סינון */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+            <div className="field">
+              <label>סטטוס דירות</label>
+              <select className="input" value={reportFilter} onChange={e => setReportFilter(e.target.value)}>
+                <option value="הכל">הכל</option>
+                <option value="מושכר">מושכרות בלבד</option>
+                <option value="פנוי">פנויות בלבד</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>כתובת / מבנה</label>
+              <select className="input" value={reportBuilding} onChange={e => setReportBuilding(e.target.value)}>
+                <option value="הכל">כל הכתובות</option>
+                {dbBuildings.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* בחירת שדות */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 15 }}>✅ בחר שדות לדוח:</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                { key: "address", label: "📍 כתובת" },
+                { key: "floor", label: "🏢 קומה" },
+                { key: "apartment_number", label: "🚪 מספר דירה" },
+                { key: "owner_name", label: "👤 בעל נכס" },
+                { key: "tenant_name", label: "🔑 שם דייר" },
+                { key: "tenant_phone", label: "📞 טלפון דייר" },
+                { key: "rent_amount", label: "💰 שכירות חודשית" },
+                { key: "lease_end", label: "📅 תאריך סיום חוזה" },
+                { key: "days_left", label: "⏳ ימים לסיום חוזה" },
+                { key: "status", label: "🏷️ סטטוס" },
+                { key: "rooms", label: "🛏️ מספר חדרים" },
+                { key: "payment_method", label: "💳 אמצעי תשלום" },
+                { key: "arnona_number", label: "🏛️ מספר ארנונה" },
+                { key: "arnona_cost", label: "🏛️ עלות ארנונה" },
+                { key: "arnona_payer", label: "🏛️ מי משלם ארנונה" },
+                { key: "electric_meter", label: "⚡ מונה חשמל" },
+                { key: "electric_payer", label: "⚡ מי משלם חשמל" },
+              ].map(field => (
+                <label key={field.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, cursor: "pointer", background: reportFields.includes(field.key) ? "#fef9ec" : "#f8fafc", border: `1px solid ${reportFields.includes(field.key) ? "#c9a227" : "#e2e8f0"}` }}>
+                  <input type="checkbox" checked={reportFields.includes(field.key)}
+                    onChange={e => setReportFields(e.target.checked ? [...reportFields, field.key] : reportFields.filter(f => f !== field.key))}
+                    style={{ width: 16, height: 16, accentColor: "#c9a227" }} />
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{field.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: "#f8fafc", borderRadius: 12, padding: 12, marginBottom: 20, fontSize: 13, color: "#64748b" }}>
+            סה״כ דירות בדוח: <strong>{dbApartments.filter(a => (reportFilter === "הכל" || a.status === reportFilter) && (reportBuilding === "הכל" || a.buildings?.name === reportBuilding)).length}</strong>
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="btn btn-primary" style={{ flex: 1, height: 48 }} onClick={generateReport} disabled={reportFields.length === 0}>🖨️ הפק ופתח דוח</button>
+            <button className="btn btn-outline" onClick={() => setShowReportModal(false)}>ביטול</button>
+          </div>
+        </div>
+      </div>
+    )}
   );
 }
 
