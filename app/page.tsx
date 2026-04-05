@@ -1525,18 +1525,65 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
   const [building, setBuilding] = useState<any>(null);
   const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editingUnit, setEditingUnit] = useState<any>(null);
+  const [addForm, setAddForm] = useState({ apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "" });
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      const { data: b } = await supabase.from("buildings").select("*").eq("id", buildingId).single();
-      const { data: apts } = await supabase.from("apartments").select("*").eq("building_id", buildingId).order("floor").order("apartment_number");
-      setBuilding(b);
-      setUnits(apts || []);
-      setLoading(false);
-    }
     load();
   }, [buildingId]);
+
+  async function load() {
+    setLoading(true);
+    const { data: b } = await supabase.from("buildings").select("*").eq("id", buildingId).single();
+    const { data: apts } = await supabase.from("apartments").select("*").eq("building_id", buildingId).order("floor").order("apartment_number");
+    setBuilding(b);
+    setUnits(apts || []);
+    setLoading(false);
+  }
+
+  async function addUnit() {
+    if (!addForm.apartment_number) return;
+    setSaving(true);
+    await supabase.from("apartments").insert({
+      building_id: buildingId,
+      apartment_number: addForm.apartment_number,
+      floor: parseInt(addForm.floor),
+      rooms: parseFloat(addForm.rooms),
+      status: addForm.status,
+      rent_amount: parseFloat(addForm.rent_amount) || 0,
+      owner_name: addForm.owner_name,
+      tenant_name: addForm.tenant_name,
+    });
+    setAddForm({ apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "" });
+    setShowAddForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function saveUnit() {
+    if (!editingUnit) return;
+    setSaving(true);
+    await supabase.from("apartments").update({
+      apartment_number: editingUnit.apartment_number,
+      floor: parseInt(editingUnit.floor),
+      rooms: parseFloat(editingUnit.rooms),
+      status: editingUnit.status,
+      rent_amount: parseFloat(editingUnit.rent_amount) || 0,
+      owner_name: editingUnit.owner_name,
+      tenant_name: editingUnit.tenant_name,
+    }).eq("id", editingUnit.id);
+    setEditingUnit(null);
+    await load();
+    setSaving(false);
+  }
+
+  async function deleteUnit(id: string) {
+    if (!confirm("למחוק את הדירה?")) return;
+    await supabase.from("apartments").delete().eq("id", id);
+    await load();
+  }
 
   if (loading) return <div style={{ padding: 60, textAlign: "center", color: "#64748b" }}>טוען...</div>;
   if (!building) return <div style={{ padding: 60, textAlign: "center", color: "#dc2626" }}>לא נמצא מבנה</div>;
@@ -1554,7 +1601,28 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
           <h2 style={{ margin: "8px 0", fontSize: 34 }}>{building.name}</h2>
           <div className="muted">{building.city} · {building.floors} קומות</div>
         </div>
+        <button className="btn btn-primary" onClick={() => setShowAddForm(!showAddForm)}>+ הוסף דירה</button>
       </div>
+
+      {/* טופס הוספת דירה */}
+      {showAddForm && (
+        <div className="card" style={{ background: "#f8fafc" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700 }}>➕ דירה חדשה ב{building.name}</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div className="field"><label>מספר דירה *</label><input className="input" value={addForm.apartment_number} onChange={e => setAddForm({...addForm, apartment_number: e.target.value})} placeholder="1א" /></div>
+            <div className="field"><label>קומה</label><input className="input" type="number" value={addForm.floor} onChange={e => setAddForm({...addForm, floor: e.target.value})} /></div>
+            <div className="field"><label>חדרים</label><input className="input" type="number" value={addForm.rooms} onChange={e => setAddForm({...addForm, rooms: e.target.value})} step="0.5" /></div>
+            <div className="field"><label>סטטוס</label><select className="input" value={addForm.status} onChange={e => setAddForm({...addForm, status: e.target.value})}><option>פנוי</option><option>מושכר</option></select></div>
+            <div className="field"><label>שכר דירה ₪</label><input className="input" type="number" value={addForm.rent_amount} onChange={e => setAddForm({...addForm, rent_amount: e.target.value})} placeholder="5000" /></div>
+            <div className="field"><label>בעל נכס</label><input className="input" value={addForm.owner_name} onChange={e => setAddForm({...addForm, owner_name: e.target.value})} placeholder="שם בעל הנכס" /></div>
+            <div className="field"><label>דייר</label><input className="input" value={addForm.tenant_name} onChange={e => setAddForm({...addForm, tenant_name: e.target.value})} placeholder="שם הדייר" /></div>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+            <button className="btn btn-primary" onClick={addUnit} disabled={saving}>{saving ? "שומר..." : "💾 שמור דירה"}</button>
+            <button className="btn btn-outline" onClick={() => setShowAddForm(false)}>ביטול</button>
+          </div>
+        </div>
+      )}
 
       <div className="detail-kpis">
         <KPI title="שם המבנה" value={building.name} subtitle={building.city} />
@@ -1567,23 +1635,57 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
       <div className="card">
         <h3 className="card-title">יחידות לפי קומה</h3>
         {units.length === 0 ? (
-          <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>אין יחידות במבנה זה עדיין</div>
+          <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+            <div style={{ fontSize: 40 }}>🏠</div>
+            <div style={{ fontWeight: 700, marginTop: 8 }}>אין יחידות עדיין</div>
+            <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setShowAddForm(true)}>+ הוסף דירה ראשונה</button>
+          </div>
         ) : (
           <div style={{ display: "grid", gap: 18 }}>
             {floors.map((floor: any) => {
               const floorUnits = units.filter(u => u.floor === floor);
               return (
                 <div key={floor} style={{ border: "1px solid #e8eef6", borderRadius: 20, padding: 18, background: "#fff" }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>קומה {floor}</div>
-                  <div style={{ display: "grid", gap: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800 }}>קומה {floor} <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 400 }}>({floorUnits.length} יחידות)</span></div>
+                  </div>
+                  <div style={{ display: "grid", gap: 10 }}>
                     {floorUnits.map(unit => (
-                      <div key={unit.id} style={{ border: "1px solid #e8eef6", borderRadius: 18, padding: 16, display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr 1fr auto", gap: 12, alignItems: "center", background: "#fbfcfe" }}>
-                        <div><div style={{ fontWeight: 800 }}>יחידה {unit.apartment_number}</div><div className="muted" style={{ marginTop: 6 }}>{unit.rooms} חדרים</div></div>
-                        <div><div style={{ fontSize: 13, color: "#64748b" }}>דייר</div><div style={{ fontWeight: 700, marginTop: 6 }}>{unit.tenant_name || "-"}</div></div>
-                        <div><div style={{ fontSize: 13, color: "#64748b" }}>חוזה עד</div><div style={{ fontWeight: 700, marginTop: 6 }}>{unit.lease_end ? new Date(unit.lease_end).toLocaleDateString("he-IL") : "-"}</div></div>
-                        <div><div style={{ fontSize: 13, color: "#64748b" }}>שכירות</div><div style={{ fontWeight: 700, marginTop: 6 }}>{unit.rent_amount ? currency(unit.rent_amount) : "-"}</div></div>
-                        <div><div style={{ fontSize: 13, color: "#64748b" }}>סטטוס</div><div style={{ marginTop: 6 }}><Badge value={unit.status} /></div></div>
-                        <div><button className="btn btn-outline" onClick={() => openApartment(unit.id)}>פתח דירה</button></div>
+                      <div key={unit.id}>
+                        {editingUnit?.id === unit.id ? (
+                          // מצב עריכה
+                          <div style={{ border: "2px solid #c9a227", borderRadius: 16, padding: 16, background: "#fef9ec" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
+                              <div className="field"><label>מספר דירה</label><input className="input" value={editingUnit.apartment_number} onChange={e => setEditingUnit({...editingUnit, apartment_number: e.target.value})} /></div>
+                              <div className="field"><label>קומה</label><input className="input" type="number" value={editingUnit.floor} onChange={e => setEditingUnit({...editingUnit, floor: e.target.value})} /></div>
+                              <div className="field"><label>חדרים</label><input className="input" type="number" value={editingUnit.rooms} onChange={e => setEditingUnit({...editingUnit, rooms: e.target.value})} step="0.5" /></div>
+                              <div className="field"><label>סטטוס</label><select className="input" value={editingUnit.status} onChange={e => setEditingUnit({...editingUnit, status: e.target.value})}><option>פנוי</option><option>מושכר</option></select></div>
+                              <div className="field"><label>שכר דירה ₪</label><input className="input" type="number" value={editingUnit.rent_amount || ""} onChange={e => setEditingUnit({...editingUnit, rent_amount: e.target.value})} /></div>
+                              <div className="field"><label>בעל נכס</label><input className="input" value={editingUnit.owner_name || ""} onChange={e => setEditingUnit({...editingUnit, owner_name: e.target.value})} /></div>
+                              <div className="field"><label>דייר</label><input className="input" value={editingUnit.tenant_name || ""} onChange={e => setEditingUnit({...editingUnit, tenant_name: e.target.value})} /></div>
+                            </div>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button className="btn btn-primary" onClick={saveUnit} disabled={saving}>{saving ? "שומר..." : "💾 שמור"}</button>
+                              <button className="btn btn-outline" onClick={() => setEditingUnit(null)}>ביטול</button>
+                            </div>
+                          </div>
+                        ) : (
+                          // מצב תצוגה
+                          <div style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, background: "#fbfcfe" }}>
+                            <div style={{ display: "flex", gap: 20, alignItems: "center", flex: 1, flexWrap: "wrap" }}>
+                              <div><div style={{ fontWeight: 800, fontSize: 15 }}>דירה {unit.apartment_number}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>{unit.rooms} חדרים</div></div>
+                              <div><div style={{ fontSize: 12, color: "#64748b" }}>דייר</div><div style={{ fontWeight: 600 }}>{unit.tenant_name || "-"}</div></div>
+                              <div><div style={{ fontSize: 12, color: "#64748b" }}>בעל נכס</div><div style={{ fontWeight: 600 }}>{unit.owner_name || "-"}</div></div>
+                              <div><div style={{ fontSize: 12, color: "#64748b" }}>שכירות</div><div style={{ fontWeight: 600 }}>{unit.rent_amount ? currency(unit.rent_amount) : "-"}</div></div>
+                              <Badge value={unit.status} />
+                            </div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => openApartment(unit.id)}>פתח</button>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setEditingUnit({...unit, floor: String(unit.floor), rooms: String(unit.rooms), rent_amount: String(unit.rent_amount || "")})}>✏️</button>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteUnit(unit.id)}>🗑</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1594,32 +1696,36 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
         )}
       </div>
 
-      <div className="card">
-        <h3 className="card-title">לוח תפוסה</h3>
-        <div className="muted" style={{ marginBottom: 16 }}>🟢 מושכר · 🟡 פנוי</div>
-        <div style={{ display: "grid", gap: 18 }}>
-          {[...floors].reverse().map((floor: any) => {
-            const floorUnits = units.filter(u => u.floor === floor);
-            return (
-              <div key={floor} className="building-floor-card">
-                <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 14 }}>קומה {floor}</div>
-                <div className="building-board-row">
-                  {floorUnits.map(unit => (
-                    <div key={unit.id} className="building-unit-box" onClick={() => openApartment(unit.id)}
-                      style={{ background: unit.status === "פנוי" ? "#eab308" : "#16a34a" }}>
-                      <div>יחידה {unit.apartment_number}</div>
-                      <div style={{ fontSize: 12, marginTop: 6 }}>{unit.tenant_name || "פנוי"}</div>
-                    </div>
-                  ))}
+      {/* לוח תפוסה */}
+      {units.length > 0 && (
+        <div className="card">
+          <h3 className="card-title">לוח תפוסה</h3>
+          <div className="muted" style={{ marginBottom: 16 }}>🟢 מושכר · 🟡 פנוי</div>
+          <div style={{ display: "grid", gap: 18 }}>
+            {[...floors].reverse().map((floor: any) => {
+              const floorUnits = units.filter(u => u.floor === floor);
+              return (
+                <div key={floor} className="building-floor-card">
+                  <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 14 }}>קומה {floor}</div>
+                  <div className="building-board-row">
+                    {floorUnits.map(unit => (
+                      <div key={unit.id} className="building-unit-box" onClick={() => openApartment(unit.id)}
+                        style={{ background: unit.status === "פנוי" ? "#eab308" : "#16a34a" }}>
+                        <div>דירה {unit.apartment_number}</div>
+                        <div style={{ fontSize: 12, marginTop: 6 }}>{unit.tenant_name || "פנוי"}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
+
 
 function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
   const [filter, setFilter] = useState("הכל");
