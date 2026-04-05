@@ -2938,11 +2938,13 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", assigned_to: "all", priority: "רגילה", due_date: "" });
+  const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
+  const [assignMode, setAssignMode] = useState<"all" | "specific">("all");
 
   async function addTask() {
     if (!form.title) return;
     setSaving(true);
-    const assignedTo = isWorker ? workerName : form.assigned_to;
+    const assignedTo = isWorker ? workerName : (assignMode === "all" ? "all" : selectedWorkers.join(","));
     await supabase.from("ngs_tasks").insert({
       title: form.title,
       description: form.description,
@@ -2953,6 +2955,8 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
       created_by: workerName || "מנהל",
     });
     setForm({ title: "", description: "", assigned_to: "all", priority: "רגילה", due_date: "" });
+    setSelectedWorkers([]);
+    setAssignMode("all");
     setShowForm(false);
     onRefresh();
     setSaving(false);
@@ -2989,12 +2993,33 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="field"><label>כותרת משימה *</label><input className="input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="תאר את המשימה..." /></div>
               {!isWorker && (
-                <div className="field">
-                  <label>שייך לעובד</label>
-                  <select className="input" value={form.assigned_to} onChange={e => setForm({...form, assigned_to: e.target.value})}>
-                    <option value="all">👥 כל העובדים</option>
-                    {employees.filter(e => e.status === "פעיל").map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
-                  </select>
+                <div className="field" style={{ gridColumn: "span 2" }}>
+                  <label>שייך למי?</label>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 10, marginTop: 6 }}>
+                    <button type="button" onClick={() => { setAssignMode("all"); setSelectedWorkers([]); }}
+                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "all" ? "2px solid #c9a227" : "1px solid #e2e8f0", background: assignMode === "all" ? "#fef9ec" : "#f8fafc", color: assignMode === "all" ? "#92710d" : "#475569" }}>
+                      👥 כל העובדים
+                    </button>
+                    <button type="button" onClick={() => setAssignMode("specific")}
+                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "specific" ? "2px solid #c9a227" : "1px solid #e2e8f0", background: assignMode === "specific" ? "#fef9ec" : "#f8fafc", color: assignMode === "specific" ? "#92710d" : "#475569" }}>
+                      👤 עובדים ספציפיים
+                    </button>
+                  </div>
+                  {assignMode === "specific" && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {employees.filter(e => e.status === "פעיל").map(e => {
+                        const selected = selectedWorkers.includes(e.name);
+                        return (
+                          <button key={e.id} type="button"
+                            onClick={() => setSelectedWorkers(selected ? selectedWorkers.filter(n => n !== e.name) : [...selectedWorkers, e.name])}
+                            style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #3b82f6" : "1px solid #e2e8f0", background: selected ? "#eff6ff" : "#f8fafc", color: selected ? "#1d4ed8" : "#475569" }}>
+                            {selected ? "✓ " : ""}{e.name}
+                          </button>
+                        );
+                      })}
+                      {selectedWorkers.length === 0 && <div style={{ fontSize: 12, color: "#94a3b8", padding: "6px 0" }}>בחר עובד אחד או יותר</div>}
+                    </div>
+                  )}
                 </div>
               )}
               <div className="field">
@@ -3026,7 +3051,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 800, fontSize: 15 }}>{t.title}</span>
                       <span style={{ background: `${priorityColor[t.priority]}20`, color: priorityColor[t.priority], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{t.priority}</span>
-                      {t.assigned_to === "all" ? <span style={{ fontSize: 12, color: "#64748b" }}>👥 כולם</span> : <span style={{ fontSize: 12, color: "#64748b" }}>👤 {t.assigned_to}</span>}
+                      {t.assigned_to === "all" ? <span style={{ fontSize: 12, color: "#64748b" }}>👥 כולם</span> : <span style={{ fontSize: 12, color: "#64748b" }}>👤 {t.assigned_to?.split(",").map((s: string) => s.trim()).join(", ")}</span>}
                       {t.created_by && t.created_by !== "מנהל" && <span style={{ fontSize: 11, color: "#94a3b8" }}>נפתח ע"י: {t.created_by}</span>}
                     </div>
                     {t.description && <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>{t.description}</div>}
@@ -3119,7 +3144,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         l.employee_name?.includes(workerName) || l.filled_by === workerName
       ));
       // משימות שמשויכות אליו או לכולם
-      setTasks(allTasks.filter((t: any) => t.assigned_to === "all" || t.assigned_to === workerName));
+      setTasks(allTasks.filter((t: any) => t.assigned_to === "all" || t.assigned_to?.split(",").map((s: string) => s.trim()).includes(workerName)));
     } else {
       setVehicles(allVehicles);
       setWorkLogs(allWorkLogs);
