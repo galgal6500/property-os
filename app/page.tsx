@@ -188,7 +188,7 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string
   const [dbBlds, setDbBlds] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [ownerForm, setOwnerForm] = useState({ name: "", phone: "", email: "" });
-  const [aptForm, setAptForm] = useState({ building_id: "", apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", tenant_phone: "", lease_end: "", fee_type: "percent", fee_value: "8" });
+  const [aptForm, setAptForm] = useState({ building_id: "", apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", tenant_phone: "", lease_end: "", fee_type: "fixed", fee_value: "0" });
   const [leaseForm, setLeaseForm] = useState({ apartment_id: "", tenant_name: "", start_date: "", end_date: "", rent_amount: "", deposit: "" });
   const [reqForm, setReqForm] = useState({ apartment_id: "", issue: "", urgency: "בינונית", vendor: "", cost: "" });
 
@@ -243,8 +243,8 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string
   async function saveApt() {
     if (!aptForm.apartment_number) return;
     setSaving(true);
-    await supabase.from("apartments").insert({ ...aptForm, floor: parseInt(aptForm.floor), rooms: parseFloat(aptForm.rooms), rent_amount: parseFloat(aptForm.rent_amount) || 0, fee_value: parseFloat(aptForm.fee_value) || 8 });
-    setAptForm({ building_id: "", apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", tenant_phone: "", lease_end: "", fee_type: "percent", fee_value: "8" });
+    await supabase.from("apartments").insert({ ...aptForm, floor: parseInt(aptForm.floor), rooms: parseFloat(aptForm.rooms), rent_amount: parseFloat(aptForm.rent_amount) || 0, fee_value: parseFloat(aptForm.fee_value) || 0 });
+    setAptForm({ building_id: "", apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", tenant_phone: "", lease_end: "", fee_type: "fixed", fee_value: "0" });
     setQuickAction(null);
     setSaving(false);
   }
@@ -1785,7 +1785,7 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
   const [form, setForm] = useState({
     building_id: "", apartment_number: "", floor: "0", rooms: "3",
     status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "",
-    tenant_phone: "", lease_end: "", fee_type: "percent", fee_value: "8", notes: ""
+    tenant_phone: "", lease_end: "", fee_type: "fixed", fee_value: "0", notes: ""
   });
 
   const [dbOwners, setDbOwners] = useState<any[]>([]);
@@ -1818,11 +1818,11 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
       tenant_phone: form.tenant_phone,
       lease_end: form.lease_end,
       fee_type: form.fee_type,
-      fee_value: parseFloat(form.fee_value) || 8,
+      fee_value: parseFloat(form.fee_value) || 0,
       notes: form.notes
     });
     setShowForm(false);
-    setForm({ building_id: "", apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", tenant_phone: "", lease_end: "", fee_type: "percent", fee_value: "8", notes: "" });
+    setForm({ building_id: "", apartment_number: "", floor: "0", rooms: "3", status: "פנוי", rent_amount: "", owner_name: "", tenant_name: "", tenant_phone: "", lease_end: "", fee_type: "fixed", fee_value: "0", notes: "" });
     await load();
     setSaving(false);
   }
@@ -1966,8 +1966,8 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
         owner_name: a.owner_name || "",
         rent_amount: a.rent_amount || "",
         lease_end: a.lease_end || "",
-        fee_type: a.fee_type || "percent",
-        fee_value: a.fee_value || "8",
+        fee_type: a.fee_type || "fixed",
+        fee_value: a.fee_value || "0",
         notes: a.notes || "",
         arnona_number: a.arnona_number || "",
         arnona_cost: a.arnona_cost || "",
@@ -2009,7 +2009,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
       rent_amount: parseFloat(editForm.rent_amount) || 0,
       lease_end: editForm.lease_end || null,
       fee_type: editForm.fee_type,
-      fee_value: parseFloat(editForm.fee_value) || 8,
+      fee_value: parseFloat(editForm.fee_value) || 0,
       notes: editForm.notes,
       arnona_number: editForm.arnona_number || "",
       arnona_cost: parseFloat(editForm.arnona_cost) || 0,
@@ -2138,7 +2138,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
           <div className="section-top" style={{ marginBottom: 16 }}>
             <h3 className="card-title" style={{ margin: 0 }}>פרטי הדירה</h3>
             {!editing ? (
-              <button className="btn btn-primary" onClick={() => { setEditForm({ status: apt.status, owner_name: apt.owner_name || "", tenant_name: apt.tenant_name || "", tenant_phone: apt.tenant_phone || "", rent_amount: apt.rent_amount || "", lease_end: apt.lease_end || "", fee_type: apt.fee_type || "percent", fee_value: apt.fee_value || 8, notes: apt.notes || "" }); setEditing(true); }}>✏️ עריכה</button>
+              <button className="btn btn-primary" onClick={() => { setEditForm({ status: apt.status, owner_name: apt.owner_name || "", tenant_name: apt.tenant_name || "", tenant_phone: apt.tenant_phone || "", rent_amount: apt.rent_amount || "", lease_end: apt.lease_end || "", fee_type: apt.fee_type || "fixed", fee_value: apt.fee_value || 0, notes: apt.notes || "" }); setEditing(true); }}>✏️ עריכה</button>
             ) : (
               <div style={{ display: "flex", gap: 8 }}>
                 <button className="btn btn-primary" onClick={saveEdit} disabled={savingEdit}>{savingEdit ? "שומר..." : "💾 שמור"}</button>
@@ -2387,7 +2387,7 @@ function WorkContracts() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [savingEdit, setSavingEdit] = useState(false);
-  const [form, setForm] = useState({ owner_id: "", owner_name: "", start_date: "", end_date: "", fee_type: "percent", fee_value: "8", status: "פעיל", notes: "" });
+  const [form, setForm] = useState({ owner_id: "", owner_name: "", start_date: "", end_date: "", fee_type: "fixed", fee_value: "0", status: "פעיל", notes: "" });
 
   async function load() {
     setLoading(true);
@@ -2403,8 +2403,8 @@ function WorkContracts() {
   async function addContract() {
     if (!form.owner_name) return;
     setSaving(true);
-    await supabase.from("work_contracts").insert({ owner_id: form.owner_id || null, owner_name: form.owner_name, start_date: form.start_date || null, end_date: form.end_date || null, fee_type: form.fee_type, fee_value: parseFloat(form.fee_value) || 8, status: form.status, notes: form.notes });
-    setForm({ owner_id: "", owner_name: "", start_date: "", end_date: "", fee_type: "percent", fee_value: "8", status: "פעיל", notes: "" });
+    await supabase.from("work_contracts").insert({ owner_id: form.owner_id || null, owner_name: form.owner_name, start_date: form.start_date || null, end_date: form.end_date || null, fee_type: form.fee_type, fee_value: parseFloat(form.fee_value) || 0, status: form.status, notes: form.notes });
+    setForm({ owner_id: "", owner_name: "", start_date: "", end_date: "", fee_type: "fixed", fee_value: "0", status: "פעיל", notes: "" });
     setShowForm(false);
     await load();
     setSaving(false);
@@ -3903,4 +3903,3 @@ export default function Home() {
     </div>
   );
 }
-
