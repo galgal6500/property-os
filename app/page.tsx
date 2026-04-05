@@ -3625,13 +3625,18 @@ export default function Home() {
         <nav className="nav"><SidebarNav activePage={activePage} setActivePage={setActivePage} isActive={isActive} userRole={userRole} /></nav>
         <div className="side-card">
           <div className="avatar">{email[0]?.toUpperCase()}</div>
-          <div><div className="name">{email}</div><div className="role">{getRoleLabel(userRole)}</div></div>
+          <div style={{ flex: 1 }}><div className="name">{userProfile?.full_name || email}</div><div className="role">{getRoleLabel(userRole)}</div></div>
+          <button onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 18 }} title="התנתק">🚪</button>
         </div>
       </aside>
       <main className="main">
         <div className="topbar">
           <div><h1>שלום {userProfile?.full_name?.split(" ")[0] || email.split("@")[0]} 👋</h1><div className="sub">{getRoleLabel(userRole)}</div></div>
-          <div className="top-actions"><input className="search" placeholder="חיפוש מהיר..." /><button className="btn btn-dark">הוספה מהירה</button></div>
+          <div className="top-actions">
+            <input className="search" placeholder="חיפוש מהיר..." />
+            <button className="btn btn-outline" onClick={() => window.location.reload()} title="רענן נתונים" style={{ fontSize: 18, padding: "8px 14px" }}>🔄</button>
+            <button className="btn btn-outline" onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); }} style={{ color: "#dc2626", borderColor: "#dc2626" }}>התנתק</button>
+          </div>
         </div>
         {renderContent()}
       </main>
@@ -3658,6 +3663,17 @@ export default function Home() {
                   <span style={{ fontSize: 11, fontWeight: 600, textAlign: "center" }}>{item.label}</span>
                 </button>
               ))}
+              {/* רענון והתנתקות במובייל */}
+              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: "#475569" }}
+                onClick={() => { setShowMobileMenu(false); window.location.reload(); }}>
+                <span style={{ fontSize: 22 }}>🔄</span>
+                <span style={{ fontSize: 11, fontWeight: 600 }}>רענון</span>
+              </button>
+              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: "#dc2626" }}
+                onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); setShowMobileMenu(false); }}>
+                <span style={{ fontSize: 22 }}>🚪</span>
+                <span style={{ fontSize: 11, fontWeight: 600 }}>התנתק</span>
+              </button>
             </div>
           </div>
         </div>
