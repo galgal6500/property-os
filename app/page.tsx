@@ -2112,6 +2112,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
           </div>
 
           {!editing ? (
+            <>
             <div className="info-grid">
               <InfoBox label="מבנה" value={apt.buildings?.name} />
               <InfoBox label="עיר" value={apt.buildings?.city} />
@@ -2127,7 +2128,6 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
               <InfoBox label="אמצעי תשלום" value={apt.payment_method || "-"} />
               <InfoBox label="הערות" value={apt.notes || "-"} />
             </div>
-            {/* ארנונה וחשמל */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
               <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16 }}>
                 <div style={{ fontWeight: 700, marginBottom: 10, color: "#475569" }}>🏛️ ארנונה</div>
@@ -2145,6 +2145,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
                 </div>
               </div>
             </div>
+            </>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <div className="field">
