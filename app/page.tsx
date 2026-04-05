@@ -3827,6 +3827,7 @@ export default function Home() {
   const [pendingApproval, setPendingApproval] = useState(false);
   const [selectedApartmentId, setSelectedApartmentId] = useState<string>("");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selectedBuildingId, setSelectedBuildingId] = useState<any>("");
   const [selectedOwnerId, setSelectedOwnerId] = useState(1);
 
@@ -3916,23 +3917,23 @@ export default function Home() {
       return <TenantPortal userProfile={userProfile} />;
     }
     if (userRole === "owner") return <OwnerDashboard userProfile={userProfile} />;
-    if (userRole === "ngs_worker") return <NGSDashboard userProfile={userProfile} userRole={userRole} />;
+    if (userRole === "ngs_worker") return <NGSDashboard key={refreshKey} userProfile={userProfile} userRole={userRole} />;
     switch (activePage) {
-      case "dashboard": return <Dashboard openApartment={openApartment} openBuilding={openBuilding} />;
-      case "owners": return <Owners openOwner={openOwner} />;
-      case "ownerDetails": return <OwnerDetails ownerId={selectedOwnerId} back={() => setActivePage("owners")} />;
-      case "buildings": return <Buildings openBuilding={openBuilding} />;
-      case "buildingDetails": return <BuildingDetails buildingId={selectedBuildingId} back={() => setActivePage("buildings")} openApartment={openApartment} />;
-      case "apartments": return <Apartments openApartment={openApartment} />;
-      case "apartmentDetails": return <ApartmentDetails apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} />;
-      case "requests": return <ServiceRequests />;
-      case "leases": return <Leases />;
+      case "dashboard": return <Dashboard key={refreshKey} openApartment={openApartment} openBuilding={openBuilding} />;
+      case "owners": return <Owners key={refreshKey} openOwner={openOwner} />;
+      case "ownerDetails": return <OwnerDetails key={refreshKey} ownerId={selectedOwnerId} back={() => setActivePage("owners")} />;
+      case "buildings": return <Buildings key={refreshKey} openBuilding={openBuilding} />;
+      case "buildingDetails": return <BuildingDetails key={refreshKey} buildingId={selectedBuildingId} back={() => setActivePage("buildings")} openApartment={openApartment} />;
+      case "apartments": return <Apartments key={refreshKey} openApartment={openApartment} />;
+      case "apartmentDetails": return <ApartmentDetails key={refreshKey} apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} />;
+      case "requests": return <ServiceRequests key={refreshKey} />;
+      case "leases": return <Leases key={refreshKey} />;
       case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר והסכמי ניהול." />;
-      case "tenantPortal": return <TenantPortal userProfile={userProfile} />;
-      case "settings": return <Settings userEmail={email} />;
-      case "users": return <UsersManagement />;
-      case "workcontracts": return <WorkContracts />;
-      case "ngs": return <NGSDashboard userProfile={userProfile} userRole={userRole} />;
+      case "tenantPortal": return <TenantPortal key={refreshKey} userProfile={userProfile} />;
+      case "settings": return <Settings key={refreshKey} userEmail={email} />;
+      case "users": return <UsersManagement key={refreshKey} />;
+      case "workcontracts": return <WorkContracts key={refreshKey} />;
+      case "ngs": return <NGSDashboard key={refreshKey} userProfile={userProfile} userRole={userRole} />;
       default: return null;
     }
   }
@@ -4023,7 +4024,7 @@ export default function Home() {
           <div><h1>שלום {userProfile?.full_name?.split(" ")[0] || email.split("@")[0]} 👋</h1><div className="sub">{getRoleLabel(userRole)}</div></div>
           <div className="top-actions">
             <input className="search" placeholder="חיפוש מהיר..." />
-            <button className="btn btn-outline" onClick={() => { setActivePage(p => { const curr = p; setTimeout(() => setActivePage(curr), 10); return "___refresh___"; }); setTimeout(() => setActivePage(activePage), 50); }} title="רענן נתונים" style={{ fontSize: 18, padding: "8px 14px" }}>🔄</button>
+            <button className="btn btn-outline" onClick={() => setRefreshKey(k => k + 1)} title="רענן נתונים" style={{ fontSize: 18, padding: "8px 14px" }}>🔄</button>
             <button className="btn btn-outline" onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); }} style={{ color: "#dc2626", borderColor: "#dc2626" }}>התנתק</button>
           </div>
         </div>
@@ -4054,7 +4055,7 @@ export default function Home() {
               ))}
               {/* רענון והתנתקות במובייל */}
               <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: "#475569" }}
-                onClick={() => { setShowMobileMenu(false); setActivePage(p => { setTimeout(() => setActivePage(p), 50); return "___refresh___"; }); }}>
+                onClick={() => { setShowMobileMenu(false); setRefreshKey(k => k + 1); }}>
                 <span style={{ fontSize: 22 }}>🔄</span>
                 <span style={{ fontSize: 11, fontWeight: 600 }}>רענון</span>
               </button>
