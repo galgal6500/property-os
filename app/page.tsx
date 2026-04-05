@@ -1914,13 +1914,13 @@ function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
         ) : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>מבנה</th><th>דירה</th><th>קומה</th><th>בעל נכס</th><th>דייר</th><th>טלפון</th><th>חוזה עד</th><th>שכירות</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+              <thead><tr><th>כתובת</th><th>קומה</th><th>דירה</th><th>בעל נכס</th><th>דייר</th><th>טלפון</th><th>חוזה עד</th><th>שכירות</th><th>סטטוס</th><th>פעולות</th></tr></thead>
               <tbody>
                 {filtered.map((item) => (
                   <tr key={item.id}>
                     <td>{item.buildings?.name}</td>
-                    <td>{item.apartment_number}</td>
                     <td>{item.floor}</td>
+                    <td>{item.apartment_number}</td>
                     <td>{item.owner_name || "-"}</td>
                     <td>{item.tenant_name || "-"}</td>
                     <td>{item.tenant_phone || "-"}</td>
@@ -1969,6 +1969,12 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
         fee_type: a.fee_type || "percent",
         fee_value: a.fee_value || "8",
         notes: a.notes || "",
+        arnona_number: a.arnona_number || "",
+        arnona_cost: a.arnona_cost || "",
+        arnona_payer: a.arnona_payer || "דייר",
+        electric_meter: a.electric_meter || "",
+        electric_payer: a.electric_payer || "דייר",
+        payment_method: a.payment_method || "העברה בנקאית",
       });
       const { data: ls } = await supabase.from("leases").select("*").eq("apartment_id", apartmentId).order("created_at", { ascending: false });
       setLeases(ls || []);
@@ -2005,6 +2011,12 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
       fee_type: editForm.fee_type,
       fee_value: parseFloat(editForm.fee_value) || 8,
       notes: editForm.notes,
+      arnona_number: editForm.arnona_number || "",
+      arnona_cost: parseFloat(editForm.arnona_cost) || 0,
+      arnona_payer: editForm.arnona_payer || "דייר",
+      electric_meter: editForm.electric_meter || "",
+      electric_payer: editForm.electric_payer || "דייר",
+      payment_method: editForm.payment_method || "העברה בנקאית",
     }).eq("id", apartmentId);
     const { data: a } = await supabase.from("apartments").select("*, buildings(name, city)").eq("id", apartmentId).single();
     setApt(a);
@@ -2040,8 +2052,16 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
       <div className="detail-top">
         <div>
           <button className="back-link" onClick={back}>← חזרה לרשימת דירות</button>
-          <h2 style={{ margin: "8px 0", fontSize: 34 }}>{apt.buildings?.name} / דירה {apt.apartment_number}</h2>
-          <div className="muted"><Badge value={apt.status} /><span style={{ marginRight: 8 }}>{apt.buildings?.city} · קומה {apt.floor} · {apt.rooms} חדרים</span></div>
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}>{apt.buildings?.city}</div>
+            <h2 style={{ margin: "0 0 4px", fontSize: 36, fontWeight: 900, lineHeight: 1.1 }}>{apt.buildings?.name}</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
+              <span style={{ background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "4px 14px", fontSize: 15, fontWeight: 800 }}>קומה {apt.floor}</span>
+              <span style={{ background: "#d5b57a", color: "#1e293b", borderRadius: 999, padding: "4px 14px", fontSize: 15, fontWeight: 800 }}>דירה {apt.apartment_number}</span>
+              <span style={{ fontSize: 14, color: "#64748b" }}>{apt.rooms} חדרים</span>
+              <Badge value={apt.status} />
+            </div>
+          </div>
         </div>
         <button className="btn btn-primary" onClick={() => setEditing(!editing)}>✏️ עריכה</button>
       </div>
@@ -2075,6 +2095,22 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
             </div>
             <div className="field"><label>{editForm.fee_type === "percent" ? "אחוז %" : "עמלה ₪"}</label><input className="input" type="number" value={editForm.fee_value} onChange={e => setEditForm({...editForm, fee_value: e.target.value})} /></div>
             <div className="field"><label>הערות</label><input className="input" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} /></div>
+          </div>
+          <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14, marginTop: 4 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "#475569" }}>🏛️ ארנונה</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="field"><label>מספר משלם ארנונה</label><input className="input" value={editForm.arnona_number} onChange={e => setEditForm({...editForm, arnona_number: e.target.value})} placeholder="123456" /></div>
+              <div className="field"><label>עלות ₪/חודש</label><input className="input" type="number" value={editForm.arnona_cost} onChange={e => setEditForm({...editForm, arnona_cost: e.target.value})} /></div>
+              <div className="field"><label>מי משלם</label><select className="input" value={editForm.arnona_payer} onChange={e => setEditForm({...editForm, arnona_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
+            </div>
+          </div>
+          <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "#475569" }}>⚡ חשמל ותשלום</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="field"><label>מספר מונה חשמל</label><input className="input" value={editForm.electric_meter} onChange={e => setEditForm({...editForm, electric_meter: e.target.value})} placeholder="12345678" /></div>
+              <div className="field"><label>מי משלם חשמל</label><select className="input" value={editForm.electric_payer} onChange={e => setEditForm({...editForm, electric_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
+              <div className="field"><label>אמצעי תשלום</label><select className="input" value={editForm.payment_method} onChange={e => setEditForm({...editForm, payment_method: e.target.value})}><option>העברה בנקאית</option><option>מזומן</option><option>צ׳קים</option></select></div>
+            </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <button className="btn btn-primary" onClick={saveEdit} disabled={savingEdit}>{savingEdit ? "שומר..." : "שמור שינויים"}</button>
@@ -3867,3 +3903,4 @@ export default function Home() {
     </div>
   );
 }
+
