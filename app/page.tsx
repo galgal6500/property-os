@@ -3178,7 +3178,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
   const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "" });
-  const [workLogForm, setWorkLogForm] = useState({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+  const [workLogForm, setWorkLogForm] = useState({ filled_by: isWorker ? workerName : "", employee_name: isWorker ? workerName : "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
 
   async function load() {
     setLoading(true);
@@ -3202,7 +3202,9 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       setVehicles(allVehicles.filter((v: any) => v.driver === workerName));
       // יומנים שלו בלבד
       setWorkLogs(allWorkLogs.filter((l: any) =>
-        l.employee_name?.includes(workerName) || l.filled_by === workerName
+        l.employee_name?.split(",").map((s: string) => s.trim()).some((n: string) => n === workerName) ||
+        l.filled_by?.trim() === workerName?.trim() ||
+        l.workers?.split(",").map((s: string) => s.trim()).some((n: string) => n === workerName)
       ));
       // משימות שמשויכות אליו או לכולם
       setTasks(allTasks.filter((t: any) => t.assigned_to === "all" || t.assigned_to?.split(",").map((s: string) => s.trim()).includes(workerName)));
@@ -3263,7 +3265,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   async function saveWorkLog() {
     if (!workLogForm.employee_name && !workLogForm.filled_by) return; setSaving(true);
     await supabase.from("ngs_work_logs").insert({ ...workLogForm, hours: parseFloat(workLogForm.hours) || 0 });
-    setWorkLogForm({ filled_by: "", employee_name: "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+    setWorkLogForm({ filled_by: isWorker ? workerName : "", employee_name: isWorker ? workerName : "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
     setShowForm(false); await load(); setSaving(false);
   }
   async function updateServiceCallStatus(id: string, status: string, completedBy?: string) {
