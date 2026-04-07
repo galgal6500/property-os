@@ -1275,6 +1275,7 @@ function ServiceRequests() {
   const filtered = filter === "הכל" ? requests : requests.filter(r => r.status === filter);
 
   return (
+    <>
     <div style={{ display: "grid", gap: 18 }}>
       <div className="card">
         <div className="section-top">
@@ -1430,6 +1431,7 @@ function ServiceRequests() {
         </div>
       </div>
     )}
+    </>
   );
 }
 
@@ -4034,23 +4036,23 @@ export default function Home() {
       return <TenantPortal userProfile={userProfile} />;
     }
     if (userRole === "owner") return <OwnerDashboard userProfile={userProfile} />;
-    if (userRole === "ngs_worker") return <NGSDashboard key={refreshKey} userProfile={userProfile} userRole={userRole} />;
+    if (userRole === "ngs_worker") return <div key={refreshKey}><NGSDashboard userProfile={userProfile} userRole={userRole} /></div>;
     switch (activePage) {
-      case "dashboard": return <Dashboard key={refreshKey} openApartment={openApartment} openBuilding={openBuilding} />;
-      case "owners": return <Owners key={refreshKey} openOwner={openOwner} />;
-      case "ownerDetails": return <OwnerDetails key={refreshKey} ownerId={selectedOwnerId} back={() => setActivePage("owners")} />;
-      case "buildings": return <Buildings key={refreshKey} openBuilding={openBuilding} />;
-      case "buildingDetails": return <BuildingDetails key={refreshKey} buildingId={selectedBuildingId} back={() => setActivePage("buildings")} openApartment={openApartment} />;
-      case "apartments": return <Apartments key={refreshKey} openApartment={openApartment} />;
-      case "apartmentDetails": return <ApartmentDetails key={refreshKey} apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} />;
-      case "requests": return <ServiceRequests key={refreshKey} />;
-      case "leases": return <Leases key={refreshKey} />;
+      case "dashboard": return <div key={refreshKey}><Dashboard openApartment={openApartment} openBuilding={openBuilding} /></div>;
+      case "owners": return <div key={refreshKey}><Owners openOwner={openOwner} /></div>;
+      case "ownerDetails": return <div key={refreshKey}><OwnerDetails ownerId={selectedOwnerId} back={() => setActivePage("owners")} /></div>;
+      case "buildings": return <div key={refreshKey}><Buildings openBuilding={openBuilding} /></div>;
+      case "buildingDetails": return <div key={refreshKey}><BuildingDetails buildingId={selectedBuildingId} back={() => setActivePage("buildings")} openApartment={openApartment} /></div>;
+      case "apartments": return <div key={refreshKey}><Apartments openApartment={openApartment} /></div>;
+      case "apartmentDetails": return <div key={refreshKey}><ApartmentDetails apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} /></div>;
+      case "requests": return <div key={refreshKey}><ServiceRequests /></div>;
+      case "leases": return <div key={refreshKey}><Leases /></div>;
       case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר והסכמי ניהול." />;
-      case "tenantPortal": return <TenantPortal key={refreshKey} userProfile={userProfile} />;
-      case "settings": return <Settings key={refreshKey} userEmail={email} />;
-      case "users": return <UsersManagement key={refreshKey} />;
-      case "workcontracts": return <WorkContracts key={refreshKey} />;
-      case "ngs": return <NGSDashboard key={refreshKey} userProfile={userProfile} userRole={userRole} />;
+      case "tenantPortal": return <div key={refreshKey}><TenantPortal userProfile={userProfile} /></div>;
+      case "settings": return <div key={refreshKey}><Settings userEmail={email} /></div>;
+      case "users": return <div key={refreshKey}><UsersManagement /></div>;
+      case "workcontracts": return <div key={refreshKey}><WorkContracts /></div>;
+      case "ngs": return <div key={refreshKey}><NGSDashboard userProfile={userProfile} userRole={userRole} /></div>;
       default: return null;
     }
   }
@@ -4188,3 +4190,4 @@ export default function Home() {
     </div>
   );
 }
+
