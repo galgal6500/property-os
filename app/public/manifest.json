@@ -1,11 +1,28 @@
 {
-  "name": "GM ניהול נכסים",
-  "short_name": "GM נכסים",
-  "description": "מערכת יוקרתית לניהול נכסים",
+  "name": "נ.ג.ש מור הנדסה",
+  "short_name": "נ.ג.ש מור",
+  "description": "מערכת ניהול משולבת לנ.ג.ש מור הנדסה",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#c9a227",
+  "theme_color": "#0f172a",
   "orientation": "portrait",
-  "icons": []
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }
