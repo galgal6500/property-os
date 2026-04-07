@@ -1033,7 +1033,7 @@ function Leases() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [filter, setFilter] = useState("חדשה");
+  const [filter, setFilter] = useState("פעיל");
   const [form, setForm] = useState({
     apartment_id: "", tenant_name: "", start_date: "", end_date: "",
     rent_amount: "", deposit: "", status: "פעיל", notes: ""
@@ -1828,7 +1828,7 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
 
 
 function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
-  const [filter, setFilter] = useState("חדשה");
+  const [filter, setFilter] = useState("הכל");
   const [query, setQuery] = useState("");
   const [dbApartments, setDbApartments] = useState<any[]>([]);
   const [dbBuildings, setDbBuildings] = useState<any[]>([]);
@@ -3726,7 +3726,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           ) : (
             <div className="table-wrap">
               <table>
-                <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>טופל ע"י</th>}{!isWorker && <th>פעולות</th>}</tr></thead>
+                <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>טופל ע"י</th>}<th>פעולות</th></tr></thead>
                 <tbody>
                   {serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).map(s => (
                     <tr key={s.id}>
