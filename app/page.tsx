@@ -1033,7 +1033,7 @@ function Leases() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [filter, setFilter] = useState("הכל");
+  const [filter, setFilter] = useState("חדשה");
   const [form, setForm] = useState({
     apartment_id: "", tenant_name: "", start_date: "", end_date: "",
     rent_amount: "", deposit: "", status: "פעיל", notes: ""
@@ -1210,7 +1210,8 @@ function ServiceRequests() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [filter, setFilter] = useState("הכל");
+  const [filter, setFilter] = useState("חדשה");
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [form, setForm] = useState({
     apartment_id: "", issue: "", description: "",
     urgency: "בינונית", status: "חדשה", cost: "", vendor: ""
@@ -1366,7 +1367,8 @@ function ServiceRequests() {
                       </select>
                     </td>
                     <td style={{ display: "flex", gap: 6 }}>
-                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#c9a227", borderColor: "#c9a227" }} onClick={() => transferToNgs(r)}>🏗 העבר לנג"ש</button>
+                      <button className="btn btn-primary" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => setSelectedRequest(r)}>👁 צפייה</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#c9a227", borderColor: "#c9a227" }} onClick={() => transferToNgs(r)}>🏗 נג"ש</button>
                       <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteRequest(r.id)}>מחק</button>
                     </td>
                   </tr>
@@ -1377,6 +1379,57 @@ function ServiceRequests() {
         )}
       </div>
     </div>
+
+    {/* מודל צפייה בקריאה */}
+    {selectedRequest && (
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+        <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 560, maxHeight: "85vh", overflow: "auto" }}>
+          <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>🔧 {selectedRequest.issue}</h3>
+              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedRequest.apartments?.buildings?.name} / {selectedRequest.apartments?.apartment_number}</div>
+            </div>
+            <button onClick={() => setSelectedRequest(null)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#64748b" }}>×</button>
+          </div>
+          <div style={{ padding: "20px 24px", display: "grid", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>סטטוס</div>
+                <Badge value={selectedRequest.status} />
+              </div>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>דחיפות</div>
+                <Badge value={selectedRequest.urgency} />
+              </div>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>ספק / בעל מקצוע</div>
+                <div style={{ fontWeight: 700 }}>{selectedRequest.vendor || "-"}</div>
+              </div>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>עלות</div>
+                <div style={{ fontWeight: 700 }}>{selectedRequest.cost ? currency(selectedRequest.cost) : "-"}</div>
+              </div>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>תאריך פתיחה</div>
+                <div style={{ fontWeight: 700 }}>{new Date(selectedRequest.created_at).toLocaleDateString("he-IL")}</div>
+              </div>
+            </div>
+            {selectedRequest.description && (
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 8 }}>תיאור הבעיה</div>
+                <div style={{ fontSize: 14, lineHeight: 1.7 }}>{selectedRequest.description}</div>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <select value={selectedRequest.status} onChange={async e => { await updateStatus(selectedRequest.id, e.target.value); setSelectedRequest({...selectedRequest, status: e.target.value}); }} style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 12px", fontSize: 14 }}>
+                <option>חדשה</option><option>בטיפול</option><option>ממתין לבעל מקצוע</option><option>הושלם</option>
+              </select>
+              <button className="btn btn-outline" onClick={() => setSelectedRequest(null)}>סגור</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
   );
 }
 
@@ -1775,7 +1828,7 @@ function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any;
 
 
 function Apartments({ openApartment }: { openApartment: (id: any) => void }) {
-  const [filter, setFilter] = useState("הכל");
+  const [filter, setFilter] = useState("חדשה");
   const [query, setQuery] = useState("");
   const [dbApartments, setDbApartments] = useState<any[]>([]);
   const [dbBuildings, setDbBuildings] = useState<any[]>([]);
@@ -3110,8 +3163,9 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const [editingVehicle, setEditingVehicle] = useState<any>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any>(null);
-  const [workLogFilter, setWorkLogFilter] = useState("הכל");
-  const [serviceCallFilter, setServiceCallFilter] = useState("הכל");
+  const [selectedServiceCall, setSelectedServiceCall] = useState<any>(null);
+  const [workLogFilter, setWorkLogFilter] = useState("לא טופל");
+  const [serviceCallFilter, setServiceCallFilter] = useState("חדשה");
   const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", driver: "", notes: "" });
   const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "פעיל" });
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
@@ -3244,6 +3298,66 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   return (
     <div style={{ display: "grid", gap: 18 }}>
       {selectedVehicle && <VehicleServicesModal vehicleId={selectedVehicle.id} licensePlate={selectedVehicle.license_plate} onClose={() => setSelectedVehicle(null)} />}
+
+      {selectedServiceCall && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 540, maxHeight: "85vh", overflow: "auto" }}>
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>🔧 {selectedServiceCall.issue}</h3>
+                <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedServiceCall.client_name || "-"}</div>
+              </div>
+              <button onClick={() => setSelectedServiceCall(null)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#64748b" }}>×</button>
+            </div>
+            <div style={{ padding: "20px 24px", display: "grid", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>סטטוס</div>
+                  <Badge value={selectedServiceCall.status} />
+                </div>
+                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>דחיפות</div>
+                  <Badge value={selectedServiceCall.urgency} />
+                </div>
+                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>אחראי</div>
+                  <div style={{ fontWeight: 700 }}>{selectedServiceCall.assigned_to || "-"}</div>
+                </div>
+                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>תאריך פתיחה</div>
+                  <div style={{ fontWeight: 700 }}>{selectedServiceCall.created_at ? new Date(selectedServiceCall.created_at).toLocaleDateString("he-IL") : "-"}</div>
+                </div>
+                {selectedServiceCall.location && (
+                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14, gridColumn: "span 2" }}>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>📍 מיקום</div>
+                    <div style={{ fontWeight: 700 }}>{selectedServiceCall.location}</div>
+                  </div>
+                )}
+                {selectedServiceCall.completed_by && (
+                  <div style={{ background: "#dcfce7", borderRadius: 12, padding: 14, gridColumn: "span 2" }}>
+                    <div style={{ fontSize: 11, color: "#166534", marginBottom: 4 }}>✅ טופל ע"י</div>
+                    <div style={{ fontWeight: 700, color: "#166534" }}>{selectedServiceCall.completed_by}</div>
+                  </div>
+                )}
+              </div>
+              {(selectedServiceCall.description || selectedServiceCall.notes) && (
+                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 8 }}>תיאור / הערות</div>
+                  <div style={{ fontSize: 14, lineHeight: 1.7 }}>{selectedServiceCall.description || selectedServiceCall.notes}</div>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 10 }}>
+                {!isWorker && (
+                  <select value={selectedServiceCall.status} onChange={async e => { await updateServiceCallStatus(selectedServiceCall.id, e.target.value); setSelectedServiceCall({...selectedServiceCall, status: e.target.value}); }} style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 12px", fontSize: 14 }}>
+                    <option>חדשה</option><option>בטיפול</option><option>הושלם</option>
+                  </select>
+                )}
+                <button className="btn btn-outline" onClick={() => setSelectedServiceCall(null)}>סגור</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedWorkLog && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
@@ -3637,7 +3751,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                         )}
                       </td>
                       {!isWorker && <td style={{ fontSize: 13, color: s.completed_by ? "#16a34a" : "#94a3b8", fontWeight: s.completed_by ? 700 : 400 }}>{s.completed_by || "-"}</td>}
-                      {!isWorker && <td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button></td>}
+                      <td style={{ display: "flex", gap: 6 }}>
+                        <button className="btn btn-primary" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setSelectedServiceCall(s)}>👁 צפייה</button>
+                        {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
