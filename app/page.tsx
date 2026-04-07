@@ -3620,7 +3620,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             <div style={{ position: "relative" }}>
               <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>ברוך הבא 👋</div>
               <h1 style={{ margin: "0 0 6px", fontSize: 32, fontWeight: 900 }}>{workerName}</h1>
-              <div style={{ color: "#94a3b8", fontSize: 15 }}>עובד נג"ש מור הנדסה</div>
+              <div style={{ color: "#94a3b8", fontSize: 15 }}>עובד נ.ג.ש מור הנדסה</div>
               <div style={{ display: "flex", gap: 24, marginTop: 28 }}>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 28, fontWeight: 900, color: "#d5b57a" }}>{workLogs.length}</div>
@@ -4222,8 +4222,8 @@ export default function Home() {
         <div className="login-wrap">
           <div className="login-left">
             <div>
-              <div className="eyebrow"><span className="dot" />נג"ש מור הנדסה</div>
-              <h1 className="login-title">מערכת ניהול משולבת לנג"ש מור הנדסה</h1>
+              <div className="eyebrow"><span className="dot" />נ.ג.ש מור הנדסה</div>
+              <h1 className="login-title">מערכת ניהול משולבת לנ.ג.ש מור הנדסה</h1>
               <div className="login-sub">פלטפורמה מתקדמת לניהול רכבים, עובדים, לקוחות, פרויקטים, קריאות שירות ויומני עבודה.</div>
               <div className="hero-grid">
                 {[["🚗","צי רכבים"],["👷","ניהול עובדים"],["📁","פרויקטים"],["📋","יומני עבודה"]].map(([icon, label]) => (
@@ -4240,7 +4240,7 @@ export default function Home() {
                 <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 48, marginBottom: 16 }}>✅</div><h2>הבקשה נשלחה!</h2><button className="btn btn-primary" style={{ marginTop: 16, width: "100%" }} onClick={() => { setRegSuccess(false); setAuthMode("login"); }}>חזרה להתחברות</button></div>
               ) : authMode === "login" ? (
                 <>
-                  <div style={{textAlign:"center",marginBottom:16}}><div style={{fontSize:48}}>🏗</div><h2 style={{margin:"8px 0 4px",fontSize:22,fontWeight:900}}>נג"ש מור הנדסה</h2><div style={{fontSize:13,color:"#64748b",marginBottom:16}}>כניסה למערכת הניהול</div></div>
+                  <div style={{textAlign:"center",marginBottom:16}}><div style={{fontSize:48}}>🏗</div><h2 style={{margin:"8px 0 4px",fontSize:22,fontWeight:900}}>נ.ג.ש מור הנדסה</h2><div style={{fontSize:13,color:"#64748b",marginBottom:16}}>כניסה למערכת הניהול</div></div>
                   <div className="field"><label>אימייל</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" /></div>
                   <div className="field"><label>סיסמה</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" /></div>
                   {loginError && <div style={{color:"#dc2626", marginBottom:10, fontSize:14}}>{loginError}</div>}
@@ -4289,7 +4289,7 @@ export default function Home() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="brand"><div className="brand-icon">🏗</div><div><small>נג"ש מור</small><strong>הנדסה</strong></div></div>
+        <div className="brand"><div className="brand-icon">🏗</div><div><small>נ.ג.ש מור</small><strong>הנדסה</strong></div></div>
         <nav className="nav"><SidebarNav activePage={activePage} setActivePage={setActivePage} isActive={isActive} userRole={userRole} /></nav>
         <div className="side-card">
           <div className="avatar">{email[0]?.toUpperCase()}</div>
