@@ -24,6 +24,8 @@
 html, body {
   font-family: 'Inter', Arial, Helvetica, sans-serif;
   direction: rtl;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -558,6 +560,7 @@ tr:hover td { background: #fafbfe; }
     z-index: 200;
     scrollbar-width: none;
     padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
   }
 
   .mobile-bottom-nav::-webkit-scrollbar { display: none; }
@@ -585,7 +588,11 @@ tr:hover td { background: #fafbfe; }
   .mobile-nav-icon { font-size: 20px; line-height: 1; transition: transform 0.2s ease; }
   .mobile-nav-label { font-size: 10px; font-weight: 700; white-space: nowrap; }
 
-  .main { padding: 12px 12px 82px; min-height: 100dvh; background: #f1f5f9; }
+  .main { padding: 12px 12px 82px; min-height: 100dvh; background: #f1f5f9; padding-top: max(12px, env(safe-area-inset-top)); }
+
+  /* Touch improvements */
+  .btn, .mobile-nav-btn, .tab-btn { touch-action: manipulation; }
+  * { -webkit-overflow-scrolling: touch; }
 
   .topbar { border-radius: 14px; padding: 10px 14px; margin-bottom: 12px; }
   .topbar h1 { font-size: 15px; }
@@ -612,7 +619,8 @@ tr:hover td { background: #fafbfe; }
   .section-top { flex-direction: column; align-items: flex-start; gap: 8px; }
   .section-top > button { width: 100%; }
 
-  .tab-bar { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; gap: 5px; }
+  .table-wrap { -webkit-overflow-scrolling: touch; }
+  .tab-bar { -webkit-overflow-scrolling: touch; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; gap: 5px; }
   .tab-btn { padding: 6px 11px; font-size: 12px; }
 
   .input { font-size: 16px; height: 44px; }
@@ -640,4 +648,3 @@ tr:hover td { background: #fafbfe; }
   .desktop-table { display: none; }
   .mobile-cards { display: block; }
 }
-
