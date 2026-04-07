@@ -3956,7 +3956,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                         style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #c9a227" : "1px solid #e2e8f0", background: selected ? "#fef9ec" : "#f8fafc", color: selected ? "#92710d" : "#475569" }}
                         onClick={() => {
                           const current = workLogForm.employee_name ? workLogForm.employee_name.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
-                          const updated = selected ? current.filter(n => n !== e.name) : [...current, e.name];
+                          const updated = selected ? current.filter((n: string) => n !== e.name) : [...current, e.name];
                           setWorkLogForm({...workLogForm, employee_name: updated.join(", ")});
                         }}>{selected ? "✓ " : ""}{e.name}</button>
                     );
