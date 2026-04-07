@@ -3950,12 +3950,12 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 <div style={{ fontWeight: 600, fontSize: 13, color: "#475569", marginBottom: 8 }}>👷 עובדים:</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
                   {employees.filter(e => e.status === "פעיל").map(e => {
-                    const selected = workLogForm.employee_name.split(",").map(s => s.trim()).includes(e.name);
+                    const selected = workLogForm.employee_name.split(",").map((s: string) => s.trim()).includes(e.name);
                     return (
                       <button key={e.id} type="button"
                         style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #c9a227" : "1px solid #e2e8f0", background: selected ? "#fef9ec" : "#f8fafc", color: selected ? "#92710d" : "#475569" }}
                         onClick={() => {
-                          const current = workLogForm.employee_name ? workLogForm.employee_name.split(",").map(s => s.trim()).filter(Boolean) : [];
+                          const current = workLogForm.employee_name ? workLogForm.employee_name.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
                           const updated = selected ? current.filter(n => n !== e.name) : [...current, e.name];
                           setWorkLogForm({...workLogForm, employee_name: updated.join(", ")});
                         }}>{selected ? "✓ " : ""}{e.name}</button>
