@@ -113,6 +113,11 @@ const navItems = [
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+function formatSerial(n: number | null | undefined) {
+  if (!n) return "0000";
+  return String(n).padStart(4, "0");
+}
+
 function badgeClass(value: string) {
   if (["מושכר", "פעיל", "נסגרה"].includes(value)) return "badge badge-success";
   if (["פנוי", "חדשה", "בינונית"].includes(value)) return "badge badge-warning";
@@ -3366,7 +3371,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <div style={{ fontSize: 22, fontWeight: 900 }}>📋 #{selectedWorkLog.serial_number} · {selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : "-"}</div>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>📋 #{formatSerial(selectedWorkLog.serial_number)} · {selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : "-"}</div>
                 <div style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
                   {selectedWorkLog.branch && <span>📍 {selectedWorkLog.branch} · </span>}
                   {selectedWorkLog.project_name && <span>🤝 {selectedWorkLog.project_name} · </span>}
@@ -3542,7 +3547,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 {workLogs.slice(0, 6).map(w => (
                   <div key={w.id} style={{ background: "#f8fafc", borderRadius: 12, padding: 14, cursor: "pointer" }} onClick={() => setSelectedWorkLog(w)}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 8px" }}>#{w.serial_number}</span>
+                      <span style={{ fontSize: 11, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 8px" }}>#{formatSerial(w.serial_number)}</span>
                       <span style={{ fontSize: 13, fontWeight: 700 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
                     </div>
                     <div style={{ fontSize: 12, color: "#64748b" }}>{w.project_name || w.branch || "-"}</div>
@@ -3828,7 +3833,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 13, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 10px" }}>#{w.serial_number}</span>
+                        <span style={{ fontSize: 13, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
                         <span style={{ fontSize: 18, fontWeight: 900 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
                       </div>
                       <div style={{ fontSize: 14, color: "#64748b", marginTop: 2 }}>{w.branch ? `📍 ${w.branch}` : ""}{w.project_name ? ` · 🤝 ${w.project_name}` : ""}</div>
@@ -3847,8 +3852,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       const workers = [w.employee_name, w.workers].filter(Boolean).join(", ");
                       const win = window.open("", "_blank");
                       if (win) {
-                        win.document.write(`<html dir="rtl"><head><title>יומן עבודה #${w.serial_number}</title><style>body{font-family:Arial,sans-serif;padding:32px;direction:rtl}h2{font-size:22px;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px}td,th{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f1f5f9}@media print{button{display:none}}</style></head><body>`);
-                        win.document.write(`<h2>📋 יומן עבודה #${w.serial_number}</h2>`);
+                        win.document.write(`<html dir="rtl"><head><title>יומן עבודה #${formatSerial(w.serial_number)}</title><style>body{font-family:Arial,sans-serif;padding:32px;direction:rtl}h2{font-size:22px;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px}td,th{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f1f5f9}@media print{button{display:none}}</style></head><body>`);
+                        win.document.write(`<h2>📋 יומן עבודה #${formatSerial(w.serial_number)}</h2>`);
                         win.document.write(`<p>תאריך: ${w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"} | לקוח: ${w.project_name || "-"} | סניף: ${w.branch || "-"}</p>`);
                         win.document.write(`<p>עובדים: ${workers || "-"} | שעות: ${w.hours || "-"} | ממלא: ${w.filled_by || "-"}</p>`);
                         win.document.write(`<table><thead><tr><th>#</th><th>פירוט עבודה</th></tr></thead><tbody>`);
