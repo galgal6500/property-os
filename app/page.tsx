@@ -2994,6 +2994,152 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
   );
 }
 
+function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName: string }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [filter, setFilter] = useState("הכל");
+  const [form, setForm] = useState({ item: "", quantity: "", category: "כללי", notes: "" });
+
+  const categories = ["כללי", "כלי עבודה", "חומרי גלם", "ציוד בטיחות", "חשמל", "אינסטלציה", "רכב", "אחר"];
+
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase.from("ngs_inventory").select("*").order("created_at", { ascending: false });
+    setItems(data || []);
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function addItem() {
+    if (!form.item) return;
+    setSaving(true);
+    await supabase.from("ngs_inventory").insert({
+      item: form.item,
+      quantity: form.quantity,
+      category: form.category,
+      notes: form.notes,
+      status: "חסר",
+      added_by: workerName || "מנהל",
+    });
+    setForm({ item: "", quantity: "", category: "כללי", notes: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function updateStatus(id: string, status: string) {
+    await supabase.from("ngs_inventory").update({ status }).eq("id", id);
+    await load();
+  }
+
+  async function deleteItem(id: string) {
+    if (!confirm("למחוק?")) return;
+    await supabase.from("ngs_inventory").delete().eq("id", id);
+    await load();
+  }
+
+  const filtered = filter === "הכל" ? items : items.filter(i => i.status === filter);
+  const missing = items.filter(i => i.status === "חסר").length;
+  const ordered = items.filter(i => i.status === "הוזמן").length;
+  const received = items.filter(i => i.status === "התקבל").length;
+
+  const statusColor: Record<string, string> = {
+    "חסר": "#dc2626", "הוזמן": "#f59e0b", "התקבל": "#16a34a"
+  };
+
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      {/* כרטיסי סיכום */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+        {[
+          { label: "פריטים חסרים", value: missing, color: "#dc2626", bg: "#fee2e2" },
+          { label: "הוזמנו", value: ordered, color: "#d97706", bg: "#fef3c7" },
+          { label: "התקבלו", value: received, color: "#16a34a", bg: "#dcfce7" },
+        ].map(s => (
+          <div key={s.label} style={{ background: s.bg, borderRadius: 16, padding: "16px 20px", textAlign: "center" }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: 13, color: s.color, marginTop: 4, fontWeight: 600 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card">
+        <div className="section-top">
+          <div>
+            <h3 className="card-title" style={{ margin: 0 }}>🛒 ציוד חסר / רשימת קניות</h3>
+            <div className="muted" style={{ marginTop: 4 }}>רשום כאן כל פריט שחסר — כולם רואים ויכולים לעדכן</div>
+          </div>
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף פריט</button>
+        </div>
+
+        {showForm && (
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div className="field"><label>שם הפריט *</label><input className="input" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="למשל: ברגים M6" autoFocus /></div>
+              <div className="field"><label>כמות</label><input className="input" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} placeholder="למשל: 100 יח׳" /></div>
+              <div className="field">
+                <label>קטגוריה</label>
+                <select className="input" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+                  {categories.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="field" style={{ gridColumn: "span 3" }}><label>הערות</label><input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="פרטים נוספים, איפה נמצא, למה נחוץ..." /></div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-primary" onClick={addItem} disabled={saving}>{saving ? "שומר..." : "➕ הוסף לרשימה"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+
+        {/* סינון */}
+        <div className="chips" style={{ marginBottom: 16 }}>
+          {["הכל", "חסר", "הוזמן", "התקבל"].map(f => (
+            <button key={f} className={`btn ${filter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setFilter(f)}>{f}</button>
+          ))}
+        </div>
+
+        {loading ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        : filtered.length === 0 ? (
+          <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+            <div style={{ fontSize: 40 }}>🛒</div>
+            <div style={{ fontWeight: 700, marginTop: 8 }}>{filter === "חסר" ? "אין פריטים חסרים כרגע! 🎉" : "אין פריטים"}</div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {filtered.map(item => (
+              <div key={item.id} style={{ border: `2px solid ${statusColor[item.status] || "#e2e8f0"}30`, borderRight: `4px solid ${statusColor[item.status] || "#e2e8f0"}`, borderRadius: 14, padding: 14, background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
+                    <span style={{ fontWeight: 800, fontSize: 15 }}>{item.item}</span>
+                    {item.quantity && <span style={{ background: "#f1f5f9", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>כמות: {item.quantity}</span>}
+                    <span style={{ background: "#f1f5f9", borderRadius: 999, padding: "2px 10px", fontSize: 12, color: "#64748b" }}>{item.category}</span>
+                    <span style={{ background: `${statusColor[item.status]}20`, color: statusColor[item.status], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{item.status}</span>
+                  </div>
+                  {item.notes && <div style={{ fontSize: 13, color: "#64748b" }}>{item.notes}</div>}
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>נוסף ע"י: {item.added_by || "-"} · {new Date(item.created_at).toLocaleDateString("he-IL")}</div>
+                </div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <select value={item.status} onChange={e => updateStatus(item.id, e.target.value)}
+                    style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "5px 8px", fontSize: 12, background: `${statusColor[item.status]}10` }}>
+                    <option value="חסר">❌ חסר</option>
+                    <option value="הוזמן">🕐 הוזמן</option>
+                    <option value="התקבל">✅ התקבל</option>
+                  </select>
+                  {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem(item.id)}>מחק</button>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks: any[]; employees: any[]; isWorker: boolean; workerName: string; onRefresh: () => void }) {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -3291,6 +3437,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     { key: "service", label: "🔧 קריאות שירות" },
     { key: "vehicles", label: "🚗 הרכב שלי" },
     { key: "tasks", label: "✅ המשימות שלי" },
+    { key: "inventory", label: "🛒 ציוד חסר" },
   ] : [
     { key: "overview", label: "📊 סקירה" },
     { key: "vehicles", label: "🚗 רכבים" },
@@ -3300,6 +3447,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     { key: "service", label: "🔧 קריאות שירות" },
     { key: "worklogs", label: "📋 יומני עבודה" },
     { key: "tasks", label: "✅ משימות" },
+    { key: "inventory", label: "🛒 ציוד חסר" },
   ];
   const openServiceCalls = serviceCalls.filter(s => s.status !== "הושלם");
   const activeProjects = projects.filter(p => p.status === "פעיל");
@@ -3777,6 +3925,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         <TasksTab tasks={tasks} employees={employees} isWorker={isWorker} workerName={workerName} onRefresh={load} />
       )}
 
+      {tab === "inventory" && (
+        <InventoryTab isWorker={isWorker} workerName={workerName} />
+      )}
+
       {!loading && tab === "worklogs" && (
         <div className="card">
           <div className="section-top"><h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה</h3><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ יומן חדש</button></div>
@@ -3787,7 +3939,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 14 }}>
               <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>📋 יומן עבודה חדש</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                <div className="field"><label>ממלא היומן</label><input className="input" value={workLogForm.filled_by} onChange={e => setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="שם הממלא" /></div>
+                <div className="field"><label>ממלא היומן</label><input className="input" value={workLogForm.filled_by} onChange={e => !isWorker && setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="שם הממלא" readOnly={isWorker} style={isWorker ? { background: "#f1f5f9", color: "#64748b" } : {}} /></div>
                 <div className="field"><label>לקוח</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">✏️ אחר</option></select></div>
                 <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
                 <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} step="0.5" /></div>
