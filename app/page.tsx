@@ -122,6 +122,7 @@ function badgeClass(value: string) {
   if (["מושכר", "פעיל", "נסגרה"].includes(value)) return "badge badge-success";
   if (["פנוי", "חדשה", "בינונית"].includes(value)) return "badge badge-warning";
   if (["גבוהה"].includes(value)) return "badge badge-danger";
+  if (["דחוף מאוד"].includes(value)) return "badge" + " " + "badge-urgent";
   return "badge badge-default";
 }
 
@@ -378,7 +379,7 @@ function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string
               <input className="input" placeholder="נושא התקלה *" value={reqForm.issue} onChange={e => setReqForm({...reqForm, issue: e.target.value})} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <select className="input" value={reqForm.urgency} onChange={e => setReqForm({...reqForm, urgency: e.target.value})}>
-                  <option>נמוכה</option><option>בינונית</option><option>גבוהה</option>
+                  <option>נמוכה</option><option>בינונית</option><option>גבוהה</option><option>דחוף מאוד</option>
                 </select>
                 <input className="input" placeholder="ספק / בעל מקצוע" value={reqForm.vendor} onChange={e => setReqForm({...reqForm, vendor: e.target.value})} />
                 <input className="input" placeholder="עלות ₪" type="number" value={reqForm.cost} onChange={e => setReqForm({...reqForm, cost: e.target.value})} />
@@ -1303,7 +1304,7 @@ function ServiceRequests() {
               <div className="field">
                 <label>דחיפות</label>
                 <select className="input" value={form.urgency} onChange={e => setForm({...form, urgency: e.target.value})}>
-                  <option>נמוכה</option><option>בינונית</option><option>גבוהה</option>
+                  <option>נמוכה</option><option>בינונית</option><option>גבוהה</option><option>דחוף מאוד</option>
                 </select>
               </div>
               <div className="field">
@@ -3855,7 +3856,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                 <div className="field"><label>לקוח</label><select className="input" value={serviceCallForm.client_name} onChange={e => setServiceCallForm({...serviceCallForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
                 <div className="field"><label>נושא *</label><input className="input" value={serviceCallForm.issue} onChange={e => setServiceCallForm({...serviceCallForm, issue: e.target.value})} /></div>
-                <div className="field"><label>דחיפות</label><select className="input" value={serviceCallForm.urgency} onChange={e => setServiceCallForm({...serviceCallForm, urgency: e.target.value})}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select></div>
+                <div className="field"><label>דחיפות</label><select className="input" value={serviceCallForm.urgency} onChange={e => setServiceCallForm({...serviceCallForm, urgency: e.target.value})}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option><option>דחוף מאוד</option></select></div>
                 <div className="field"><label>אחראי</label><select className="input" value={serviceCallForm.assigned_to} onChange={e => setServiceCallForm({...serviceCallForm, assigned_to: e.target.value})}><option value="">בחר עובד</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
                 <div className="field"><label>📍 מיקום</label><input className="input" value={serviceCallForm.location} onChange={e => setServiceCallForm({...serviceCallForm, location: e.target.value})} placeholder="כתובת / אתר..." /></div>
               </div>
