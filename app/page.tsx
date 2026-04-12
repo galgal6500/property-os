@@ -3324,7 +3324,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "פעיל" });
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
-  const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "" });
+  const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "", contact_name: "", contact_phone: "" });
   const [workLogForm, setWorkLogForm] = useState({ filled_by: isWorker ? workerName : "", employee_name: isWorker ? workerName : "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
 
   async function load() {
@@ -3407,7 +3407,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   async function saveServiceCall() {
     if (!serviceCallForm.issue) return; setSaving(true);
     await supabase.from("ngs_service_calls").insert(serviceCallForm);
-    setServiceCallForm({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "" }); setShowForm(false); await load(); setSaving(false);
+    setServiceCallForm({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "", contact_name: "", contact_phone: "" }); setShowForm(false); await load(); setSaving(false);
   }
   async function saveWorkLog() {
     if (!workLogForm.employee_name && !workLogForm.filled_by) return; setSaving(true);
@@ -3489,6 +3489,19 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14, gridColumn: "span 2" }}>
                     <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>📍 מיקום</div>
                     <div style={{ fontWeight: 700 }}>{selectedServiceCall.location}</div>
+                  </div>
+                )}
+                {selectedServiceCall.contact_name && (
+                  <div style={{ background: "#eff6ff", borderRadius: 12, padding: 14, gridColumn: "span 2", border: "1px solid #bfdbfe" }}>
+                    <div style={{ fontSize: 11, color: "#1d4ed8", marginBottom: 8, fontWeight: 700 }}>👤 איש קשר</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontWeight: 800, fontSize: 15 }}>{selectedServiceCall.contact_name}</div>
+                      {selectedServiceCall.contact_phone && (
+                        <a href={`tel:${selectedServiceCall.contact_phone}`} className="btn btn-primary" style={{ fontSize: 13, padding: "6px 16px", textDecoration: "none" }}>
+                          📞 {selectedServiceCall.contact_phone}
+                        </a>
+                      )}
+                    </div>
                   </div>
                 )}
                 {selectedServiceCall.completed_by && (
@@ -3859,6 +3872,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 <div className="field"><label>דחיפות</label><select className="input" value={serviceCallForm.urgency} onChange={e => setServiceCallForm({...serviceCallForm, urgency: e.target.value})}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option><option>דחוף מאוד</option></select></div>
                 <div className="field"><label>אחראי</label><select className="input" value={serviceCallForm.assigned_to} onChange={e => setServiceCallForm({...serviceCallForm, assigned_to: e.target.value})}><option value="">בחר עובד</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
                 <div className="field"><label>📍 מיקום</label><input className="input" value={serviceCallForm.location} onChange={e => setServiceCallForm({...serviceCallForm, location: e.target.value})} placeholder="כתובת / אתר..." /></div>
+                <div className="field"><label>👤 איש קשר</label><input className="input" value={serviceCallForm.contact_name} onChange={e => setServiceCallForm({...serviceCallForm, contact_name: e.target.value})} placeholder="שם איש הקשר" /></div>
+                <div className="field"><label>📞 טלפון איש קשר</label><input className="input" value={serviceCallForm.contact_phone} onChange={e => setServiceCallForm({...serviceCallForm, contact_phone: e.target.value})} placeholder="050-0000000" /></div>
               </div>
               <div className="field" style={{ marginTop: 10 }}><label>📝 תיאור</label><textarea className="input" value={serviceCallForm.description} onChange={e => setServiceCallForm({...serviceCallForm, description: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveServiceCall} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
