@@ -1239,6 +1239,7 @@ function ServiceRequests() {
     setSaving(true);
     await supabase.from("service_requests").insert({
       apartment_id: form.apartment_id || null,
+      apartment_manual: form.apartment_manual || null,
       issue: form.issue,
       description: form.description,
       urgency: form.urgency,
@@ -1246,7 +1247,7 @@ function ServiceRequests() {
       cost: parseFloat(form.cost) || 0,
       vendor: form.vendor
     });
-    setForm({ apartment_id: "", issue: "", description: "", urgency: "בינונית", status: "חדשה", cost: "", vendor: "" });
+    setForm({ apartment_id: "", apartment_manual: "", issue: "", description: "", urgency: "בינונית", status: "חדשה", cost: "", vendor: "" });
     setShowForm(false);
     await load();
     setSaving(false);
@@ -1295,10 +1296,14 @@ function ServiceRequests() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="field">
                 <label>דירה</label>
-                <select className="input" value={form.apartment_id} onChange={e => setForm({...form, apartment_id: e.target.value})}>
-                  <option value="">בחר דירה</option>
+                <select className="input" value={form.apartment_id} onChange={e => setForm({...form, apartment_id: e.target.value, apartment_manual: ""})}>
+                  <option value="">בחר דירה מהרשימה</option>
                   {apartments.map((a: any) => <option key={a.id} value={a.id}>{a.buildings?.name} / {a.apartment_number}</option>)}
                 </select>
+              </div>
+              <div className="field">
+                <label>או כתוב כתובת ידנית</label>
+                <input className="input" value={form.apartment_manual || ""} onChange={e => setForm({...form, apartment_manual: e.target.value, apartment_id: ""})} placeholder="למשל: רחוב הרצל 5 / דירה 3" disabled={!!form.apartment_id} style={{ opacity: form.apartment_id ? 0.5 : 1 }} />
               </div>
               <div className="field"><label>נושא התקלה</label><input className="input" value={form.issue} onChange={e => setForm({...form, issue: e.target.value})} placeholder="נזילה במקלחת" /></div>
               <div className="field">
@@ -1363,7 +1368,7 @@ function ServiceRequests() {
                 {filtered.map((r) => (
                   <tr key={r.id}>
                     <td>{new Date(r.created_at).toLocaleDateString("he-IL")}</td>
-                    <td>{r.apartments?.buildings?.name} / {r.apartments?.apartment_number}</td>
+                    <td>{r.apartment_manual || (r.apartments?.buildings?.name ? `${r.apartments.buildings.name} / ${r.apartments.apartment_number}` : "-")}</td>
                     <td style={{ fontWeight: 700 }}>{r.issue}</td>
                     <td><Badge value={r.urgency} /></td>
                     <td>{r.vendor || "-"}</td>
@@ -1394,7 +1399,7 @@ function ServiceRequests() {
           <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>🔧 {selectedRequest.issue}</h3>
-              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedRequest.apartments?.buildings?.name} / {selectedRequest.apartments?.apartment_number}</div>
+              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedRequest.apartment_manual || (selectedRequest.apartments?.buildings?.name ? `${selectedRequest.apartments.buildings.name} / ${selectedRequest.apartments.apartment_number}` : "-")}</div>
             </div>
             <button onClick={() => setSelectedRequest(null)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#64748b" }}>×</button>
           </div>
