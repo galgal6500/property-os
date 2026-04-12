@@ -1219,7 +1219,7 @@ function ServiceRequests() {
   const [filter, setFilter] = useState("חדשה");
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [form, setForm] = useState({
-    apartment_id: "", issue: "", description: "",
+    apartment_id: "", apartment_manual: "", issue: "", description: "",
     urgency: "בינונית", status: "חדשה", cost: "", vendor: ""
   });
 
