@@ -105,6 +105,7 @@ const navItems = [
   { key: "owners", label: "בעלי נכסים" },
   { key: "buildings", label: "מבנים" },
   { key: "leases", label: "חוזים" },
+  { key: "payments", label: "תשלומים" },
   { key: "workcontracts", label: "חוזי עבודה" },
   { key: "documents", label: "מסמכים" },
   { key: "users", label: "משתמשים" },
@@ -2585,6 +2586,257 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
 }
 
 
+function PaymentsTracker() {
+  const [payments, setPayments] = useState<any[]>([]);
+  const [apartments, setApartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [filterMonth, setFilterMonth] = useState(String(new Date().getMonth() + 1).padStart(2, "0"));
+  const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()));
+  const [filterStatus, setFilterStatus] = useState("הכל");
+  const [form, setForm] = useState({ apartment_id: "", tenant_name: "", amount: "", month: String(new Date().getMonth() + 1).padStart(2, "0"), year: String(new Date().getFullYear()), status: "לא שולם", payment_date: "", payment_method: "העברה בנקאית", notes: "" });
+
+  const months = [
+    { val: "01", label: "ינואר" }, { val: "02", label: "פברואר" }, { val: "03", label: "מרץ" },
+    { val: "04", label: "אפריל" }, { val: "05", label: "מאי" }, { val: "06", label: "יוני" },
+    { val: "07", label: "יולי" }, { val: "08", label: "אוגוסט" }, { val: "09", label: "ספטמבר" },
+    { val: "10", label: "אוקטובר" }, { val: "11", label: "נובמבר" }, { val: "12", label: "דצמבר" },
+  ];
+  const years = ["2023", "2024", "2025", "2026", "2027"];
+
+  async function load() {
+    setLoading(true);
+    const { data: apts } = await supabase.from("apartments").select("id, apartment_number, tenant_name, rent_amount, buildings(name, city)").eq("status", "מושכר");
+    const { data: pays } = await supabase.from("payments").select("*").order("created_at", { ascending: false });
+    setApartments(apts || []);
+    setPayments(pays || []);
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function addPayment() {
+    if (!form.apartment_id) return;
+    setSaving(true);
+    const apt = apartments.find(a => a.id === form.apartment_id);
+    await supabase.from("payments").insert({
+      apartment_id: form.apartment_id,
+      tenant_name: form.tenant_name || apt?.tenant_name || "",
+      amount: parseFloat(form.amount) || apt?.rent_amount || 0,
+      month: form.month,
+      year: parseInt(form.year),
+      status: form.status,
+      payment_date: form.payment_date || null,
+      payment_method: form.payment_method,
+      notes: form.notes,
+    });
+    setForm({ apartment_id: "", tenant_name: "", amount: "", month: String(new Date().getMonth() + 1).padStart(2, "0"), year: String(new Date().getFullYear()), status: "לא שולם", payment_date: "", payment_method: "העברה בנקאית", notes: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+
+  async function updatePaymentStatus(id: string, status: string, payment_date?: string) {
+    await supabase.from("payments").update({ status, payment_date: payment_date || null }).eq("id", id);
+    await load();
+  }
+
+  async function deletePayment(id: string) {
+    if (!confirm("למחוק תשלום?")) return;
+    await supabase.from("payments").delete().eq("id", id);
+    await load();
+  }
+
+  // סינון
+  const filtered = payments.filter(p => {
+    const monthMatch = filterMonth === "הכל" || p.month === filterMonth;
+    const yearMatch = p.year === parseInt(filterYear);
+    const statusMatch = filterStatus === "הכל" || p.status === filterStatus;
+    return monthMatch && yearMatch && statusMatch;
+  });
+
+  const totalExpected = filtered.reduce((s, p) => s + (p.amount || 0), 0);
+  const totalPaid = filtered.filter(p => p.status === "שולם").reduce((s, p) => s + (p.amount || 0), 0);
+  const totalPending = filtered.filter(p => p.status === "לא שולם").reduce((s, p) => s + (p.amount || 0), 0);
+  const paidCount = filtered.filter(p => p.status === "שולם").length;
+  const pendingCount = filtered.filter(p => p.status === "לא שולם").length;
+  const lateCount = filtered.filter(p => p.status === "באיחור").length;
+
+  const statusColor: Record<string, string> = { "שולם": "#16a34a", "לא שולם": "#dc2626", "באיחור": "#d97706", "שולם חלקית": "#2563eb" };
+  const statusBg: Record<string, string> = { "שולם": "#dcfce7", "לא שולם": "#fee2e2", "באיחור": "#fef3c7", "שולם חלקית": "#dbeafe" };
+
+  // יצירת תשלומים חודשיים אוטומטית לכל הדירות המושכרות
+  async function generateMonthlyPayments() {
+    if (!confirm(`ליצור תשלומים עבור ${months.find(m => m.val === filterMonth)?.label} ${filterYear} לכל הדירות המושכרות?`)) return;
+    setSaving(true);
+    for (const apt of apartments) {
+      const exists = payments.find(p => p.apartment_id === apt.id && p.month === filterMonth && p.year === parseInt(filterYear));
+      if (!exists) {
+        await supabase.from("payments").insert({
+          apartment_id: apt.id,
+          tenant_name: apt.tenant_name || "",
+          amount: apt.rent_amount || 0,
+          month: filterMonth,
+          year: parseInt(filterYear),
+          status: "לא שולם",
+          payment_method: "העברה בנקאית",
+        });
+      }
+    }
+    await load();
+    setSaving(false);
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      {/* כותרת */}
+      <div className="card">
+        <div className="section-top">
+          <div>
+            <h2 className="card-title" style={{ marginBottom: 6 }}>💰 מעקב תשלומים</h2>
+            <div className="muted">מעקב אחר תשלומי שכירות מכל הדיירים</div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="btn btn-outline" onClick={generateMonthlyPayments} disabled={saving}>⚡ צור תשלומים חודשיים</button>
+            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף תשלום</button>
+          </div>
+        </div>
+
+        {/* סינון */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+          <div className="field">
+            <label>חודש</label>
+            <select className="input" value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
+              <option value="הכל">כל החודשים</option>
+              {months.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>שנה</label>
+            <select className="input" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+              {years.map(y => <option key={y}>{y}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>סטטוס</label>
+            <select className="input" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+              <option value="הכל">הכל</option>
+              <option>שולם</option><option>לא שולם</option><option>באיחור</option><option>שולם חלקית</option>
+            </select>
+          </div>
+        </div>
+
+        {/* טופס הוספה */}
+        {showForm && (
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>תשלום חדש</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="field">
+                <label>דירה *</label>
+                <select className="input" value={form.apartment_id} onChange={e => {
+                  const apt = apartments.find(a => a.id === e.target.value);
+                  setForm({...form, apartment_id: e.target.value, tenant_name: apt?.tenant_name || "", amount: String(apt?.rent_amount || "")});
+                }}>
+                  <option value="">בחר דירה</option>
+                  {apartments.map(a => <option key={a.id} value={a.id}>{a.buildings?.name} / {a.apartment_number} — {a.tenant_name}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>שם דייר</label><input className="input" value={form.tenant_name} onChange={e => setForm({...form, tenant_name: e.target.value})} /></div>
+              <div className="field"><label>סכום ₪</label><input className="input" type="number" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} /></div>
+              <div className="field">
+                <label>חודש</label>
+                <select className="input" value={form.month} onChange={e => setForm({...form, month: e.target.value})}>
+                  {months.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label>שנה</label>
+                <select className="input" value={form.year} onChange={e => setForm({...form, year: e.target.value})}>
+                  {years.map(y => <option key={y}>{y}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label>סטטוס</label>
+                <select className="input" value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                  <option>לא שולם</option><option>שולם</option><option>באיחור</option><option>שולם חלקית</option>
+                </select>
+              </div>
+              <div className="field"><label>תאריך תשלום</label><input className="input" type="date" value={form.payment_date} onChange={e => setForm({...form, payment_date: e.target.value})} /></div>
+              <div className="field">
+                <label>אמצעי תשלום</label>
+                <select className="input" value={form.payment_method} onChange={e => setForm({...form, payment_method: e.target.value})}>
+                  <option>העברה בנקאית</option><option>מזומן</option><option>צ׳קים</option>
+                </select>
+              </div>
+              <div className="field"><label>הערות</label><input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-primary" onClick={addPayment} disabled={saving}>{saving ? "שומר..." : "💾 שמור"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* כרטיסי סיכום */}
+      <div className="detail-kpis">
+        <KPI title="סה״כ צפוי" value={currency(totalExpected)} subtitle={`${filtered.length} תשלומים`} />
+        <KPI title="שולם" value={currency(totalPaid)} subtitle={`${paidCount} דיירים`} />
+        <KPI title="לא שולם" value={currency(totalPending)} subtitle={`${pendingCount} דיירים`} />
+        <KPI title="באיחור" value={String(lateCount)} subtitle="דיירים" />
+        <KPI title="אחוז גבייה" value={totalExpected > 0 ? Math.round((totalPaid / totalExpected) * 100) + "%" : "0%"} subtitle="מהצפוי" />
+      </div>
+
+      {/* טבלת תשלומים */}
+      <div className="card">
+        {loading ? <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        : filtered.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+            <div style={{ fontSize: 40 }}>💰</div>
+            <div style={{ fontWeight: 700, marginTop: 8 }}>אין תשלומים לתקופה זו</div>
+            <div style={{ fontSize: 13, marginTop: 6, color: "#94a3b8" }}>לחץ "צור תשלומים חודשיים" כדי ליצור אוטומטית לכל הדירות</div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {filtered.map(p => {
+              const apt = apartments.find(a => a.id === p.apartment_id);
+              const monthLabel = months.find(m => m.val === p.month)?.label || p.month;
+              return (
+                <div key={p.id} style={{ border: `1px solid ${statusBg[p.status] || "#f1f5f9"}`, borderRight: `4px solid ${statusColor[p.status] || "#94a3b8"}`, borderRadius: 14, padding: "14px 16px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
+                      <span style={{ fontWeight: 800, fontSize: 15 }}>{p.tenant_name || "-"}</span>
+                      <span style={{ fontSize: 12, color: "#64748b" }}>{apt ? `${apt.buildings?.name} / ${apt.apartment_number}` : "-"}</span>
+                      <span style={{ fontSize: 12, background: "#f1f5f9", borderRadius: 999, padding: "2px 10px", fontWeight: 600 }}>{monthLabel} {p.year}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{currency(p.amount)}</span>
+                      {p.payment_method && <span style={{ fontSize: 12, color: "#94a3b8" }}>{p.payment_method}</span>}
+                      {p.payment_date && <span style={{ fontSize: 12, color: "#64748b" }}>שולם: {new Date(p.payment_date).toLocaleDateString("he-IL")}</span>}
+                      {p.notes && <span style={{ fontSize: 12, color: "#94a3b8" }}>{p.notes}</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <select value={p.status} onChange={e => updatePaymentStatus(p.id, e.target.value, e.target.value === "שולם" ? new Date().toISOString().split("T")[0] : undefined)}
+                      style={{ border: `1px solid ${statusColor[p.status] || "#e2e8f0"}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, fontWeight: 700, background: statusBg[p.status] || "#fff", color: statusColor[p.status] || "#334155" }}>
+                      <option>לא שולם</option>
+                      <option>שולם</option>
+                      <option>באיחור</option>
+                      <option>שולם חלקית</option>
+                    </select>
+                    <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deletePayment(p.id)}>🗑</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function WorkContracts() {
   const [contracts, setContracts] = useState<any[]>([]);
   const [owners, setOwners] = useState<any[]>([]);
@@ -4065,7 +4317,7 @@ function SidebarNav({ activePage, setActivePage, isActive, userRole }: { activeP
   const propertyItems = [
     { key: "owners", label: "👤 בעלי נכסים" }, { key: "buildings", label: "🏢 מבנים" },
     { key: "apartments", label: "🚪 דירות" }, { key: "requests", label: "🔧 קריאות שירות" },
-    { key: "leases", label: "📋 חוזים" }, { key: "workcontracts", label: "📝 חוזי עבודה" },
+    { key: "leases", label: "📋 חוזים" }, { key: "payments", label: "💰 תשלומים" }, { key: "workcontracts", label: "📝 חוזי עבודה" },
     { key: "documents", label: "📄 מסמכים" },
   ];
   const isPropertyActive = propertyItems.some(i => isActive(i.key));
@@ -4227,6 +4479,7 @@ export default function Home() {
       case "apartmentDetails": return <div key={refreshKey}><ApartmentDetails apartmentId={selectedApartmentId} back={() => setActivePage("apartments")} /></div>;
       case "requests": return <div key={refreshKey}><ServiceRequests /></div>;
       case "leases": return <div key={refreshKey}><Leases /></div>;
+      case "payments": return <div key={refreshKey}><PaymentsTracker /></div>;
       case "documents": return <Placeholder title="מסמכים" text="כאן ירוכזו חוזים, תמונות, הצעות מחיר והסכמי ניהול." />;
       case "tenantPortal": return <div key={refreshKey}><TenantPortal userProfile={userProfile} /></div>;
       case "settings": return <div key={refreshKey}><Settings userEmail={email} /></div>;
