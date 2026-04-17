@@ -3672,6 +3672,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const [serviceCalls, setServiceCalls] = useState<any[]>([]);
   const [workLogs, setWorkLogs] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -3691,7 +3692,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
   async function load() {
     setLoading(true);
-    const [v, e, c, p, s, w, t] = await Promise.all([
+    const [v, e, c, p, s, w, t, inv] = await Promise.all([
       supabase.from("ngs_vehicles").select("*").order("created_at", { ascending: false }),
       supabase.from("ngs_employees").select("*").order("name"),
       supabase.from("ngs_clients").select("*").order("name"),
@@ -3699,6 +3700,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       supabase.from("ngs_service_calls").select("*").order("created_at", { ascending: false }),
       supabase.from("ngs_work_logs").select("*").order("date", { ascending: false }),
       supabase.from("ngs_tasks").select("*").order("created_at", { ascending: false }),
+      supabase.from("ngs_inventory").select("*").order("created_at", { ascending: false }),
     ]);
 
     // סינון לפי עובד
@@ -3707,15 +3709,12 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     const allTasks = t.data || [];
 
     if (isWorker && workerName) {
-      // רכב שמשויך לעובד
       setVehicles(allVehicles.filter((v: any) => v.driver === workerName));
-      // יומנים שלו בלבד
       setWorkLogs(allWorkLogs.filter((l: any) =>
         l.employee_name?.split(",").map((s: string) => s.trim()).some((n: string) => n === workerName) ||
         l.filled_by?.trim() === workerName?.trim() ||
         l.workers?.split(",").map((s: string) => s.trim()).some((n: string) => n === workerName)
       ));
-      // משימות שמשויכות אליו או לכולם
       setTasks(allTasks.filter((t: any) => t.assigned_to === "all" || t.assigned_to?.split(",").map((s: string) => s.trim()).includes(workerName)));
     } else {
       setVehicles(allVehicles);
@@ -3725,6 +3724,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
     setEmployees(e.data || []); setClients(c.data || []);
     setProjects(p.data || []); setServiceCalls(s.data || []);
+    setInventoryItems(inv.data || []);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -3997,100 +3997,103 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       )}
 
       {!loading && tab === "overview" && isWorker && (
-        <div style={{ display: "grid", gap: 18 }}>
+        <div style={{ display: "grid", gap: 14 }}>
           {/* כרטיס ברוך הבא */}
-          <div style={{ background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", borderRadius: 24, padding: "32px 36px", color: "#fff", position: "relative", overflow: "hidden" }}>
+          <div style={{ background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", borderRadius: 24, padding: "24px 24px 20px", color: "#fff", position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: -40, left: -40, width: 200, height: 200, background: "rgba(213,181,122,0.08)", borderRadius: "50%" }} />
-            <div style={{ position: "absolute", bottom: -60, right: -20, width: 250, height: 250, background: "rgba(213,181,122,0.05)", borderRadius: "50%" }} />
             <div style={{ position: "relative" }}>
-              <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>ברוך הבא 👋</div>
-              <h1 style={{ margin: "0 0 6px", fontSize: 32, fontWeight: 900 }}>{workerName}</h1>
-              <div style={{ color: "#94a3b8", fontSize: 15 }}>עובד נ.ג.ש מור הנדסה</div>
-              <div style={{ display: "flex", gap: 24, marginTop: 28 }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: "#d5b57a" }}>{workLogs.length}</div>
-                  <div style={{ fontSize: 12, color: "#94a3b8" }}>יומנים</div>
-                </div>
-                <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#f87171" : "#34d399" }}>{serviceCalls.filter(s => s.status !== "הושלם").length}</div>
-                  <div style={{ fontSize: 12, color: "#94a3b8" }}>קריאות פתוחות</div>
-                </div>
-                <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#fbbf24" : "#34d399" }}>{tasks.filter(t => t.status === "פתוח").length}</div>
-                  <div style={{ fontSize: 12, color: "#94a3b8" }}>משימות פתוחות</div>
-                </div>
-                {vehicles.length > 0 && <>
-                  <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 28, fontWeight: 900, color: "#60a5fa" }}>{vehicles[0]?.license_plate || "-"}</div>
-                    <div style={{ fontSize: 12, color: "#94a3b8" }}>הרכב שלי</div>
-                  </div>
-                </>}
-              </div>
+              <div style={{ fontSize: 13, color: "#94a3b8" }}>שלום 👋</div>
+              <h1 style={{ margin: "4px 0 2px", fontSize: 28, fontWeight: 900 }}>{workerName}</h1>
+              <div style={{ color: "#64748b", fontSize: 13 }}>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}</div>
             </div>
           </div>
 
-          <div className="grid-1-1">
-            {/* משימות פתוחות */}
-            <div className="card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <h3 className="card-title" style={{ margin: 0 }}>✅ המשימות שלי</h3>
-                <button className="btn btn-outline" style={{ fontSize: 12 }} onClick={() => setTab("tasks")}>הכל</button>
-              </div>
-              {tasks.filter(t => t.status === "פתוח").length === 0 ? (
-                <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין משימות פתוחות 🎉</div>
-              ) : tasks.filter(t => t.status === "פתוח").slice(0, 4).map(t => (
-                <div key={t.id} style={{ borderRight: `3px solid ${t.priority === "דחופה" ? "#dc2626" : t.priority === "גבוהה" ? "#f59e0b" : "#3b82f6"}`, padding: "10px 14px", marginBottom: 8, background: "#f8fafc", borderRadius: "0 10px 10px 0" }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{t.title}</div>
+          {/* כרטיסי פעולה מהירה */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <button onClick={() => setTab("service")} style={{ background: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#fef2f2" : "#f0fdf4", border: `2px solid ${serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#fca5a5" : "#86efac"}`, borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right" }}>
+              <div style={{ fontSize: 28 }}>🔧</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#dc2626" : "#16a34a", marginTop: 6 }}>{serviceCalls.filter(s => s.status !== "הושלם").length}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>קריאות פתוחות</div>
+            </button>
+
+            <button onClick={() => setTab("tasks")} style={{ background: tasks.filter(t => t.status === "פתוח").length > 0 ? "#fffbeb" : "#f0fdf4", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#fcd34d" : "#86efac"}`, borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right" }}>
+              <div style={{ fontSize: 28 }}>✅</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#d97706" : "#16a34a", marginTop: 6 }}>{tasks.filter(t => t.status === "פתוח").length}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>משימות פתוחות</div>
+            </button>
+
+            <button onClick={() => setTab("worklogs")} style={{ background: "#f8fafc", border: "2px solid #e2e8f0", borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right" }}>
+              <div style={{ fontSize: 28 }}>📋</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", marginTop: 6 }}>{workLogs.length}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>יומני עבודה</div>
+            </button>
+
+            <button onClick={() => setTab("inventory")} style={{ background: "#faf5ff", border: "2px solid #d8b4fe", borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right" }}>
+              <div style={{ fontSize: 28 }}>🛒</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: "#7c3aed", marginTop: 6 }}>{inventoryItems?.filter((i: any) => i.status === "חסר").length || 0}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>ציוד חסר</div>
+            </button>
+          </div>
+
+          {/* כפתורי פעולה מהירה */}
+          <div style={{ background: "#fff", borderRadius: 20, padding: 16, border: "1px solid #e2e8f0" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8", marginBottom: 12 }}>⚡ פעולה מהירה</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <button className="btn btn-primary" style={{ height: 52, fontSize: 14, borderRadius: 14 }} onClick={() => { setTab("worklogs"); setShowForm(true); }}>+ יומן עבודה</button>
+              <button className="btn btn-outline" style={{ height: 52, fontSize: 14, borderRadius: 14 }} onClick={() => { setTab("service"); setShowForm(true); }}>+ קריאת שירות</button>
+            </div>
+          </div>
+
+          {/* קריאות דחופות */}
+          {serviceCalls.filter(s => s.status !== "הושלם" && (s.urgency === "דחוף מאוד" || s.urgency === "גבוהה")).length > 0 && (
+            <div style={{ background: "#fef2f2", borderRadius: 20, padding: 16, border: "1px solid #fca5a5" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626", marginBottom: 12 }}>🚨 קריאות דחופות</div>
+              {serviceCalls.filter(s => s.status !== "הושלם" && (s.urgency === "דחוף מאוד" || s.urgency === "גבוהה")).slice(0, 3).map(s => (
+                <div key={s.id} onClick={() => { setSelectedServiceCall(s); }} style={{ background: "#fff", borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer", borderRight: "4px solid #dc2626" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontWeight: 800, fontSize: 14 }}>{s.issue}</span>
+                    <Badge value={s.urgency} />
+                  </div>
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{s.client_name || "-"} {s.location ? `· ${s.location}` : ""}</div>
+                  {s.contact_phone && (
+                    <a href={`tel:${s.contact_phone}`} onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, background: "#dcfce7", color: "#16a34a", borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>📞 {s.contact_phone}</a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* משימות דחופות */}
+          {tasks.filter(t => t.status === "פתוח" && (t.priority === "דחופה" || t.priority === "גבוהה")).length > 0 && (
+            <div style={{ background: "#fffbeb", borderRadius: 20, padding: 16, border: "1px solid #fcd34d" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#d97706", marginBottom: 12 }}>⚠️ משימות דחופות</div>
+              {tasks.filter(t => t.status === "פתוח" && (t.priority === "דחופה" || t.priority === "גבוהה")).slice(0, 3).map(t => (
+                <div key={t.id} style={{ background: "#fff", borderRadius: 12, padding: "12px 14px", marginBottom: 8, borderRight: "4px solid #f59e0b" }}>
+                  <div style={{ fontWeight: 800, fontSize: 14 }}>{t.title}</div>
                   {t.due_date && <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>📅 {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
                 </div>
               ))}
             </div>
+          )}
 
-            {/* קריאות שירות */}
-            <div className="card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <h3 className="card-title" style={{ margin: 0 }}>🔧 קריאות שירות</h3>
-                <button className="btn btn-outline" style={{ fontSize: 12 }} onClick={() => setTab("service")}>הכל</button>
-              </div>
-              {serviceCalls.filter(s => s.status !== "הושלם").length === 0 ? (
-                <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין קריאות פתוחות 🎉</div>
-              ) : serviceCalls.filter(s => s.status !== "הושלם").slice(0, 4).map(s => (
-                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 10, padding: "10px 14px", marginBottom: 8 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontWeight: 700, fontSize: 14 }}>{s.issue}</span>
-                    <Badge value={s.urgency} />
-                  </div>
-                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{s.client_name || "-"}</div>
+          {/* הרכב שלי */}
+          {vehicles.length > 0 && (
+            <div style={{ background: "#eff6ff", borderRadius: 20, padding: 16, border: "1px solid #bfdbfe", cursor: "pointer" }} onClick={() => setTab("vehicles")}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", marginBottom: 10 }}>🚗 הרכב שלי</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: "#1e40af" }}>{vehicles[0]?.license_plate}</div>
+                  <div style={{ fontSize: 13, color: "#3b82f6" }}>{vehicles[0]?.model} {vehicles[0]?.year}</div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* יומנים אחרונים */}
-          <div className="card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה אחרונים</h3>
-              <button className="btn btn-outline" style={{ fontSize: 12 }} onClick={() => setTab("worklogs")}>הכל</button>
-            </div>
-            {workLogs.length === 0 ? (
-              <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין יומני עבודה עדיין</div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
-                {workLogs.slice(0, 6).map(w => (
-                  <div key={w.id} style={{ background: "#f8fafc", borderRadius: 12, padding: 14, cursor: "pointer" }} onClick={() => setSelectedWorkLog(w)}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 8px" }}>#{formatSerial(w.serial_number)}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
-                    </div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>{w.project_name || w.branch || "-"}</div>
+                {vehicles[0]?.next_test_date && (
+                  <div style={{ textAlign: "center", background: "#fff", borderRadius: 12, padding: "8px 14px" }}>
+                    <div style={{ fontSize: 11, color: "#94a3b8" }}>טסט הבא</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#1e40af" }}>{new Date(vehicles[0].next_test_date).toLocaleDateString("he-IL")}</div>
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
