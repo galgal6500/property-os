@@ -109,6 +109,7 @@ const navItems = [
   { key: "workcontracts", label: "חוזי עבודה" },
   { key: "documents", label: "מסמכים" },
   { key: "users", label: "משתמשים" },
+  { key: "activity", label: "פעילות" },
   { key: "settings", label: "הגדרות" },
 ];
 
@@ -794,6 +795,77 @@ function Settings({ userEmail }: { userEmail: string }) {
   );
 }
 
+function ActivityLog() {
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("הכל");
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase.from("user_activity").select("*").order("created_at", { ascending: false }).limit(200);
+      setActivities(data || []);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const filtered = filter === "הכל" ? activities : activities.filter(a => a.user_name === filter);
+  const users = Array.from(new Set(activities.map(a => a.user_name).filter(Boolean)));
+
+  // סיכום לפי משתמש
+  const summary = users.map(name => {
+    const userActs = activities.filter(a => a.user_name === name);
+    const lastLogin = userActs[0]?.session_start;
+    return { name, count: userActs.length, lastLogin, role: userActs[0]?.user_role };
+  });
+
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <div className="card">
+        <h3 className="card-title">👁️ מעקב פעילות משתמשים</h3>
+
+        {/* סיכום לפי משתמש */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: 20 }}>
+          {summary.map(u => (
+            <div key={u.name} style={{ background: "#f8fafc", borderRadius: 14, padding: 14, border: "1px solid #e2e8f0" }}>
+              <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>{u.name}</div>
+              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>{u.role}</div>
+              <div style={{ fontSize: 12, color: "#475569" }}>כניסות: <strong>{u.count}</strong></div>
+              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+                אחרון: {u.lastLogin ? new Date(u.lastLogin).toLocaleString("he-IL") : "-"}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* סינון */}
+        <div className="chips" style={{ marginBottom: 14 }}>
+          <button className={`btn ${filter === "הכל" ? "btn-dark" : "btn-outline"}`} onClick={() => setFilter("הכל")}>הכל</button>
+          {users.map(u => <button key={u} className={`btn ${filter === u ? "btn-dark" : "btn-outline"}`} onClick={() => setFilter(u)}>{u}</button>)}
+        </div>
+
+        {loading ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>טוען...</div> : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>משתמש</th><th>תפקיד</th><th>פעולה</th><th>תאריך ושעה</th></tr></thead>
+              <tbody>
+                {filtered.map(a => (
+                  <tr key={a.id}>
+                    <td style={{ fontWeight: 700 }}>{a.user_name || "-"}</td>
+                    <td>{a.user_role || "-"}</td>
+                    <td><span style={{ background: "#dcfce7", color: "#16a34a", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>כניסה</span></td>
+                    <td>{a.session_start ? new Date(a.session_start).toLocaleString("he-IL") : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function UsersManagement() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1238,6 +1310,7 @@ function ServiceRequests() {
   async function addRequest() {
     if (!form.issue) return;
     setSaving(true);
+    const apt = apartments.find((a: any) => a.id === form.apartment_id);
     await supabase.from("service_requests").insert({
       apartment_id: form.apartment_id || null,
       apartment_manual: form.apartment_manual || null,
@@ -1248,6 +1321,20 @@ function ServiceRequests() {
       cost: parseFloat(form.cost) || 0,
       vendor: form.vendor
     });
+    // שליחת מייל התראה
+    fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "new_service_request",
+        data: {
+          issue: form.issue,
+          apartment: form.apartment_manual || (apt ? `${apt.buildings?.name} / ${apt.apartment_number}` : "-"),
+          urgency: form.urgency,
+          description: form.description,
+        }
+      })
+    }).catch(() => {});
     setForm({ apartment_id: "", apartment_manual: "", issue: "", description: "", urgency: "בינונית", status: "חדשה", cost: "", vendor: "" });
     setShowForm(false);
     await load();
@@ -2595,6 +2682,7 @@ function PaymentsTracker() {
   const [filterMonth, setFilterMonth] = useState(String(new Date().getMonth() + 1).padStart(2, "0"));
   const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()));
   const [filterStatus, setFilterStatus] = useState("הכל");
+  const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState({ apartment_id: "", tenant_name: "", amount: "", month: String(new Date().getMonth() + 1).padStart(2, "0"), year: String(new Date().getFullYear()), status: "לא שולם", payment_date: "", payment_method: "העברה בנקאית", notes: "" });
 
   const months = [
@@ -2653,7 +2741,14 @@ function PaymentsTracker() {
     const monthMatch = filterMonth === "הכל" || p.month === filterMonth;
     const yearMatch = p.year === parseInt(filterYear);
     const statusMatch = filterStatus === "הכל" || p.status === filterStatus;
-    return monthMatch && yearMatch && statusMatch;
+    const apt = apartments.find(a => a.id === p.apartment_id);
+    const q = searchQuery.trim().toLowerCase();
+    const searchMatch = !q ||
+      p.tenant_name?.toLowerCase().includes(q) ||
+      apt?.apartment_number?.toLowerCase().includes(q) ||
+      apt?.buildings?.name?.toLowerCase().includes(q) ||
+      p.notes?.toLowerCase().includes(q);
+    return monthMatch && yearMatch && statusMatch && searchMatch;
   });
 
   const totalExpected = filtered.reduce((s, p) => s + (p.amount || 0), 0);
@@ -2725,6 +2820,16 @@ function PaymentsTracker() {
               <option>שולם</option><option>לא שולם</option><option>באיחור</option><option>שולם חלקית</option>
             </select>
           </div>
+        </div>
+        {/* חיפוש */}
+        <div style={{ position: "relative", marginBottom: 16 }}>
+          <input className="input" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            placeholder="🔍 חפש דייר, כתובת, מבנה..."
+            style={{ paddingRight: 16, background: searchQuery ? "#fef9ec" : "#f8fafc", borderColor: searchQuery ? "#c9a227" : "#e2e8f0" }} />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")}
+              style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#94a3b8" }}>×</button>
+          )}
         </div>
 
         {/* טופס הוספה */}
@@ -3664,6 +3769,15 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   async function saveServiceCall() {
     if (!serviceCallForm.issue) return; setSaving(true);
     await supabase.from("ngs_service_calls").insert(serviceCallForm);
+    // שליחת מייל התראה
+    fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "new_ngs_service_call",
+        data: serviceCallForm
+      })
+    }).catch(() => {});
     setServiceCallForm({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "", contact_name: "", contact_phone: "" }); setShowForm(false); await load(); setSaving(false);
   }
   async function saveWorkLog() {
@@ -4440,6 +4554,16 @@ export default function Home() {
     setUserProfile(profile);
     setUserRole(profile.role || "admin");
 
+    // רישום כניסה למערכת
+    supabase.from("user_activity").insert({
+      user_id: userId,
+      user_email: email,
+      user_name: profile.full_name || email,
+      user_role: profile.role || "admin",
+      action: "login",
+      session_start: new Date().toISOString(),
+    }).then(() => {});
+
     if (profile.role === "tenant") setActivePage("tenantPortal");
     else if (profile.role === "ngs_worker") setActivePage("ngs");
     else setActivePage("dashboard");
@@ -4484,6 +4608,7 @@ export default function Home() {
       case "tenantPortal": return <div key={refreshKey}><TenantPortal userProfile={userProfile} /></div>;
       case "settings": return <div key={refreshKey}><Settings userEmail={email} /></div>;
       case "users": return <div key={refreshKey}><UsersManagement /></div>;
+      case "activity": return <div key={refreshKey}><ActivityLog /></div>;
       case "workcontracts": return <div key={refreshKey}><WorkContracts /></div>;
       case "ngs": return <div key={refreshKey}><NGSDashboard userProfile={userProfile} userRole={userRole} /></div>;
       default: return null;
@@ -4623,5 +4748,3 @@ export default function Home() {
     </div>
   );
 }
-
-
