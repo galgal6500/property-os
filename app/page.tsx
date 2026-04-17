@@ -3964,31 +3964,132 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       {loading && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>}
 
       {!loading && tab === "overview" && !isWorker && (
-        <div style={{ display: "grid", gap: 18 }}>
-          <div className="kpi-grid">
-            <KPI title="עובדים פעילים" value={String(employees.filter(e => e.status === "פעיל").length)} subtitle="צוות" />
-            <KPI title="רכבים" value={String(vehicles.length)} subtitle="צי רכבים" />
-            <KPI title="פרויקטים פעילים" value={String(activeProjects.length)} subtitle="בביצוע" />
-            <KPI title="קריאות פתוחות" value={String(openServiceCalls.length)} subtitle="לטיפול" />
+        <div style={{ display: "grid", gap: 14 }}>
+
+          {/* כותרת */}
+          <div style={{ background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", borderRadius: 24, padding: "24px 28px", color: "#fff", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: -40, left: -40, width: 200, height: 200, background: "rgba(213,181,122,0.08)", borderRadius: "50%" }} />
+            <div style={{ position: "relative" }}>
+              <div style={{ fontSize: 13, color: "#94a3b8" }}>לוח בקרה 📊</div>
+              <h1 style={{ margin: "4px 0 2px", fontSize: 26, fontWeight: 900, color: "#fff" }}>נ.ג.ש מור הנדסה</h1>
+              <div style={{ color: "#64748b", fontSize: 13 }}>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}</div>
+              <div style={{ display: "flex", gap: 20, marginTop: 16 }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: openServiceCalls.length > 0 ? "#f87171" : "#34d399" }}>{openServiceCalls.length}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>קריאות פתוחות</div>
+                </div>
+                <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: "#d5b57a" }}>{activeProjects.length}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>פרויקטים</div>
+                </div>
+                <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: "#60a5fa" }}>{employees.filter(e => e.status === "פעיל").length}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>עובדים</div>
+                </div>
+                <div style={{ width: 1, background: "rgba(255,255,255,0.1)" }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: "#a78bfa" }}>{inventoryItems.filter((i: any) => i.status === "חסר").length}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>ציוד חסר</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="grid-1-1">
-            <div className="card">
-              <h3 className="card-title">🔧 קריאות שירות פתוחות</h3>
-              {openServiceCalls.length === 0 ? <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין קריאות פתוחות 🎉</div>
-              : openServiceCalls.slice(0, 5).map(s => (
-                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, marginBottom: 8 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontWeight: 700 }}>{s.issue}</span><Badge value={s.urgency} /></div>
-                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name} · {s.status}</div>
+
+          {/* כרטיסי KPI */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <button onClick={() => setTab("service")} style={{ background: openServiceCalls.filter(s => s.urgency === "דחוף מאוד" || s.urgency === "גבוהה").length > 0 ? "#fef2f2" : "#f0fdf4", border: `2px solid ${openServiceCalls.filter(s => s.urgency === "דחוף מאוד").length > 0 ? "#fca5a5" : "#86efac"}`, borderRadius: 18, padding: "16px", cursor: "pointer", textAlign: "right" }}>
+              <div style={{ fontSize: 24 }}>🔧</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: openServiceCalls.length > 0 ? "#dc2626" : "#16a34a", marginTop: 4 }}>{openServiceCalls.length}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>קריאות פתוחות</div>
+              {openServiceCalls.filter(s => s.urgency === "דחוף מאוד").length > 0 && (
+                <div style={{ fontSize: 11, color: "#dc2626", marginTop: 4, fontWeight: 700 }}>🚨 {openServiceCalls.filter(s => s.urgency === "דחוף מאוד").length} דחוף מאוד</div>
+              )}
+            </button>
+
+            <button onClick={() => setTab("worklogs")} style={{ background: "#f8fafc", border: "2px solid #e2e8f0", borderRadius: 18, padding: "16px", cursor: "pointer", textAlign: "right" }}>
+              <div style={{ fontSize: 24 }}>📋</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#0f172a", marginTop: 4 }}>{workLogs.filter(w => w.performa !== "יצאה פרפורמה").length}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>יומנים לא טופלו</div>
+            </button>
+
+            <button onClick={() => setTab("tasks")} style={{ background: tasks.filter(t => t.status === "פתוח").length > 0 ? "#fffbeb" : "#f0fdf4", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#fcd34d" : "#86efac"}`, borderRadius: 18, padding: "16px", cursor: "pointer", textAlign: "right" }}>
+              <div style={{ fontSize: 24 }}>✅</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#d97706" : "#16a34a", marginTop: 4 }}>{tasks.filter(t => t.status === "פתוח").length}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>משימות פתוחות</div>
+            </button>
+
+            <button onClick={() => setTab("inventory")} style={{ background: inventoryItems.filter((i: any) => i.status === "חסר").length > 0 ? "#faf5ff" : "#f0fdf4", border: `2px solid ${inventoryItems.filter((i: any) => i.status === "חסר").length > 0 ? "#d8b4fe" : "#86efac"}`, borderRadius: 18, padding: "16px", cursor: "pointer", textAlign: "right" }}>
+              <div style={{ fontSize: 24 }}>🛒</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#7c3aed", marginTop: 4 }}>{inventoryItems.filter((i: any) => i.status === "חסר").length}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>ציוד חסר</div>
+            </button>
+          </div>
+
+          {/* קריאות דחופות */}
+          {openServiceCalls.filter(s => s.urgency === "דחוף מאוד" || s.urgency === "גבוהה").length > 0 && (
+            <div style={{ background: "#fef2f2", borderRadius: 20, padding: 16, border: "1px solid #fca5a5" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626", marginBottom: 12 }}>🚨 קריאות דחופות — לטיפול מיידי</div>
+              {openServiceCalls.filter(s => s.urgency === "דחוף מאוד" || s.urgency === "גבוהה").slice(0, 4).map(s => (
+                <div key={s.id} onClick={() => setSelectedServiceCall(s)} style={{ background: "#fff", borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer", borderRight: "4px solid #dc2626" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontWeight: 800, fontSize: 14 }}>{s.issue}</span>
+                    <Badge value={s.urgency} />
+                  </div>
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{s.client_name || "-"} {s.assigned_to ? `· ${s.assigned_to}` : ""}</div>
+                  {s.contact_phone && (
+                    <a href={`tel:${s.contact_phone}`} onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, background: "#dcfce7", color: "#16a34a", borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>📞 {s.contact_phone}</a>
+                  )}
                 </div>
               ))}
             </div>
+          )}
+
+          {/* עובדים ופרויקטים */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="card">
-              <h3 className="card-title">📁 פרויקטים פעילים</h3>
-              {activeProjects.length === 0 ? <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין פרויקטים פעילים</div>
+              <h3 className="card-title" style={{ fontSize: 14 }}>👷 עובדים פעילים</h3>
+              {employees.filter(e => e.status === "פעיל").slice(0, 5).map(e => (
+                <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                  <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#1e293b", color: "#d5b57a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, flexShrink: 0 }}>{e.name?.[0]}</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>{e.name}</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8" }}>{e.role || "-"}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="card">
+              <h3 className="card-title" style={{ fontSize: 14 }}>📁 פרויקטים פעילים</h3>
+              {activeProjects.length === 0 ? <div style={{ padding: 10, textAlign: "center", color: "#64748b", fontSize: 13 }}>אין פרויקטים</div>
               : activeProjects.slice(0, 5).map(p => (
-                <div key={p.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 12, marginBottom: 8 }}>
-                  <div style={{ fontWeight: 700 }}>{p.name}</div>
-                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{p.client_name || "-"}</div>
+                <div key={p.id} style={{ padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>{p.client_name || "-"}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* יומנים אחרונים */}
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h3 className="card-title" style={{ margin: 0, fontSize: 14 }}>📋 יומנים אחרונים</h3>
+              <button className="btn btn-outline" style={{ fontSize: 12 }} onClick={() => setTab("worklogs")}>הכל</button>
+            </div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {workLogs.slice(0, 5).map(w => (
+                <div key={w.id} style={{ background: "#f8fafc", borderRadius: 12, padding: "10px 14px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} onClick={() => setSelectedWorkLog(w)}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 8px" }}>#{formatSerial(w.serial_number)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>{w.employee_name || w.filled_by || "-"}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{w.project_name || w.branch || "-"}</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#94a3b8" }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</div>
                 </div>
               ))}
             </div>
