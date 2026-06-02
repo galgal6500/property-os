@@ -3816,6 +3816,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   async function updateServiceCallStatus(id: string, status: string, completedBy?: string) {
     const updateData: any = { status };
     if (status === "הושלם" && completedBy) updateData.completed_by = completedBy;
+    if (status !== "הושלם") updateData.completed_by = null;
     await supabase.from("ngs_service_calls").update(updateData).eq("id", id);
     if (status === "הושלם") {
       const { data: ngsCall } = await supabase.from("ngs_service_calls").select("source_request_id").eq("id", id).single();
