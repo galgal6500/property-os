@@ -3680,6 +3680,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const [editingVehicle, setEditingVehicle] = useState<any>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any>(null);
+  const [editingWorkLog, setEditingWorkLog] = useState<any>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [selectedServiceCall, setSelectedServiceCall] = useState<any>(null);
   const [workLogFilter, setWorkLogFilter] = useState("לא טופל");
   const [serviceCallFilter, setServiceCallFilter] = useState("חדשה");
@@ -3780,6 +3782,31 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     }).catch(() => {});
     setServiceCallForm({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "", contact_name: "", contact_phone: "" }); setShowForm(false); await load(); setSaving(false);
   }
+  async function saveEditWorkLog() {
+    if (!editingWorkLog) return;
+    setSavingEdit(true);
+    await supabase.from("ngs_work_logs").update({
+      branch: editingWorkLog.branch || "",
+      project_name: editingWorkLog.project_name || "",
+      date: editingWorkLog.date || null,
+      hours: parseFloat(editingWorkLog.hours) || 0,
+      client_notes: editingWorkLog.client_notes || "",
+      line1: editingWorkLog.line1 || "",
+      line2: editingWorkLog.line2 || "",
+      line3: editingWorkLog.line3 || "",
+      line4: editingWorkLog.line4 || "",
+      line5: editingWorkLog.line5 || "",
+      line6: editingWorkLog.line6 || "",
+      line7: editingWorkLog.line7 || "",
+      line8: editingWorkLog.line8 || "",
+      line9: editingWorkLog.line9 || "",
+      line10: editingWorkLog.line10 || "",
+    }).eq("id", editingWorkLog.id);
+    setEditingWorkLog(null);
+    await load();
+    setSavingEdit(false);
+  }
+
   async function saveWorkLog() {
     if (!workLogForm.employee_name && !workLogForm.filled_by) return; setSaving(true);
     await supabase.from("ngs_work_logs").insert({ ...workLogForm, hours: parseFloat(workLogForm.hours) || 0 });
@@ -3896,6 +3923,46 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 )}
                 <button className="btn btn-outline" onClick={() => setSelectedServiceCall(null)}>סגור</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingWorkLog && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>✏️ עריכת יומן #{formatSerial(editingWorkLog.serial_number)}</h3>
+              <button onClick={() => setEditingWorkLog(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "#64748b" }}>×</button>
+            </div>
+            <div style={{ flex: 1, overflow: "auto", padding: "20px 24px", display: "grid", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <div className="field">
+                  <label>לקוח</label>
+                  <select className="input" value={editingWorkLog.project_name || ""} onChange={e => setEditingWorkLog({...editingWorkLog, project_name: e.target.value})}>
+                    <option value="">בחר לקוח</option>
+                    {clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    <option value="אחר">✏️ אחר</option>
+                  </select>
+                </div>
+                <div className="field"><label>סניף / אתר</label><input className="input" value={editingWorkLog.branch || ""} onChange={e => setEditingWorkLog({...editingWorkLog, branch: e.target.value})} /></div>
+                <div className="field"><label>תאריך</label><input className="input" type="date" value={editingWorkLog.date || ""} onChange={e => setEditingWorkLog({...editingWorkLog, date: e.target.value})} /></div>
+                <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={editingWorkLog.hours || ""} onChange={e => setEditingWorkLog({...editingWorkLog, hours: e.target.value})} step="0.5" /></div>
+              </div>
+              <div className="field"><label>📝 הערות ללקוח</label><textarea className="input" value={editingWorkLog.client_notes || ""} onChange={e => setEditingWorkLog({...editingWorkLog, client_notes: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "#475569" }}>📝 פירוט העבודה:</div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {([1,2,3,4,5,6,7,8,9,10] as number[]).map(n => (
+                  <div key={n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 700, minWidth: 24 }}>{n}.</span>
+                    <input className="input" style={{ flex: 1 }} value={(editingWorkLog as any)[`line${n}`] || ""} onChange={e => setEditingWorkLog({...editingWorkLog, [`line${n}`]: e.target.value})} placeholder={`שורה ${n}...`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f5f9", display: "flex", gap: 10 }}>
+              <button className="btn btn-primary" onClick={saveEditWorkLog} disabled={savingEdit}>{savingEdit ? "שומר..." : "💾 שמור שינויים"}</button>
+              <button className="btn btn-outline" onClick={() => setEditingWorkLog(null)}>ביטול</button>
             </div>
           </div>
         </div>
@@ -4464,6 +4531,9 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   </div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setSelectedWorkLog(w)}>📄 פתח יומן</button>
+                    {(isWorker ? (w.filled_by === workerName || w.employee_name?.includes(workerName)) : true) && (
+                      <button className="btn btn-outline" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => setEditingWorkLog({...w})}>✏️ עריכה</button>
+                    )}
                     <button className="btn btn-outline" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => {
                       const lines = [1,2,3,4,5,6,7,8,9,10].map(n => w[`line${n}`]).filter(Boolean);
                       const workers = [w.employee_name, w.workers].filter(Boolean).join(", ");
