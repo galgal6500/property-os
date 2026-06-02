@@ -592,7 +592,7 @@ function OwnerDetails({ ownerId, back }: { ownerId: number; back: () => void }) 
         <div className="muted" style={{ marginBottom: 14 }}>כל התיקונים והספקים שבעל הנכס שילם עליהם</div>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>תאריך</th><th>דירה</th><th>סוג הוצאה</th><th>תיאור</th><th>ספק</th><th>עלות</th></tr></thead>
+            <thead><tr><th>תאריך פתיחה</th><th>תאריך טיפול</th><th>דירה</th><th>סוג הוצאה</th><th>תיאור</th><th>ספק</th><th>עלות</th></tr></thead>
             <tbody>
               {expenses.map((e) => (
                 <tr key={e.id}><td>{e.date}</td><td>{e.apartment}</td><td>{e.category}</td><td>{e.description}</td><td>{e.vendor}</td><td>{currency(e.amount)}</td></tr>
@@ -1018,7 +1018,7 @@ function UsersManagement() {
           <h3 className="card-title">⏳ ממתינים לאישור ({pending.length})</h3>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>שם</th><th>תפקיד</th><th>תאריך</th><th>פעולות</th></tr></thead>
+              <thead><tr><th>שם</th><th>תפקיד</th><th>תאריך פתיחה</th><th>תאריך טיפול</th><th>פעולות</th></tr></thead>
               <tbody>
                 {pending.map(u => (
                   <tr key={u.id} style={{ background: "#fffbeb" }}>
@@ -1451,7 +1451,7 @@ function ServiceRequests() {
         ) : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>תאריך</th><th>דירה</th><th>תקלה</th><th>דחיפות</th><th>ספק</th><th>עלות</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+              <thead><tr><th>תאריך פתיחה</th><th>תאריך טיפול</th><th>דירה</th><th>תקלה</th><th>דחיפות</th><th>ספק</th><th>עלות</th><th>סטטוס</th><th>פעולות</th></tr></thead>
               <tbody>
                 {filtered.map((r) => (
                   <tr key={r.id}>
@@ -2583,7 +2583,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
               <h3 className="card-title" style={{ color: "#dc2626" }}>🔧 קריאות פתוחות ({openRequests.length})</h3>
               <div className="table-wrap">
                 <table>
-                  <thead><tr><th>תאריך</th><th>תקלה</th><th>דחיפות</th><th>ספק</th><th>עלות</th><th>סטטוס</th></tr></thead>
+                  <thead><tr><th>תאריך פתיחה</th><th>תאריך טיפול</th><th>תקלה</th><th>דחיפות</th><th>ספק</th><th>עלות</th><th>סטטוס</th></tr></thead>
                   <tbody>
                     {openRequests.map(r => (
                       <tr key={r.id}>
@@ -2609,7 +2609,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
               <h3 className="card-title">✅ קריאות שטופלו ({closedRequests.length})</h3>
               <div className="table-wrap">
                 <table>
-                  <thead><tr><th>תאריך</th><th>תקלה</th><th>ספק</th><th>עלות</th></tr></thead>
+                  <thead><tr><th>תאריך פתיחה</th><th>תאריך טיפול</th><th>תקלה</th><th>ספק</th><th>עלות</th></tr></thead>
                   <tbody>
                     {closedRequests.map(r => (
                       <tr key={r.id}>
@@ -2652,7 +2652,7 @@ function ApartmentDetails({ apartmentId, back }: { apartmentId: string; back: ()
           <h3 className="card-title">📋 היסטוריה מלאה</h3>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>תאריך</th><th>סוג</th><th>פרטים</th></tr></thead>
+              <thead><tr><th>תאריך פתיחה</th><th>תאריך טיפול</th><th>סוג</th><th>פרטים</th></tr></thead>
               <tbody>
                 {[...leases.map(l => ({ date: l.created_at, type: "חוזה", details: `${l.tenant_name} — ${l.status}` })),
                   ...requests.map(r => ({ date: r.created_at, type: "קריאת שירות", details: `${r.issue} — ${r.status}` }))
@@ -3228,7 +3228,7 @@ function TenantPortal({ userProfile }: { userProfile: any }) {
         <h3 className="card-title">קריאות השירות שלי</h3>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>תאריך</th><th>תקלה</th><th>סטטוס</th></tr></thead>
+            <thead><tr><th>תאריך פתיחה</th><th>תאריך טיפול</th><th>תקלה</th><th>סטטוס</th></tr></thead>
             <tbody>
               {tenantPortalData.requests.map((item) => (
                 <tr key={item.id}><td>{item.date}</td><td>{item.issue}</td><td><Badge value={item.status} /></td></tr>
@@ -3242,7 +3242,7 @@ function TenantPortal({ userProfile }: { userProfile: any }) {
         <h3 className="card-title">הוצאות חודשיות</h3>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>תאריך</th><th>תיאור</th><th>סכום</th></tr></thead>
+            <thead><tr><th>תאריך פתיחה</th><th>תאריך טיפול</th><th>תיאור</th><th>סכום</th></tr></thead>
             <tbody>
               {tenantPortalData.expenses.map((item) => (
                 <tr key={item.id}><td>{item.date}</td><td>{item.description}</td><td style={{fontWeight:700}}>{currency(item.amount)}</td></tr>
@@ -4415,11 +4415,11 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           ) : (
             <div className="table-wrap">
               <table>
-                <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>טופל ע"י</th>}<th>פעולות</th></tr></thead>
+                <thead><tr><th>תאריך פתיחה</th><th>תאריך טיפול</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>טופל ע"י</th>}<th>פעולות</th></tr></thead>
                 <tbody>
                   {serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).sort((a, b) => { if (serviceCallFilter === "הושלם") { return new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime(); } return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(); }).map(s => (
                     <tr key={s.id}>
-                      <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td>
+                      <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td><td>{s.completed_at ? new Date(s.completed_at).toLocaleDateString("he-IL") : "-"}</td>
                       <td>{s.client_name || "-"}</td>
                       <td style={{ fontWeight: 700 }}>{s.issue}</td>
                       <td><Badge value={s.urgency} /></td>
