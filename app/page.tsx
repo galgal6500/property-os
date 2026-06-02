@@ -4427,8 +4427,13 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                           <button
                             className="btn btn-outline"
                             style={{ fontSize: 12, padding: "4px 12px", background: s.status === "הושלם" ? "#dcfce7" : "", color: s.status === "הושלם" ? "#16a34a" : "" }}
-                            onClick={() => s.status !== "הושלם" && updateServiceCallStatus(s.id, "הושלם", workerName)}
-                            disabled={s.status === "הושלם"}>
+                            onClick={() => {
+                              if (s.status === "הושלם") {
+                                updateServiceCallStatus(s.id, "בטיפול", workerName);
+                              } else {
+                                updateServiceCallStatus(s.id, "הושלם", workerName);
+                              }
+                            }}>
                             {s.status === "הושלם" ? "✅ טופל" : "סמן טופל"}
                           </button>
                         ) : (
