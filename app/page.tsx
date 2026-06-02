@@ -3816,7 +3816,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   async function updateServiceCallStatus(id: string, status: string, completedBy?: string) {
     const updateData: any = { status };
     if (status === "הושלם" && completedBy) updateData.completed_by = completedBy;
-    if (status !== "הושלם") updateData.completed_by = null;
+    if (status === "הושלם") updateData.completed_at = new Date().toISOString();
+    if (status !== "הושלם") { updateData.completed_by = null; updateData.completed_at = null; }
     await supabase.from("ngs_service_calls").update(updateData).eq("id", id);
     if (status === "הושלם") {
       const { data: ngsCall } = await supabase.from("ngs_service_calls").select("source_request_id").eq("id", id).single();
@@ -4416,7 +4417,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <table>
                 <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>טופל ע"י</th>}<th>פעולות</th></tr></thead>
                 <tbody>
-                  {serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).map(s => (
+                  {serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).sort((a, b) => { if (serviceCallFilter === "הושלם") { return new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime(); } return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(); }).map(s => (
                     <tr key={s.id}>
                       <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td>
                       <td>{s.client_name || "-"}</td>
