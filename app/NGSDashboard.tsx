@@ -1153,13 +1153,14 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           ) : (
             <div className="table-wrap">
               <table>
-                <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>טופל ע"י</th>}<th>פעולות</th></tr></thead>
+                <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>מיקום</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>טופל ע"י</th>}<th>פעולות</th></tr></thead>
                 <tbody>
                   {serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).map(s => (
                     <tr key={s.id}>
                       <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td>
                       <td>{s.client_name || "-"}</td>
                       <td style={{ fontWeight: 700 }}>{s.issue}</td>
+                      <td>{s.location ? `📍 ${s.location}` : "-"}</td>
                       <td><Badge value={s.urgency} /></td>
                       <td>{s.assigned_to || "-"}</td>
                       <td>
