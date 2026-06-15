@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { NGSDashboard } from "./NGSDashboard";
-import { Owners, OwnerDetails, Buildings, Settings, OwnerDashboard, TenantPortal, Apartments, ApartmentDetails, ServiceRequests, Leases, PaymentsTracker, WorkContracts, ActivityLog, UsersManagement, Placeholder } from "./PropertyDashboard";
+import { Dashboard, Owners, OwnerDetails, Buildings, Settings, OwnerDashboard, TenantPortal, Apartments, ApartmentDetails, ServiceRequests, Leases, PaymentsTracker, WorkContracts, ActivityLog, UsersManagement, Placeholder } from "./PropertyDashboard";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
