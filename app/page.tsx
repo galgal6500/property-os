@@ -25,6 +25,7 @@ const navItems = [
   { key: "settings", label: "הגדרות" },
 ];
 
+
 function SidebarNav({ activePage, setActivePage, isActive, userRole }: { activePage: string; setActivePage: (p: string) => void; isActive: (k: string) => boolean; userRole: string }) {
   const [openGroup, setOpenGroup] = useState<string | null>("property");
   if (userRole === "tenant") return (<>{[{ key: "tenantPortal", label: "🏠 הבית שלי" }, { key: "requests", label: "🔧 קריאות שירות" }].map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</>);
