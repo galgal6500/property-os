@@ -7,12 +7,11 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-
 function badgeClass(value: string) {
   if (["מושכר", "פעיל", "נסגרה"].includes(value)) return "badge badge-success";
   if (["פנוי", "חדשה", "בינונית"].includes(value)) return "badge badge-warning";
   if (["גבוהה"].includes(value)) return "badge badge-danger";
-  if (["דחוף מאוד"].includes(value)) return "badge" + " " + "badge-urgent";
+  if (["דחוף מאוד"].includes(value)) return "badge badge-urgent";
   return "badge badge-default";
 }
 
@@ -165,6 +164,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
     </div>
   );
 }
+
 
 function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks: any[]; employees: any[]; isWorker: boolean; workerName: string; onRefresh: () => void }) {
   const [showForm, setShowForm] = useState(false);
@@ -398,7 +398,7 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
   );
 }
 
-function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName: string }) {
+
 function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?: string }) {
   const isWorker = userRole === "ngs_worker";
   const workerName = userProfile?.full_name || "";
@@ -1307,58 +1307,5 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     </div>
   );
 }
-
-function SidebarNav({ activePage, setActivePage, isActive, userRole }: { activePage: string; setActivePage: (p: string) => void; isActive: (k: string) => boolean; userRole: string }) {
-  const [openGroup, setOpenGroup] = useState<string | null>("property");
-  if (userRole === "tenant") return (<>{[{ key: "tenantPortal", label: "🏠 הבית שלי" }, { key: "requests", label: "🔧 קריאות שירות" }].map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</>);
-  if (userRole === "owner") return (<>{[{ key: "dashboard", label: "🏠 סיכום" }, { key: "apartments", label: "🚪 הדירות שלי" }, { key: "leases", label: "📋 חוזים" }].map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</>);
-  if (userRole === "ngs_worker") return <button className={`nav-btn ${isActive("ngs") ? "active" : ""}`} onClick={() => setActivePage("ngs")}>🏗 נ.ג.ש מור</button>;
-  const propertyItems = [
-    { key: "owners", label: "👤 בעלי נכסים" }, { key: "buildings", label: "🏢 מבנים" },
-    { key: "apartments", label: "🚪 דירות" }, { key: "requests", label: "🔧 קריאות שירות" },
-    { key: "leases", label: "📋 חוזים" }, { key: "payments", label: "💰 תשלומים" }, { key: "workcontracts", label: "📝 חוזי עבודה" },
-    { key: "documents", label: "📄 מסמכים" },
-  ];
-  const isPropertyActive = propertyItems.some(i => isActive(i.key));
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
-      <div>
-        <button className={`nav-btn ${isActive("dashboard") ? "active" : ""}`} onClick={() => setActivePage("dashboard")}>🏠 דשבורד</button>
-        <div style={{ marginTop: 4 }}>
-          <button onClick={() => setOpenGroup(openGroup === "property" ? null : "property")} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", background: isPropertyActive ? "rgba(213,181,122,0.15)" : openGroup === "property" ? "rgba(255,255,255,0.05)" : "transparent", border: "none", cursor: "pointer", color: isPropertyActive || openGroup === "property" ? "#d5b57a" : "#94a3b8", fontWeight: 700, fontSize: 14, borderRadius: 12, marginBottom: 2 }}>
-            <span>🏢 ניהול נכסים</span><span style={{ fontSize: 11, transform: openGroup === "property" ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▾</span>
-          </button>
-          {openGroup === "property" && (<div style={{ paddingRight: 10, borderRight: "2px solid rgba(213,181,122,0.25)", marginRight: 10, marginBottom: 4 }}>{propertyItems.map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} style={{ fontSize: 13, padding: "8px 12px" }} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</div>)}
-        </div>
-        <button className={`nav-btn ${isActive("ngs") ? "active" : ""}`} style={{ marginTop: 4 }} onClick={() => setActivePage("ngs")}>🏗 נ.ג.ש מור</button>
-      </div>
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10, marginTop: 10 }}>
-        <button className={`nav-btn ${isActive("users") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("users")}>👥 משתמשים</button>
-        <button className={`nav-btn ${isActive("activity") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("activity")}>👁️ פעילות</button>
-        <button className={`nav-btn ${isActive("settings") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("settings")}>⚙️ הגדרות</button>
-      </div>
-    </div>
-  );
-}
-
-function getNavIcon(key: string) {
-  const icons: Record<string, string> = { dashboard: "🏠", owners: "👤", buildings: "🏢", apartments: "🚪", requests: "🔧", leases: "📋", documents: "📄", tenantPortal: "🏠", settings: "⚙️", users: "👥", workcontracts: "📝", ngs: "🏗" };
-  return icons[key] || "•";
-}
-
-function getNavItemsForRole(role: string) {
-  if (role === "tenant") return [{ key: "tenantPortal", label: "הבית שלי" }, { key: "requests", label: "קריאות שירות" }];
-  if (role === "owner") return [{ key: "dashboard", label: "סיכום" }, { key: "apartments", label: "הדירות שלי" }, { key: "leases", label: "חוזים" }];
-  if (role === "ngs_worker") return [{ key: "ngs", label: "🏗 נ.ג.ש מור" }];
-  return navItems;
-}
-
-function getRoleLabel(role: string) {
-  if (role === "tenant") return "דייר";
-  if (role === "owner") return "בעל נכס";
-  if (role === "ngs_worker") return 'עובד נג"ש';
-  return "מנהל מערכת";
-}
-
 
 export { NGSDashboard };
