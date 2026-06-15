@@ -9,6 +9,22 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+const navItems = [
+  { key: "dashboard", label: "דשבורד" },
+  { key: "apartments", label: "דירות" },
+  { key: "requests", label: "קריאות שירות" },
+  { key: "ngs", label: "נג״ש מור" },
+  { key: "owners", label: "בעלי נכסים" },
+  { key: "buildings", label: "מבנים" },
+  { key: "leases", label: "חוזים" },
+  { key: "payments", label: "תשלומים" },
+  { key: "workcontracts", label: "חוזי עבודה" },
+  { key: "documents", label: "מסמכים" },
+  { key: "users", label: "משתמשים" },
+  { key: "activity", label: "פעילות" },
+  { key: "settings", label: "הגדרות" },
+];
+
 function SidebarNav({ activePage, setActivePage, isActive, userRole }: { activePage: string; setActivePage: (p: string) => void; isActive: (k: string) => boolean; userRole: string }) {
   const [openGroup, setOpenGroup] = useState<string | null>("property");
   if (userRole === "tenant") return (<>{[{ key: "tenantPortal", label: "🏠 הבית שלי" }, { key: "requests", label: "🔧 קריאות שירות" }].map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</>);
