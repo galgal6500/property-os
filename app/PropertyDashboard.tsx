@@ -185,7 +185,7 @@ function IncomeChart() {
   );
 }
 
-function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string) => void; openBuilding: (id: any) => void }) {
+export function Dashboard({ openApartment, openBuilding }: { openApartment: (id: string) => void; openBuilding: (id: any) => void }) {
   const vacant = apartments.filter((a) => a.status === "פנוי");
   const [quickAction, setQuickAction] = useState<string | null>(null);
   const [stats, setStats] = useState({ owners: 0, buildings: 0, apartments: 0, vacant: 0, openRequests: 0, endingSoon: 0, monthlyIncome: 0 });
