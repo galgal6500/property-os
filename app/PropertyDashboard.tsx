@@ -1675,7 +1675,7 @@ export function Buildings({ openBuilding }: { openBuilding: (id: any) => void })
   );
 }
 
-function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any; back: () => void; openApartment: (id: any) => void }) {
+export function BuildingDetails({ buildingId, back, openApartment }: { buildingId: any; back: () => void; openApartment: (id: any) => void }) {
   const [building, setBuilding] = useState<any>(null);
   const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
