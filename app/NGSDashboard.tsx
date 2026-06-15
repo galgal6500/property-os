@@ -7,6 +7,11 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+function formatSerial(n: number | null | undefined) {
+  if (!n) return "0000";
+  return String(n).padStart(4, "0");
+}
+
 function badgeClass(value: string) {
   if (["מושכר", "פעיל", "נסגרה"].includes(value)) return "badge badge-success";
   if (["פנוי", "חדשה", "בינונית"].includes(value)) return "badge badge-warning";
