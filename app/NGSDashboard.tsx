@@ -16,12 +16,85 @@ function badgeClass(value: string) {
   if (["מושכר", "פעיל", "נסגרה"].includes(value)) return "badge badge-success";
   if (["פנוי", "חדשה", "בינונית"].includes(value)) return "badge badge-warning";
   if (["גבוהה"].includes(value)) return "badge badge-danger";
-  if (["דחוף מאוד"].includes(value)) return "badge badge-urgent";
+  if (["דחוף מאוד"].includes(value)) return "badge" + " " + "badge-urgent";
   return "badge badge-default";
 }
 
-function Badge({ value }: { value: string }) {
-  return <span className={badgeClass(value)}>{value}</span>;
+function Badge({ value }: { value: string }) { return <span className={badgeClass(value)}>{value}</span>; }
+
+function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId: string; licensePlate: string; onClose: () => void }) {
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ service_type: "", date: "", notes: "" });
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase.from("ngs_vehicle_services").select("*").eq("vehicle_id", vehicleId).order("date", { ascending: false });
+    setServices(data || []);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+  async function addService() {
+    if (!form.service_type || !form.date) return;
+    setSaving(true);
+    await supabase.from("ngs_vehicle_services").insert({ vehicle_id: vehicleId, ...form });
+    setForm({ service_type: "", date: "", notes: "" });
+    setShowForm(false);
+    await load();
+    setSaving(false);
+  }
+  async function deleteService(id: string) {
+    if (!confirm("למחוק?")) return;
+    await supabase.from("ngs_vehicle_services").delete().eq("id", id);
+    await load();
+  }
+  const serviceTypes = ["טיפול שמן", "טסט", "גלגלים", "בלמים", "מצבר", "מזגן", "תיקון כללי", "אחר"];
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>🔧 היסטוריית טיפולים</h3><div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>רכב: {licensePlate}</div></div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => setShowForm(!showForm)}>+ טיפול חדש</button>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#64748b" }}>×</button>
+          </div>
+        </div>
+        {showForm && (
+          <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e8eef6" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div className="field"><label>סוג טיפול *</label><select className="input" value={form.service_type} onChange={e => setForm({...form, service_type: e.target.value})}><option value="">בחר סוג</option>{serviceTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+              <div className="field"><label>תאריך *</label><input className="input" type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
+              <div className="field" style={{ gridColumn: "span 2" }}><label>הערות</label><input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="פרטים נוספים..." /></div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-primary" onClick={addService} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+            </div>
+          </div>
+        )}
+        <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
+          {loading ? <div style={{ padding: 30, textAlign: "center" }}>טוען...</div> : services.length === 0 ? (
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין טיפולים עדיין</div></div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {services.map(s => (
+                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <span style={{ fontWeight: 800 }}>🔧 {s.service_type}</span>
+                    <span style={{ fontSize: 13, color: "#64748b", marginRight: 8 }}>{s.date ? new Date(s.date).toLocaleDateString("he-IL") : "-"}</span>
+                    {s.notes && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.notes}</div>}
+                  </div>
+                  <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "#dc2626" }} onClick={() => deleteService(s.id)}>מחק</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName: string }) {
@@ -169,7 +242,6 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
     </div>
   );
 }
-
 
 function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks: any[]; employees: any[]; isWorker: boolean; workerName: string; onRefresh: () => void }) {
   const [showForm, setShowForm] = useState(false);
@@ -327,82 +399,6 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
     </div>
   );
 }
-
-function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId: string; licensePlate: string; onClose: () => void }) {
-  const [services, setServices] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [uploadingId, setUploadingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ service_type: "", date: "", notes: "" });
-  async function load() {
-    setLoading(true);
-    const { data } = await supabase.from("ngs_vehicle_services").select("*").eq("vehicle_id", vehicleId).order("date", { ascending: false });
-    setServices(data || []);
-    setLoading(false);
-  }
-  useEffect(() => { load(); }, []);
-  async function addService() {
-    if (!form.service_type || !form.date) return;
-    setSaving(true);
-    await supabase.from("ngs_vehicle_services").insert({ vehicle_id: vehicleId, ...form });
-    setForm({ service_type: "", date: "", notes: "" });
-    setShowForm(false);
-    await load();
-    setSaving(false);
-  }
-  async function deleteService(id: string) {
-    if (!confirm("למחוק?")) return;
-    await supabase.from("ngs_vehicle_services").delete().eq("id", id);
-    await load();
-  }
-  const serviceTypes = ["טיפול שמן", "טסט", "גלגלים", "בלמים", "מצבר", "מזגן", "תיקון כללי", "אחר"];
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>🔧 היסטוריית טיפולים</h3><div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>רכב: {licensePlate}</div></div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => setShowForm(!showForm)}>+ טיפול חדש</button>
-            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#64748b" }}>×</button>
-          </div>
-        </div>
-        {showForm && (
-          <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e8eef6" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-              <div className="field"><label>סוג טיפול *</label><select className="input" value={form.service_type} onChange={e => setForm({...form, service_type: e.target.value})}><option value="">בחר סוג</option>{serviceTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
-              <div className="field"><label>תאריך *</label><input className="input" type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
-              <div className="field" style={{ gridColumn: "span 2" }}><label>הערות</label><input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="פרטים נוספים..." /></div>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn btn-primary" onClick={addService} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
-              <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
-            </div>
-          </div>
-        )}
-        <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
-          {loading ? <div style={{ padding: 30, textAlign: "center" }}>טוען...</div> : services.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין טיפולים עדיין</div></div>
-          ) : (
-            <div style={{ display: "grid", gap: 10 }}>
-              {services.map(s => (
-                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <span style={{ fontWeight: 800 }}>🔧 {s.service_type}</span>
-                    <span style={{ fontSize: 13, color: "#64748b", marginRight: 8 }}>{s.date ? new Date(s.date).toLocaleDateString("he-IL") : "-"}</span>
-                    {s.notes && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.notes}</div>}
-                  </div>
-                  <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "#dc2626" }} onClick={() => deleteService(s.id)}>מחק</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?: string }) {
   const isWorker = userRole === "ngs_worker";
