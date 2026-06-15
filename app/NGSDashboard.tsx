@@ -1133,21 +1133,41 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveServiceCall} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
-          {serviceCalls.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16, background: "#1e293b", borderRadius: 16, padding: "14px 20px" }}>
-              {[
-                { label: "סה״כ", value: serviceCalls.length, color: "#d5b57a" },
-                { label: "חדשות", value: serviceCalls.filter(s => s.status === "חדשה").length, color: "#60a5fa" },
-                { label: "בטיפול", value: serviceCalls.filter(s => s.status === "בטיפול").length, color: "#fbbf24" },
-                { label: "הושלמו", value: serviceCalls.filter(s => s.status === "הושלם").length, color: "#34d399" },
-              ].map(item => (
-                <div key={item.label} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 24, fontWeight: 900, color: item.color }}>{item.value}</div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>{item.label}</div>
-                </div>
-              ))}
-            </div>
-          )}
+          {serviceCalls.length > 0 && (() => {
+            const thisMonth = new Date();
+            const completedThisMonth = serviceCalls.filter(s => {
+              if (s.status !== "הושלם" || !s.completed_at) return false;
+              const d = new Date(s.completed_at);
+              return d.getMonth() === thisMonth.getMonth() && d.getFullYear() === thisMonth.getFullYear();
+            });
+            const avgDays = (() => {
+              const withBoth = serviceCalls.filter(s => s.completed_at && s.created_at);
+              if (!withBoth.length) return null;
+              const avg = withBoth.reduce((sum, s) => sum + (new Date(s.completed_at).getTime() - new Date(s.created_at).getTime()), 0) / withBoth.length;
+              return Math.round(avg / (1000 * 60 * 60 * 24));
+            })();
+            const overdueCount = serviceCalls.filter(s => {
+              if (s.status === "הושלם") return false;
+              return (Date.now() - new Date(s.created_at).getTime()) / (1000 * 60 * 60 * 24) > 3;
+            }).length;
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 16, background: "#1e293b", borderRadius: 16, padding: "14px 20px" }}>
+                {[
+                  { label: "סהג", value: serviceCalls.length, color: "#d5b57a" },
+                  { label: "חדשות", value: serviceCalls.filter(s => s.status === "חדשה").length, color: "#60a5fa" },
+                  { label: "בטיפול", value: serviceCalls.filter(s => s.status === "בטיפול").length, color: "#fbbf24" },
+                  { label: "הושלמו", value: serviceCalls.filter(s => s.status === "הושלם").length, color: "#34d399" },
+                  { label: "טופלו החודש", value: completedThisMonth.length, color: "#a78bfa" },
+                  { label: overdueCount > 0 ? "⚠️ מעל 3 ימים" : "ממוצע ימים", value: overdueCount > 0 ? overdueCount : (avgDays !== null ? avgDays : "-"), color: overdueCount > 0 ? "#f87171" : "#94a3b8" },
+                ].map(item => (
+                  <div key={item.label} style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: item.color }}>{item.value}</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           {serviceCalls.length === 0 ? (
             <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
           ) : (
@@ -1156,7 +1176,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>מיקום</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>טופל ע"י</th>}<th>פעולות</th></tr></thead>
                 <tbody>
                   {serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).map(s => (
-                    <tr key={s.id}>
+                    <tr key={s.id} style={{ background: s.status !== "הושלם" && s.created_at && (Date.now() - new Date(s.created_at).getTime()) / (1000*60*60*24) > 3 ? "#fff5f5" : "" }}>
                       <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td>
                       <td>{s.client_name || "-"}</td>
                       <td style={{ fontWeight: 700 }}>{s.issue}</td>
