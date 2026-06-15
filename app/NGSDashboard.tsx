@@ -399,7 +399,7 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
 }
 
 function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName: string }) {
-export function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?: string }) {
+function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?: string }) {
   const isWorker = userRole === "ngs_worker";
   const workerName = userProfile?.full_name || "";
 
@@ -1359,3 +1359,6 @@ function getRoleLabel(role: string) {
   if (role === "ngs_worker") return 'עובד נג"ש';
   return "מנהל מערכת";
 }
+
+
+export { NGSDashboard };
