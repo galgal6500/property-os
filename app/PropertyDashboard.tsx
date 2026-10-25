@@ -175,7 +175,7 @@ function IncomeChart() {
           return (
             <div key={item.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
               <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>{item.amount.toLocaleString("he-IL")} ₪</div>
-              <div style={{ width: "100%", maxWidth: 56, height, borderRadius: "18px 18px 8px 8px", background: "linear-gradient(180deg, #d5b57a, #b79253)", boxShadow: "0 12px 24px rgba(183,146,83,.28)" }} />
+              <div style={{ width: "100%", maxWidth: 56, height, borderRadius: "18px 18px 8px 8px", background: "#2563EB" }} />
               <div style={{ fontSize: 13, color: "#475569", fontWeight: 700 }}>{item.month}</div>
             </div>
           );
@@ -767,7 +767,7 @@ export function Settings({ userEmail }: { userEmail: string }) {
                   <div className="muted" style={{ marginTop: 4 }}>{item.desc}</div>
                 </div>
                 <div style={{ position: "relative", cursor: "pointer" }} onClick={() => setAlerts({...alerts, [item.key]: !alerts[item.key as keyof typeof alerts]})}>
-                  <div style={{ width: 48, height: 26, borderRadius: 13, background: alerts[item.key as keyof typeof alerts] ? "#c9a227" : "#cbd5e1", transition: "background 0.2s" }}>
+                  <div style={{ width: 48, height: 26, borderRadius: 13, background: alerts[item.key as keyof typeof alerts] ? "#2563EB" : "#cbd5e1", transition: "background 0.2s" }}>
                     <div style={{ width: 20, height: 20, borderRadius: "50%", background: "white", position: "absolute", top: 3, left: alerts[item.key as keyof typeof alerts] ? 25 : 3, transition: "left 0.2s" }} />
                   </div>
                 </div>
@@ -957,7 +957,7 @@ export function UsersManagement() {
       {/* כרטיסי סיכום */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
         {[
-          { label: 'סה״כ משתמשים', value: users.length, color: "#d5b57a" },
+          { label: 'סה״כ משתמשים', value: users.length, color: "#2563EB" },
           { label: "מנהלים", value: users.filter(u => u.role === "admin").length, color: "#60a5fa" },
           { label: 'עובדי נג"ש', value: users.filter(u => u.role === "ngs_worker").length, color: "#a78bfa" },
           { label: "ממתינים", value: pending.length, color: "#f87171" },
@@ -994,7 +994,7 @@ export function UsersManagement() {
                     { value: "tenant", label: "🔑 דייר", desc: "רואה רק את הדירה שלו" },
                   ].map(opt => (
                     <div key={opt.value} onClick={() => setForm({...form, role: opt.value})}
-                      style={{ border: `2px solid ${form.role === opt.value ? "#c9a227" : "#e2e8f0"}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer", background: form.role === opt.value ? "#fef9ec" : "#fff" }}>
+                      style={{ border: `2px solid ${form.role === opt.value ? "#2563EB" : "#e2e8f0"}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer", background: form.role === opt.value ? "#EFF4FF" : "#fff" }}>
                       <div style={{ fontWeight: 700, fontSize: 14 }}>{opt.label}</div>
                       <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{opt.desc}</div>
                     </div>
@@ -1420,7 +1420,7 @@ export function ServiceRequests() {
         {!loading && requests.length > 0 && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 16, background: "#1e293b", borderRadius: 16, padding: "14px 20px" }}>
             {[
-              { label: 'סה״כ', value: requests.length, color: "#d5b57a" },
+              { label: 'סה״כ', value: requests.length, color: "#2563EB" },
               { label: "חדשות", value: requests.filter(r => r.status === "חדשה").length, color: "#60a5fa" },
               { label: "בטיפול", value: requests.filter(r => r.status === "בטיפול").length, color: "#fbbf24" },
               { label: "ממתין לבעל מקצוע", value: requests.filter(r => r.status === "ממתין לבעל מקצוע").length, color: "#f87171" },
@@ -1468,7 +1468,7 @@ export function ServiceRequests() {
                     </td>
                     <td style={{ display: "flex", gap: 6 }}>
                       <button className="btn btn-primary" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => setSelectedRequest(r)}>👁 צפייה</button>
-                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#c9a227", borderColor: "#c9a227" }} onClick={() => transferToNgs(r)}>🏗 נג"ש</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#2563EB", borderColor: "#2563EB" }} onClick={() => transferToNgs(r)}>🏗 נג"ש</button>
                       <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => deleteRequest(r.id)}>מחק</button>
                     </td>
                   </tr>
@@ -1836,7 +1836,7 @@ export function BuildingDetails({ buildingId, back, openApartment }: { buildingI
                       <div key={unit.id}>
                         {editingUnit?.id === unit.id ? (
                           // מצב עריכה
-                          <div style={{ border: "2px solid #c9a227", borderRadius: 16, padding: 16, background: "#fef9ec" }}>
+                          <div style={{ border: "2px solid #2563EB", borderRadius: 16, padding: 16, background: "#EFF4FF" }}>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
                               <div className="field"><label>מספר דירה</label><input className="input" value={editingUnit.apartment_number} onChange={e => setEditingUnit({...editingUnit, apartment_number: e.target.value})} /></div>
                               <div className="field"><label>קומה</label><input className="input" type="number" value={editingUnit.floor} onChange={e => setEditingUnit({...editingUnit, floor: e.target.value})} /></div>
@@ -2038,7 +2038,7 @@ export function Apartments({ openApartment }: { openApartment: (id: any) => void
         h1 { font-size: 22px; margin-bottom: 4px; }
         .meta { color: #64748b; font-size: 13px; margin-bottom: 16px; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th { background: #1e293b; color: #d5b57a; padding: 10px 12px; text-align: right; font-size: 12px; }
+        th { background: #EFF4FF; color: #1D4ED8; padding: 10px 12px; text-align: right; font-size: 12px; }
         td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         tr:nth-child(even) td { background: #f8fafc; }
         .total { margin-top: 14px; font-weight: bold; font-size: 14px; padding: 10px 14px; background: #f1f5f9; border-radius: 8px; }
@@ -2213,10 +2213,10 @@ export function Apartments({ openApartment }: { openApartment: (id: any) => void
                 { key: "electric_meter", label: "⚡ מונה חשמל" },
                 { key: "electric_payer", label: "⚡ מי משלם חשמל" },
               ].map(field => (
-                <label key={field.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, cursor: "pointer", background: reportFields.includes(field.key) ? "#fef9ec" : "#f8fafc", border: `1px solid ${reportFields.includes(field.key) ? "#c9a227" : "#e2e8f0"}` }}>
+                <label key={field.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, cursor: "pointer", background: reportFields.includes(field.key) ? "#EFF4FF" : "#f8fafc", border: `1px solid ${reportFields.includes(field.key) ? "#2563EB" : "#e2e8f0"}` }}>
                   <input type="checkbox" checked={reportFields.includes(field.key)}
                     onChange={e => setReportFields(e.target.checked ? [...reportFields, field.key] : reportFields.filter(f => f !== field.key))}
-                    style={{ width: 16, height: 16, accentColor: "#c9a227" }} />
+                    style={{ width: 16, height: 16, accentColor: "#2563EB" }} />
                   <span style={{ fontSize: 13, fontWeight: 600 }}>{field.label}</span>
                 </label>
               ))}
@@ -2352,8 +2352,8 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
             <div style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}>{apt.buildings?.city}</div>
             <h2 style={{ margin: "0 0 4px", fontSize: 36, fontWeight: 900, lineHeight: 1.1 }}>{apt.buildings?.name}</h2>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
-              <span style={{ background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "4px 14px", fontSize: 15, fontWeight: 800 }}>קומה {apt.floor}</span>
-              <span style={{ background: "#d5b57a", color: "#1e293b", borderRadius: 999, padding: "4px 14px", fontSize: 15, fontWeight: 800 }}>דירה {apt.apartment_number}</span>
+              <span style={{ background: "#EFF4FF", color: "#1D4ED8", borderRadius: 999, padding: "4px 14px", fontSize: 15, fontWeight: 800 }}>קומה {apt.floor}</span>
+              <span style={{ background: "#2563EB", color: "#fff", borderRadius: 999, padding: "4px 14px", fontSize: 15, fontWeight: 800 }}>דירה {apt.apartment_number}</span>
               <span style={{ fontSize: 14, color: "#64748b" }}>{apt.rooms} חדרים</span>
               <Badge value={apt.status} />
             </div>
@@ -2825,7 +2825,7 @@ export function PaymentsTracker() {
         <div style={{ position: "relative", marginBottom: 16 }}>
           <input className="input" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             placeholder="🔍 חפש דייר, כתובת, מבנה..."
-            style={{ paddingRight: 16, background: searchQuery ? "#fef9ec" : "#f8fafc", borderColor: searchQuery ? "#c9a227" : "#e2e8f0" }} />
+            style={{ paddingRight: 16, background: searchQuery ? "#EFF4FF" : "#f8fafc", borderColor: searchQuery ? "#2563EB" : "#e2e8f0" }} />
           {searchQuery && (
             <button onClick={() => setSearchQuery("")}
               style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#94a3b8" }}>×</button>
@@ -3566,11 +3566,11 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
                   <label>שייך למי?</label>
                   <div style={{ display: "flex", gap: 8, marginBottom: 10, marginTop: 6 }}>
                     <button type="button" onClick={() => { setAssignMode("all"); setSelectedWorkers([]); }}
-                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "all" ? "2px solid #c9a227" : "1px solid #e2e8f0", background: assignMode === "all" ? "#fef9ec" : "#f8fafc", color: assignMode === "all" ? "#92710d" : "#475569" }}>
+                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "all" ? "2px solid #2563EB" : "1px solid #e2e8f0", background: assignMode === "all" ? "#EFF4FF" : "#f8fafc", color: assignMode === "all" ? "#1D4ED8" : "#475569" }}>
                       👥 כל העובדים
                     </button>
                     <button type="button" onClick={() => setAssignMode("specific")}
-                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "specific" ? "2px solid #c9a227" : "1px solid #e2e8f0", background: assignMode === "specific" ? "#fef9ec" : "#f8fafc", color: assignMode === "specific" ? "#92710d" : "#475569" }}>
+                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "specific" ? "2px solid #2563EB" : "1px solid #e2e8f0", background: assignMode === "specific" ? "#EFF4FF" : "#f8fafc", color: assignMode === "specific" ? "#1D4ED8" : "#475569" }}>
                       👤 עובדים ספציפיים
                     </button>
                   </div>
