@@ -668,3 +668,43 @@ tr:hover td { background: #F9FAFB; }
   .desktop-table { display: none; }
   .mobile-cards { display: block; }
 }
+
+/* ════════════════════════════════════════════════════════════
+   עוד צבע
+   ════════════════════════════════════════════════════════════ */
+
+/* פריט פעיל בתפריט – כחול מלא */
+.nav-btn.active { background: var(--brand); color: #fff; box-shadow: 0 2px 6px rgba(37,99,235,0.25); }
+.nav-btn.active:hover { background: var(--brand-dark); color: #fff; }
+
+/* צבע לכל אייקון בתפריט הצד (הצבע עצמו מוגדר ב-page.tsx) */
+.nav-btn:not(.active) svg { color: var(--ic, var(--muted)); }
+.nav-group svg:first-child { color: #4F46E5; }
+
+/* כרטיסי מספרים – כל כרטיס בגוון משלו */
+.kpi:nth-child(6n+1) { background: #EFF4FF; border-color: #D1E0FF; }
+.kpi:nth-child(6n+2) { background: #ECFDF3; border-color: #D1FADF; }
+.kpi:nth-child(6n+3) { background: #FFFAEB; border-color: #FEF0C7; }
+.kpi:nth-child(6n+4) { background: #FDF2FA; border-color: #FCE7F6; }
+.kpi:nth-child(6n+5) { background: #F4F3FF; border-color: #E9E7FF; }
+.kpi:nth-child(6n)   { background: #F0F9FF; border-color: #E0F2FE; }
+.kpi:nth-child(6n+1) .value { color: #1D4ED8; }
+.kpi:nth-child(6n+2) .value { color: #067647; }
+.kpi:nth-child(6n+3) .value { color: #B54708; }
+.kpi:nth-child(6n+4) .value { color: #C11574; }
+.kpi:nth-child(6n+5) .value { color: #5925DC; }
+.kpi:nth-child(6n)   .value { color: #026AA2; }
+
+/* כפתור ראשי מעט יותר "חי" */
+.btn-primary { box-shadow: 0 1px 2px rgba(16,24,40,0.08), 0 2px 6px rgba(37,99,235,0.2); }
+
+/* באנר עליון של נג"ש – כחול עמוק עם נגיעה של סגול */
+.ngs-hero { background: linear-gradient(120deg, #1D4ED8 0%, #2563EB 55%, #4F46E5 100%); }
+
+/* לשוניות נג"ש עם אייקון צבעוני */
+.ngs-tab { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 14px; }
+.ngs-tab-ic { width: 26px; height: 26px; border-radius: 8px; display: inline-grid; place-items: center; flex-shrink: 0; }
+
+@media (max-width: 640px) {
+  .ngs-tab { padding: 6px 10px; }
+}
