@@ -1188,7 +1188,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 const daysToTest = nextTest ? Math.ceil((nextTest.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
                 const testAlert = daysToTest !== null && daysToTest <= 30;
                 return (
-                  <div key={v.id} style={{ border: `1px solid ${testAlert ? "var(--tint-red-line)" : "var(--line)"}`, borderRadius: 16, padding: 16, background: testAlert ? "var(--tint-red)" : "#fff" }}>
+                  <div key={v.id} style={{ border: `1px solid ${testAlert ? "var(--tint-red-line)" : "var(--line)"}`, borderRadius: 16, padding: 16, background: testAlert ? "var(--tint-red)" : "var(--card)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
@@ -1461,11 +1461,11 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       const u = agreementUsage(a);
                       const col = barColor(u.pct);
                       return (
-                        <div key={a.id} style={{ border: `1px solid ${u.pct >= 80 ? `color-mix(in srgb, ${col} 40%, transparent)` : "var(--line)"}`, borderRadius: 16, padding: 16, background: u.pct >= 100 ? "var(--tint-red)" : "#fff" }}>
+                        <div key={a.id} style={{ border: `1px solid ${u.pct >= 80 ? `color-mix(in srgb, ${col} 40%, transparent)` : "var(--line)"}`, borderRadius: 16, padding: 16, background: u.pct >= 100 ? "var(--tint-red)" : "var(--card)" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                             <div style={{ fontWeight: 900, fontSize: 16 }}>{a.station_name}</div>
                             <div style={{ display: "flex", gap: 6 }}>
-                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px" }} onClick={() => setEditingAgreement({ ...a, approved_hours: String(a.approved_hours ?? ""), notes: a.notes || "" })}></button>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px" }} onClick={() => setEditingAgreement({ ...a, approved_hours: String(a.approved_hours ?? ""), notes: a.notes || "" })}><Icon name="workcontracts" size={14} />עריכה</button>
                               <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "var(--red)" }} onClick={() => deleteItem("ngs_hour_agreements", a.id)}>מחק</button>
                             </div>
                           </div>
@@ -1704,7 +1704,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       </span>
                     )}
                   </div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                     <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setSelectedWorkLog(w)}>פתח יומן</button>
                     {(isWorker ? (w.filled_by === workerName || w.employee_name?.includes(workerName)) : true) && (
                       <button className="btn btn-outline" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => setEditingWorkLog({...w})}>עריכה</button>
