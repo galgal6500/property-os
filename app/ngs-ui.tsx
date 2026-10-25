@@ -10,7 +10,7 @@ export const SECTION: Record<string, { c: string; bg: string; solid: string }> =
   employees: { c: "var(--green-ink)", bg: "var(--tint-green)", solid: "#059669" },
   clients:   { c: "var(--pink-ink)", bg: "var(--tint-pink)", solid: "#DB2777" },
   projects:  { c: "var(--indigo-ink)", bg: "var(--tint-blue)", solid: "#4F46E5" },
-  service:   { c: "var(--red-ink)", bg: "var(--tint-red)", solid: "var(--red)" },
+  service:   { c: "var(--red-ink)", bg: "var(--tint-red)", solid: "#DC2626" },
   worklogs:  { c: "var(--blue-ink)", bg: "var(--tint-blue)", solid: "#2563EB" },
   hours:     { c: "var(--teal-ink)", bg: "var(--tint-teal)", solid: "#0D9488" },
   tasks:     { c: "var(--amber-ink)", bg: "var(--tint-amber)", solid: "#D97706" },
@@ -79,7 +79,7 @@ export function Toaster() {
   return (
     <div role="status" aria-live="polite" style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 5000, display: "flex", flexDirection: "column", gap: 8, width: "min(92vw, 420px)" }}>
       {toasts.map(t => (
-        <div key={t.id} style={{ background: t.kind === "error" ? "var(--red-ink)" : "var(--green-ink)", color: "#fff", borderRadius: 12, padding: "12px 16px", fontWeight: 600, fontSize: 15, boxShadow: "0 8px 24px rgba(16,24,40,0.18)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div key={t.id} style={{ background: t.kind === "error" ? "#B42318" : "#067647", color: "#fff", borderRadius: 12, padding: "12px 16px", fontWeight: 600, fontSize: 15, boxShadow: "0 8px 24px rgba(16,24,40,0.18)", display: "flex", alignItems: "center", gap: 10 }}>
           <Icon name={t.kind === "error" ? "alert" : "tasks"} size={20} />
           <span style={{ flex: 1 }}>{t.msg}</span>
         </div>
