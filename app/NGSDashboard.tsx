@@ -56,16 +56,16 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
   const serviceTypes = ["טיפול שמן", "טסט", "גלגלים", "בלמים", "מצבר", "מזגן", "תיקון כללי", "אחר"];
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>היסטוריית טיפולים</h3><div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>רכב: {licensePlate}</div></div>
+      <div style={{ background: "var(--card)", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--surface-3)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>היסטוריית טיפולים</h3><div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>רכב: {licensePlate}</div></div>
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => setShowForm(!showForm)}>+ טיפול חדש</button>
-            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#64748b" }}>×</button>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "var(--muted)" }}>×</button>
           </div>
         </div>
         {showForm && (
-          <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e8eef6" }}>
+          <div style={{ padding: "16px 24px", background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               <div className="field"><label>סוג טיפול *</label><select className="input" value={form.service_type} onChange={e => setForm({...form, service_type: e.target.value})}><option value="">בחר סוג</option>{serviceTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
               <div className="field"><label>תאריך *</label><input className="input" type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
@@ -79,17 +79,17 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
         )}
         <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
           {loading ? <div style={{ padding: 30, textAlign: "center" }}>טוען...</div> : services.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="service" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין טיפולים עדיין</div></div>
+            <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="service" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין טיפולים עדיין</div></div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {services.map(s => (
-                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div key={s.id} style={{ border: "1px solid var(--line)", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
                     <span style={{ fontWeight: 800 }}>{s.service_type}</span>
-                    <span style={{ fontSize: 13, color: "#64748b", marginRight: 8 }}>{s.date ? new Date(s.date).toLocaleDateString("he-IL") : "-"}</span>
-                    {s.notes && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.notes}</div>}
+                    <span style={{ fontSize: 13, color: "var(--muted)", marginRight: 8 }}>{s.date ? new Date(s.date).toLocaleDateString("he-IL") : "-"}</span>
+                    {s.notes && <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>{s.notes}</div>}
                   </div>
-                  <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "#dc2626" }} onClick={() => deleteService(s.id)}>מחק</button>
+                  <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "var(--red)" }} onClick={() => deleteService(s.id)}>מחק</button>
                 </div>
               ))}
             </div>
@@ -154,7 +154,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
   const received = items.filter(i => i.status === "התקבל").length;
 
   const statusColor: Record<string, string> = {
-    "חסר": "#dc2626", "הוזמן": "#f59e0b", "התקבל": "#16a34a"
+    "חסר": "var(--red)", "הוזמן": "#f59e0b", "התקבל": "var(--green)"
   };
 
   return (
@@ -162,9 +162,9 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
       {/* כרטיסי סיכום */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         {[
-          { label: "פריטים חסרים", value: missing, color: "#dc2626", bg: "#fee2e2" },
-          { label: "הוזמנו", value: ordered, color: "#d97706", bg: "#fef3c7" },
-          { label: "התקבלו", value: received, color: "#16a34a", bg: "#dcfce7" },
+          { label: "פריטים חסרים", value: missing, color: "var(--red)", bg: "var(--tint-red)" },
+          { label: "הוזמנו", value: ordered, color: "#d97706", bg: "var(--tint-amber)" },
+          { label: "התקבלו", value: received, color: "var(--green)", bg: "var(--tint-green)" },
         ].map(s => (
           <div key={s.label} style={{ background: s.bg, borderRadius: 16, padding: "16px 20px", textAlign: "center" }}>
             <div style={{ fontSize: 28, fontWeight: 900, color: s.color }}>{s.value}</div>
@@ -183,7 +183,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 12 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 12 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
               <div className="field"><label>שם הפריט *</label><input className="input" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="למשל: ברגים M6" autoFocus /></div>
               <div className="field"><label>כמות</label><input className="input" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} placeholder="למשל: 100 יח׳" /></div>
@@ -209,34 +209,34 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
           ))}
         </div>
 
-        {loading ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        {loading ? <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>טוען...</div>
         : filtered.length === 0 ? (
-          <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+          <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="inventory" size={56} /></div>
             <div style={{ fontWeight: 700, marginTop: 8 }}>{filter === "חסר" ? "אין פריטים חסרים כרגע! " : "אין פריטים"}</div>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
             {filtered.map(item => (
-              <div key={item.id} style={{ border: `2px solid ${statusColor[item.status] || "#e2e8f0"}30`, borderRight: `4px solid ${statusColor[item.status] || "#e2e8f0"}`, borderRadius: 14, padding: 14, background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div key={item.id} style={{ border: `2px solid ${"color-mix(in srgb, " + (statusColor[item.status] || "var(--line)") + " 19%, transparent)"}`, borderRight: `4px solid ${statusColor[item.status] || "var(--line)"}`, borderRadius: 14, padding: 14, background: "var(--card)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
                     <span style={{ fontWeight: 800, fontSize: 15 }}>{item.item}</span>
-                    {item.quantity && <span style={{ background: "#f1f5f9", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>כמות: {item.quantity}</span>}
-                    <span style={{ background: "#f1f5f9", borderRadius: 999, padding: "2px 10px", fontSize: 12, color: "#64748b" }}>{item.category}</span>
-                    <span style={{ background: `${statusColor[item.status]}20`, color: statusColor[item.status], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{item.status}</span>
+                    {item.quantity && <span style={{ background: "var(--surface-3)", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>כמות: {item.quantity}</span>}
+                    <span style={{ background: "var(--surface-3)", borderRadius: 999, padding: "2px 10px", fontSize: 12, color: "var(--muted)" }}>{item.category}</span>
+                    <span style={{ background: `${"color-mix(in srgb, " + (statusColor[item.status]) + " 12%, transparent)"}`, color: statusColor[item.status], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{item.status}</span>
                   </div>
-                  {item.notes && <div style={{ fontSize: 13, color: "#64748b" }}>{item.notes}</div>}
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>נוסף ע"י: {item.added_by || "-"} · {new Date(item.created_at).toLocaleDateString("he-IL")}</div>
+                  {item.notes && <div style={{ fontSize: 13, color: "var(--muted)" }}>{item.notes}</div>}
+                  <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 4 }}>נוסף ע"י: {item.added_by || "-"} · {new Date(item.created_at).toLocaleDateString("he-IL")}</div>
                 </div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <select value={item.status} onChange={e => updateStatus(item.id, e.target.value)}
-                    style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "5px 8px", fontSize: 12, background: `${statusColor[item.status]}10` }}>
+                    style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "5px 8px", fontSize: 12, background: `${"color-mix(in srgb, " + (statusColor[item.status]) + " 6%, transparent)"}` }}>
                     <option value="חסר">חסר</option>
                     <option value="הוזמן">הוזמן</option>
                     <option value="התקבל">התקבל</option>
                   </select>
-                  {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem(item.id)}>מחק</button>}
+                  {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deleteItem(item.id)}>מחק</button>}
                 </div>
               </div>
             ))}
@@ -289,7 +289,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
 
   const open = tasks.filter(t => t.status === "פתוח");
   const done = tasks.filter(t => t.status === "הושלם");
-  const priorityColor: Record<string, string> = { "דחופה": "#dc2626", "גבוהה": "#f59e0b", "רגילה": "#3b82f6", "נמוכה": "#94a3b8" };
+  const priorityColor: Record<string, string> = { "דחופה": "var(--red)", "גבוהה": "#f59e0b", "רגילה": "#3b82f6", "נמוכה": "var(--muted-2)" };
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -303,7 +303,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 12 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 12 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
               <div className="field"><label>כותרת משימה *</label><input className="input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="תאר את המשימה..." /></div>
               {!isWorker && (
@@ -311,11 +311,11 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
                   <label>שייך למי?</label>
                   <div style={{ display: "flex", gap: 8, marginBottom: 10, marginTop: 6 }}>
                     <button type="button" onClick={() => { setAssignMode("all"); setSelectedWorkers([]); }}
-                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "all" ? "2px solid #2563EB" : "1px solid #e2e8f0", background: assignMode === "all" ? "#EFF4FF" : "#f8fafc", color: assignMode === "all" ? "#1D4ED8" : "#475569" }}>
+                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "all" ? "2px solid #2563EB" : "1px solid var(--line)", background: assignMode === "all" ? "var(--tint-blue)" : "var(--surface-2)", color: assignMode === "all" ? "var(--blue-ink)" : "var(--text-3)" }}>
                       כל העובדים
                     </button>
                     <button type="button" onClick={() => setAssignMode("specific")}
-                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "specific" ? "2px solid #2563EB" : "1px solid #e2e8f0", background: assignMode === "specific" ? "#EFF4FF" : "#f8fafc", color: assignMode === "specific" ? "#1D4ED8" : "#475569" }}>
+                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "specific" ? "2px solid #2563EB" : "1px solid var(--line)", background: assignMode === "specific" ? "var(--tint-blue)" : "var(--surface-2)", color: assignMode === "specific" ? "var(--blue-ink)" : "var(--text-3)" }}>
                       עובדים ספציפיים
                     </button>
                   </div>
@@ -326,12 +326,12 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
                         return (
                           <button key={e.id} type="button"
                             onClick={() => setSelectedWorkers(selected ? selectedWorkers.filter(n => n !== e.name) : [...selectedWorkers, e.name])}
-                            style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #3b82f6" : "1px solid #e2e8f0", background: selected ? "#eff6ff" : "#f8fafc", color: selected ? "#1d4ed8" : "#475569" }}>
+                            style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #3b82f6" : "1px solid var(--line)", background: selected ? "var(--tint-blue)" : "var(--surface-2)", color: selected ? "var(--blue-ink)" : "var(--text-3)" }}>
                             {selected ? "✓ " : ""}{e.name}
                           </button>
                         );
                       })}
-                      {selectedWorkers.length === 0 && <div style={{ fontSize: 12, color: "#94a3b8", padding: "6px 0" }}>בחר עובד אחד או יותר</div>}
+                      {selectedWorkers.length === 0 && <div style={{ fontSize: 12, color: "var(--muted-2)", padding: "6px 0" }}>בחר עובד אחד או יותר</div>}
                     </div>
                   )}
                 </div>
@@ -345,7 +345,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
               <div className="field"><label>תאריך יעד</label><input className="input" type="date" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})} /></div>
               <div className="field" style={{ gridColumn: "span 2" }}><label>תיאור</label><textarea className="input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} placeholder="פרטים נוספים..." /></div>
             </div>
-            {isWorker && <div style={{ fontSize: 13, color: "#64748b", background: "#f1f5f9", borderRadius: 10, padding: "8px 12px" }}>המשימה תיווצר על שמך — המנהל יוכל לראות אותה</div>}
+            {isWorker && <div style={{ fontSize: 13, color: "var(--muted)", background: "var(--surface-3)", borderRadius: 10, padding: "8px 12px" }}>המשימה תיווצר על שמך — המנהל יוכל לראות אותה</div>}
             <div style={{ display: "flex", gap: 10 }}>
               <button className="btn btn-primary" onClick={addTask} disabled={saving}>{saving ? "שומר..." : "צור משימה"}</button>
               <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
@@ -354,26 +354,26 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
         )}
 
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#0f172a" }}>פתוחות ({open.length})</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "var(--text)" }}>פתוחות ({open.length})</div>
           {open.length === 0 ? (
-            <div style={{ padding: 20, textAlign: "center", color: "#64748b", background: "#f8fafc", borderRadius: 12 }}>אין משימות פתוחות </div>
+            <div style={{ padding: 20, textAlign: "center", color: "var(--muted)", background: "var(--surface-2)", borderRadius: 12 }}>אין משימות פתוחות </div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {open.map(t => (
-                <div key={t.id} style={{ borderRight: `4px solid ${priorityColor[t.priority] || "#e2e8f0"}`, borderRadius: 14, padding: 16, background: "#fff", border: `1px solid #e8eef6`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                <div key={t.id} style={{ borderRight: `4px solid ${priorityColor[t.priority] || "var(--line)"}`, borderRadius: 14, padding: 16, background: "var(--card)", border: `1px solid var(--line)`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 800, fontSize: 15 }}>{t.title}</span>
-                      <span style={{ background: `${priorityColor[t.priority]}20`, color: priorityColor[t.priority], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{t.priority}</span>
-                      {t.assigned_to === "all" ? <span style={{ fontSize: 12, color: "#64748b" }}>כולם</span> : <span style={{ fontSize: 12, color: "#64748b" }}>{t.assigned_to?.split(",").map((s: string) => s.trim()).join(", ")}</span>}
-                      {t.created_by && t.created_by !== "מנהל" && <span style={{ fontSize: 11, color: "#94a3b8" }}>נפתח ע"י: {t.created_by}</span>}
+                      <span style={{ background: `${"color-mix(in srgb, " + (priorityColor[t.priority]) + " 12%, transparent)"}`, color: priorityColor[t.priority], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{t.priority}</span>
+                      {t.assigned_to === "all" ? <span style={{ fontSize: 12, color: "var(--muted)" }}>כולם</span> : <span style={{ fontSize: 12, color: "var(--muted)" }}>{t.assigned_to?.split(",").map((s: string) => s.trim()).join(", ")}</span>}
+                      {t.created_by && t.created_by !== "מנהל" && <span style={{ fontSize: 11, color: "var(--muted-2)" }}>נפתח ע"י: {t.created_by}</span>}
                     </div>
-                    {t.description && <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>{t.description}</div>}
-                    {t.due_date && <div style={{ fontSize: 12, color: new Date(t.due_date) < new Date() ? "#dc2626" : "#64748b" }}>יעד: {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
+                    {t.description && <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>{t.description}</div>}
+                    {t.due_date && <div style={{ fontSize: 12, color: new Date(t.due_date) < new Date() ? "var(--red)" : "var(--muted)" }}>יעד: {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 14px" }} onClick={() => updateTaskStatus(t.id, "הושלם")}>סיימתי</button>
-                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "5px 10px", color: "#dc2626" }} onClick={() => deleteTask(t.id)}>מחק</button>}
+                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "5px 10px", color: "var(--red)" }} onClick={() => deleteTask(t.id)}>מחק</button>}
                   </div>
                 </div>
               ))}
@@ -383,17 +383,17 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
 
         {done.length > 0 && (
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#16a34a" }}>הושלמו ({done.length})</div>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "var(--green)" }}>הושלמו ({done.length})</div>
             <div style={{ display: "grid", gap: 8 }}>
               {done.map(t => (
-                <div key={t.id} style={{ border: "1px solid #dcfce7", borderRadius: 14, padding: 14, background: "#f0fdf4", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: 0.8 }}>
+                <div key={t.id} style={{ border: "1px solid var(--tint-green)", borderRadius: 14, padding: 14, background: "var(--tint-green)", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: 0.8 }}>
                   <div>
-                    <span style={{ fontWeight: 700, textDecoration: "line-through", color: "#64748b" }}>{t.title}</span>
-                    {t.assigned_to !== "all" && <span style={{ fontSize: 12, color: "#94a3b8", marginRight: 10 }}>{t.assigned_to}</span>}
+                    <span style={{ fontWeight: 700, textDecoration: "line-through", color: "var(--muted)" }}>{t.title}</span>
+                    {t.assigned_to !== "all" && <span style={{ fontSize: 12, color: "var(--muted-2)", marginRight: 10 }}>{t.assigned_to}</span>}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => updateTaskStatus(t.id, "פתוח")}>פתח מחדש</button>}
-                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteTask(t.id)}>מחק</button>}
+                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deleteTask(t.id)}>מחק</button>}
                   </div>
                 </div>
               ))}
@@ -704,41 +704,41 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
       {selectedServiceCall && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 540, maxHeight: "85vh", overflow: "auto" }}>
-            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ background: "var(--card)", borderRadius: 24, width: "100%", maxWidth: 540, maxHeight: "85vh", overflow: "auto" }}>
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--surface-3)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>{selectedServiceCall.issue}</h3>
-                <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedServiceCall.client_name || "-"}</div>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>{selectedServiceCall.client_name || "-"}</div>
               </div>
-              <button onClick={() => setSelectedServiceCall(null)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#64748b" }}>×</button>
+              <button onClick={() => setSelectedServiceCall(null)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "var(--muted)" }}>×</button>
             </div>
             <div style={{ padding: "20px 24px", display: "grid", gap: 14 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
-                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>סטטוס</div>
+                <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 4 }}>סטטוס</div>
                   <Badge value={selectedServiceCall.status} />
                 </div>
-                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>דחיפות</div>
+                <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 4 }}>דחיפות</div>
                   <Badge value={selectedServiceCall.urgency} />
                 </div>
-                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>אחראי</div>
+                <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 4 }}>אחראי</div>
                   <div style={{ fontWeight: 700 }}>{selectedServiceCall.assigned_to || "-"}</div>
                 </div>
-                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>תאריך פתיחה</div>
+                <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 4 }}>תאריך פתיחה</div>
                   <div style={{ fontWeight: 700 }}>{selectedServiceCall.created_at ? new Date(selectedServiceCall.created_at).toLocaleDateString("he-IL") : "-"}</div>
                 </div>
                 {selectedServiceCall.location && (
-                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14, gridColumn: "span 2" }}>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>מיקום</div>
+                  <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14, gridColumn: "span 2" }}>
+                    <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 4 }}>מיקום</div>
                     <div style={{ fontWeight: 700 }}>{selectedServiceCall.location}</div>
                   </div>
                 )}
                 {selectedServiceCall.contact_name && (
-                  <div style={{ background: "#eff6ff", borderRadius: 12, padding: 14, gridColumn: "span 2", border: "1px solid #bfdbfe" }}>
-                    <div style={{ fontSize: 11, color: "#1d4ed8", marginBottom: 8, fontWeight: 700 }}>איש קשר</div>
+                  <div style={{ background: "var(--tint-blue)", borderRadius: 12, padding: 14, gridColumn: "span 2", border: "1px solid var(--tint-blue-line)" }}>
+                    <div style={{ fontSize: 11, color: "var(--blue-ink)", marginBottom: 8, fontWeight: 700 }}>איש קשר</div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ fontWeight: 800, fontSize: 15 }}>{selectedServiceCall.contact_name}</div>
                       {selectedServiceCall.contact_phone && (
@@ -750,24 +750,24 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   </div>
                 )}
                 {selectedServiceCall.completed_by && (
-                  <div style={{ background: "#dcfce7", borderRadius: 12, padding: 14, gridColumn: "span 2" }}>
-                    <div style={{ fontSize: 11, color: "#166534", marginBottom: 4 }}>טופל ע"י</div>
-                    <div style={{ fontWeight: 700, color: "#166534" }}>{selectedServiceCall.completed_by}</div>
+                  <div style={{ background: "var(--tint-green)", borderRadius: 12, padding: 14, gridColumn: "span 2" }}>
+                    <div style={{ fontSize: 11, color: "var(--green-ink)", marginBottom: 4 }}>טופל ע"י</div>
+                    <div style={{ fontWeight: 700, color: "var(--green-ink)" }}>{selectedServiceCall.completed_by}</div>
                   </div>
                 )}
               </div>
-              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+              <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
                 <PhotoStrip supabase={supabase} table="ngs_service_calls" row={selectedServiceCall} onChange={photos => { setSelectedServiceCall({ ...selectedServiceCall, photos }); setServiceCalls(list => list.map(x => x.id === selectedServiceCall.id ? { ...x, photos } : x)); }} />
               </div>
               {(selectedServiceCall.description || selectedServiceCall.notes) && (
-                <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 8 }}>תיאור / הערות</div>
+                <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 8 }}>תיאור / הערות</div>
                   <div style={{ fontSize: 14, lineHeight: 1.7 }}>{selectedServiceCall.description || selectedServiceCall.notes}</div>
                 </div>
               )}
               <div style={{ display: "flex", gap: 10 }}>
                 {!isWorker && (
-                  <select value={selectedServiceCall.status} onChange={async e => { await updateServiceCallStatus(selectedServiceCall.id, e.target.value); setSelectedServiceCall({...selectedServiceCall, status: e.target.value}); }} style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 12px", fontSize: 14 }}>
+                  <select value={selectedServiceCall.status} onChange={async e => { await updateServiceCallStatus(selectedServiceCall.id, e.target.value); setSelectedServiceCall({...selectedServiceCall, status: e.target.value}); }} style={{ flex: 1, border: "1px solid var(--line)", borderRadius: 10, padding: "8px 12px", fontSize: 14 }}>
                     <option>חדשה</option><option>בטיפול</option><option>הושלם</option>
                   </select>
                 )}
@@ -780,10 +780,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
       {editingWorkLog && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ background: "var(--card)", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--surface-3)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>עריכת יומן #{formatSerial(editingWorkLog.serial_number)}</h3>
-              <button onClick={() => setEditingWorkLog(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "#64748b" }}>×</button>
+              <button onClick={() => setEditingWorkLog(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "var(--muted)" }}>×</button>
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: "20px 24px", display: "grid", gap: 14 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
@@ -809,17 +809,17 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={editingWorkLog.hours || ""} onChange={e => setEditingWorkLog({...editingWorkLog, hours: e.target.value})} step="0.5" /></div>
               </div>
               <div className="field"><label>הערות ללקוח</label><textarea className="input" value={editingWorkLog.client_notes || ""} onChange={e => setEditingWorkLog({...editingWorkLog, client_notes: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
-              <div style={{ fontWeight: 600, fontSize: 13, color: "#475569" }}>פירוט העבודה:</div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-3)" }}>פירוט העבודה:</div>
               <div style={{ display: "grid", gap: 8 }}>
                 {([1,2,3,4,5,6,7,8,9,10] as number[]).map(n => (
                   <div key={n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 700, minWidth: 24 }}>{n}.</span>
+                    <span style={{ fontSize: 13, color: "var(--muted-2)", fontWeight: 700, minWidth: 24 }}>{n}.</span>
                     <input className="input" style={{ flex: 1 }} value={(editingWorkLog as any)[`line${n}`] || ""} onChange={e => setEditingWorkLog({...editingWorkLog, [`line${n}`]: e.target.value})} placeholder={`שורה ${n}...`} />
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f5f9", display: "flex", gap: 10 }}>
+            <div style={{ padding: "14px 24px", borderTop: "1px solid var(--surface-3)", display: "flex", gap: 10 }}>
               <button className="btn btn-primary" onClick={saveEditWorkLog} disabled={savingEdit}>{savingEdit ? "שומר..." : "שמור שינויים"}</button>
               <button className="btn btn-outline" onClick={() => setEditingWorkLog(null)}>ביטול</button>
             </div>
@@ -829,26 +829,26 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
       {selectedWorkLog && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div style={{ background: "var(--card)", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--surface-3)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
                 <div style={{ fontSize: 22, fontWeight: 900 }}>#{formatSerial(selectedWorkLog.serial_number)} · {selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : "-"}</div>
-                <div style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
+                <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
                   {selectedWorkLog.branch && <span>{selectedWorkLog.branch} · </span>}
                   {selectedWorkLog.project_name && <span>{selectedWorkLog.project_name} · </span>}
                   {selectedWorkLog.filled_by && <span>ממלא: {selectedWorkLog.filled_by}</span>}
                 </div>
               </div>
-              <button onClick={() => setSelectedWorkLog(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "#64748b" }}>×</button>
+              <button onClick={() => setSelectedWorkLog(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "var(--muted)" }}>×</button>
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
               {selectedWorkLog.client_notes && (
-                <div style={{ marginBottom: 16, padding: 12, background: "#fffbeb", borderRadius: 12, border: "1px solid #fde68a" }}>
-                  <div style={{ fontSize: 11, color: "#92400e", fontWeight: 700, marginBottom: 4 }}>הערות ללקוח</div>
-                  <div style={{ fontSize: 14, color: "#78350f" }}>{selectedWorkLog.client_notes}</div>
+                <div style={{ marginBottom: 16, padding: 12, background: "var(--tint-amber)", borderRadius: 12, border: "1px solid #fde68a" }}>
+                  <div style={{ fontSize: 11, color: "var(--amber-ink)", fontWeight: 700, marginBottom: 4 }}>הערות ללקוח</div>
+                  <div style={{ fontSize: 14, color: "var(--amber-ink)" }}>{selectedWorkLog.client_notes}</div>
                 </div>
               )}
-              <div style={{ marginBottom: 16, background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+              <div style={{ marginBottom: 16, background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
                 <PhotoStrip supabase={supabase} table="ngs_work_logs" row={selectedWorkLog}
                   canEdit={!isWorker || selectedWorkLog.filled_by === workerName || selectedWorkLog.employee_name?.includes(workerName)}
                   onChange={photos => { setSelectedWorkLog({ ...selectedWorkLog, photos }); setWorkLogs(list => list.map(x => x.id === selectedWorkLog.id ? { ...x, photos } : x)); }} />
@@ -858,12 +858,12 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 {[1,2,3,4,5,6,7,8,9,10].map(n => {
                   const line = selectedWorkLog[`line${n}`];
                   if (!line) return null;
-                  return <div key={n} style={{ display: "flex", gap: 10, padding: "8px 12px", background: "#f8fafc", borderRadius: 10 }}><span style={{ color: "#94a3b8", fontWeight: 700, minWidth: 22 }}>{n}.</span><span style={{ fontSize: 14 }}>{line}</span></div>;
+                  return <div key={n} style={{ display: "flex", gap: 10, padding: "8px 12px", background: "var(--surface-2)", borderRadius: 10 }}><span style={{ color: "var(--muted-2)", fontWeight: 700, minWidth: 22 }}>{n}.</span><span style={{ fontSize: 14 }}>{line}</span></div>;
                 })}
               </div>
             </div>
-            <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ background: selectedWorkLog.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: selectedWorkLog.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "4px 16px", fontSize: 13, fontWeight: 700 }}>
+            <div style={{ padding: "14px 24px", borderTop: "1px solid var(--surface-3)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ background: selectedWorkLog.performa === "יצאה פרפורמה" ? "var(--tint-green)" : "var(--tint-red)", color: selectedWorkLog.performa === "יצאה פרפורמה" ? "var(--green)" : "var(--red)", borderRadius: 999, padding: "4px 16px", fontSize: 13, fontWeight: 700 }}>
                 {selectedWorkLog.performa === "יצאה פרפורמה" ? "יצאה פרפורמה" : "לא טופל"}
               </span>
               <button className="btn btn-outline" onClick={() => setSelectedWorkLog(null)}>סגור</button>
@@ -900,7 +900,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         })}
       </div>
 
-      {loading && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>}
+      {loading && <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>טוען...</div>}
 
       {!loading && tab === "overview" && !isWorker && (
         <div style={{ display: "grid", gap: 16 }}>
@@ -909,47 +909,47 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
 
             {/* קריאות שירות */}
-            <button onClick={() => setTab("service")} style={{ background: "#fff", border: `2px solid ${openServiceCalls.filter(s => s.urgency === "דחוף מאוד").length > 0 ? "#dc2626" : "#e2e8f0"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+            <button onClick={() => setTab("service")} style={{ background: "var(--card)", border: `2px solid ${openServiceCalls.filter(s => s.urgency === "דחוף מאוד").length > 0 ? "var(--red)" : "var(--line)"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="service" size={52} /></div>
-              <div style={{ fontSize: 32, fontWeight: 900, color: openServiceCalls.length > 0 ? "#dc2626" : "#16a34a" }}>{openServiceCalls.length}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#475569", marginTop: 4 }}>קריאות שירות</div>
-              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>פתוחות</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: openServiceCalls.length > 0 ? "var(--red)" : "var(--green)" }}>{openServiceCalls.length}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-3)", marginTop: 4 }}>קריאות שירות</div>
+              <div style={{ fontSize: 12, color: "var(--muted-2)", marginTop: 2 }}>פתוחות</div>
             </button>
 
             {/* יומני עבודה */}
-            <button onClick={() => setTab("worklogs")} style={{ background: "#fff", border: "2px solid #e2e8f0", borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+            <button onClick={() => setTab("worklogs")} style={{ background: "var(--card)", border: "2px solid var(--line)", borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="worklogs" size={52} /></div>
-              <div style={{ fontSize: 32, fontWeight: 900, color: "#0f172a" }}>{workLogs.filter(w => w.performa !== "יצאה פרפורמה").length}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#475569", marginTop: 4 }}>יומני עבודה</div>
-              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>לא טופלו</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: "var(--text)" }}>{workLogs.filter(w => w.performa !== "יצאה פרפורמה").length}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-3)", marginTop: 4 }}>יומני עבודה</div>
+              <div style={{ fontSize: 12, color: "var(--muted-2)", marginTop: 2 }}>לא טופלו</div>
             </button>
 
             {/* משימות */}
-            <button onClick={() => setTab("tasks")} style={{ background: "#fff", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#f59e0b" : "#e2e8f0"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+            <button onClick={() => setTab("tasks")} style={{ background: "var(--card)", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#f59e0b" : "var(--line)"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="tasks" size={52} /></div>
-              <div style={{ fontSize: 32, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#d97706" : "#16a34a" }}>{tasks.filter(t => t.status === "פתוח").length}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#475569", marginTop: 4 }}>משימות</div>
-              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>פתוחות</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#d97706" : "var(--green)" }}>{tasks.filter(t => t.status === "פתוח").length}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-3)", marginTop: 4 }}>משימות</div>
+              <div style={{ fontSize: 12, color: "var(--muted-2)", marginTop: 2 }}>פתוחות</div>
             </button>
 
             {/* ציוד חסר */}
-            <button onClick={() => setTab("inventory")} style={{ background: "#fff", border: `2px solid ${inventoryItems.filter((i: any) => i.status === "חסר").length > 0 ? "#a855f7" : "#e2e8f0"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+            <button onClick={() => setTab("inventory")} style={{ background: "var(--card)", border: `2px solid ${inventoryItems.filter((i: any) => i.status === "חסר").length > 0 ? "#a855f7" : "var(--line)"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="inventory" size={52} /></div>
               <div style={{ fontSize: 32, fontWeight: 900, color: "#7c3aed" }}>{inventoryItems.filter((i: any) => i.status === "חסר").length}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#475569", marginTop: 4 }}>ציוד חסר</div>
-              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>למחסן</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-3)", marginTop: 4 }}>ציוד חסר</div>
+              <div style={{ fontSize: 12, color: "var(--muted-2)", marginTop: 2 }}>למחסן</div>
             </button>
           </div>
 
           {/* טסטים קרובים */}
           {testsSoon.length > 0 && (
-            <div style={{ background: "#F0F9FF", borderRadius: 18, padding: 18, border: "1px solid #BAE6FD" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: "#0369A1", marginBottom: 12 }}><IconChip name="vehicles" size={34} />טסטים קרובים</div>
+            <div style={{ background: "var(--tint-blue)", borderRadius: 18, padding: 18, border: "1px solid var(--tint-blue-line)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: "var(--sky-ink)", marginBottom: 12 }}><IconChip name="vehicles" size={34} />טסטים קרובים</div>
               <div style={{ display: "grid", gap: 8 }}>
                 {testsSoon.slice(0, 5).map(({ v, days }) => (
-                  <button key={v.id} onClick={() => setTab("vehicles")} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, background: "#fff", border: "none", borderRadius: 12, padding: "12px 14px", cursor: "pointer", fontFamily: "inherit", textAlign: "right" }}>
-                    <span><span style={{ fontWeight: 800, fontSize: 15 }}>{v.license_plate}</span><span style={{ color: "#475467", fontSize: 14 }}>{v.driver ? ` · ${v.driver}` : ""}</span></span>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: (days as number) < 0 ? "#B42318" : (days as number) <= 7 ? "#B54708" : "#0369A1", background: (days as number) < 0 ? "#FEE4E2" : (days as number) <= 7 ? "#FEF0C7" : "#E0F2FE", borderRadius: 999, padding: "4px 12px", whiteSpace: "nowrap" }}>
+                  <button key={v.id} onClick={() => setTab("vehicles")} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, background: "var(--card)", border: "none", borderRadius: 12, padding: "12px 14px", cursor: "pointer", fontFamily: "inherit", textAlign: "right" }}>
+                    <span><span style={{ fontWeight: 800, fontSize: 15 }}>{v.license_plate}</span><span style={{ color: "var(--text-3)", fontSize: 14 }}>{v.driver ? ` · ${v.driver}` : ""}</span></span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: (days as number) < 0 ? "var(--red-ink)" : (days as number) <= 7 ? "var(--amber-ink)" : "var(--sky-ink)", background: (days as number) < 0 ? "var(--tint-red)" : (days as number) <= 7 ? "var(--tint-amber)" : "var(--tint-blue)", borderRadius: 999, padding: "4px 12px", whiteSpace: "nowrap" }}>
                       {(days as number) < 0 ? `עבר לפני ${-(days as number)} ימים` : days === 0 ? "היום!" : `בעוד ${days} ימים`}
                     </span>
                   </button>
@@ -960,16 +960,16 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
           {/* הסכמי שעות שמתקרבים לסוף */}
           {agreementsNearLimit.length > 0 && (
-            <div style={{ background: "#F0FDFA", borderRadius: 18, padding: 18, border: "1px solid #99F6E4" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: "#0F766E", marginBottom: 12 }}><IconChip name="hours" size={34} />הסכמי שעות שמתקרבים לסוף</div>
+            <div style={{ background: "var(--tint-teal)", borderRadius: 18, padding: 18, border: "1px solid var(--tint-teal-line)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: "var(--teal-ink)", marginBottom: 12 }}><IconChip name="hours" size={34} />הסכמי שעות שמתקרבים לסוף</div>
               <div style={{ display: "grid", gap: 8 }}>
                 {agreementsNearLimit.slice(0, 5).map(({ a, u }) => (
-                  <button key={a.id} onClick={() => setTab("hours")} style={{ background: "#fff", border: "none", borderRadius: 12, padding: "12px 14px", cursor: "pointer", fontFamily: "inherit", textAlign: "right", display: "grid", gap: 8 }}>
+                  <button key={a.id} onClick={() => setTab("hours")} style={{ background: "var(--card)", border: "none", borderRadius: 12, padding: "12px 14px", cursor: "pointer", fontFamily: "inherit", textAlign: "right", display: "grid", gap: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                      <span style={{ fontWeight: 800, fontSize: 15 }}>{a.station_name} <span style={{ fontWeight: 500, color: "#475467" }}>· {a.client_name}</span></span>
-                      <span style={{ fontWeight: 700, fontSize: 14, color: u.pct >= 100 ? "#B42318" : "#B54708" }}>{u.remaining < 0 ? `חריגה ${Math.round(-u.remaining * 10) / 10}` : `נותרו ${Math.round(u.remaining * 10) / 10}`} שעות</span>
+                      <span style={{ fontWeight: 800, fontSize: 15 }}>{a.station_name} <span style={{ fontWeight: 500, color: "var(--text-3)" }}>· {a.client_name}</span></span>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: u.pct >= 100 ? "var(--red-ink)" : "var(--amber-ink)" }}>{u.remaining < 0 ? `חריגה ${Math.round(-u.remaining * 10) / 10}` : `נותרו ${Math.round(u.remaining * 10) / 10}`} שעות</span>
                     </div>
-                    <div style={{ height: 8, background: "#E6F4F1", borderRadius: 999, overflow: "hidden" }}><div style={{ width: `${Math.min(u.pct, 100)}%`, height: "100%", background: u.pct >= 100 ? "#DC2626" : "#F59E0B" }} /></div>
+                    <div style={{ height: 8, background: "var(--tint-teal)", borderRadius: 999, overflow: "hidden" }}><div style={{ width: `${Math.min(u.pct, 100)}%`, height: "100%", background: u.pct >= 100 ? "var(--red)" : "#F59E0B" }} /></div>
                   </button>
                 ))}
               </div>
@@ -978,17 +978,17 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
           {/* קריאות דחופות */}
           {openServiceCalls.filter(s => s.urgency === "דחוף מאוד" || s.urgency === "גבוהה").length > 0 && (
-            <div style={{ background: "#fef2f2", borderRadius: 20, padding: 18, border: "2px solid #fca5a5" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: "#B42318", marginBottom: 14 }}><IconChip name="alert" section="service" size={34} />דורש טיפול מיידי</div>
+            <div style={{ background: "var(--tint-red)", borderRadius: 20, padding: 18, border: "2px solid var(--tint-red-line)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: "var(--red-ink)", marginBottom: 14 }}><IconChip name="alert" section="service" size={34} />דורש טיפול מיידי</div>
               {openServiceCalls.filter(s => s.urgency === "דחוף מאוד" || s.urgency === "גבוהה").slice(0, 3).map(s => (
-                <div key={s.id} onClick={() => setSelectedServiceCall(s)} style={{ background: "#fff", borderRadius: 14, padding: "14px 16px", marginBottom: 10, cursor: "pointer", borderRight: "5px solid #dc2626" }}>
+                <div key={s.id} onClick={() => setSelectedServiceCall(s)} style={{ background: "var(--card)", borderRadius: 14, padding: "14px 16px", marginBottom: 10, cursor: "pointer", borderRight: "5px solid var(--red)" }}>
                   <div style={{ fontSize: 16, fontWeight: 800 }}>{s.issue}</div>
-                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name || "-"} {s.location ? `· ${s.location}` : ""}</div>
+                  <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>{s.client_name || "-"} {s.location ? `· ${s.location}` : ""}</div>
                   <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                     <Badge value={s.urgency} />
-                    {s.assigned_to && <span style={{ fontSize: 12, color: "#475569", background: "#f1f5f9", borderRadius: 999, padding: "2px 10px" }}>{s.assigned_to}</span>}
+                    {s.assigned_to && <span style={{ fontSize: 12, color: "var(--text-3)", background: "var(--surface-3)", borderRadius: 999, padding: "2px 10px" }}>{s.assigned_to}</span>}
                     {s.contact_phone && (
-                      <a href={`tel:${s.contact_phone}`} onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#dcfce7", color: "#16a34a", borderRadius: 999, padding: "4px 12px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><Icon name="phone" size={14} />{s.contact_phone}</a>
+                      <a href={`tel:${s.contact_phone}`} onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--tint-green)", color: "var(--green)", borderRadius: 999, padding: "4px 12px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><Icon name="phone" size={14} />{s.contact_phone}</a>
                     )}
                   </div>
                 </div>
@@ -997,8 +997,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           )}
 
           {/* פעולות מהירות */}
-          <div style={{ background: "#fff", borderRadius: 20, padding: 18, border: "1px solid #e2e8f0" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 800, color: "#101828", marginBottom: 14 }}><Icon name="bolt" size={18} />פעולה מהירה</div>
+          <div style={{ background: "var(--card)", borderRadius: 20, padding: 18, border: "1px solid var(--line)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 800, color: "var(--text)", marginBottom: 14 }}><Icon name="bolt" size={18} />פעולה מהירה</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
               <button className="btn btn-primary" style={{ height: 56, fontSize: 15, borderRadius: 16 }} onClick={() => { setTab("service"); setShowForm(true); }}>+ קריאת שירות</button>
               <button className="btn" style={{ height: 56, fontSize: 15, borderRadius: 16, background: SECTION.hours.solid, color: "#fff" }} onClick={() => { setTab("worklogs"); setShowForm(true); }}>+ יומן עבודה</button>
@@ -1018,15 +1018,15 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 const empCalls = openServiceCalls.filter(s => s.assigned_to === e.name).length;
                 const empLogs = workLogs.filter(w => w.employee_name?.includes(e.name) || w.filled_by === e.name).length;
                 return (
-                  <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", background: "#f8fafc", borderRadius: 14 }}>
+                  <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", background: "var(--surface-2)", borderRadius: 14 }}>
                     <div style={{ width: 44, height: 44, borderRadius: "50%", background: SECTION.employees.bg, color: SECTION.employees.c, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, flexShrink: 0 }}>{e.name?.[0]}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 800, fontSize: 15 }}>{e.name}</div>
-                      <div style={{ fontSize: 12, color: "#94a3b8" }}>{e.role || "עובד"} {e.phone ? `· ${e.phone}` : ""}</div>
+                      <div style={{ fontSize: 12, color: "var(--muted-2)" }}>{e.role || "עובד"} {e.phone ? `· ${e.phone}` : ""}</div>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
-                      {empCalls > 0 && <span style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{empCalls} קריאות</span>}
-                      {empLogs > 0 && <span style={{ background: "#f1f5f9", color: "#475569", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{empLogs} יומנים</span>}
+                      {empCalls > 0 && <span style={{ background: "var(--tint-red)", color: "var(--red)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{empCalls} קריאות</span>}
+                      {empLogs > 0 && <span style={{ background: "var(--surface-3)", color: "var(--text-3)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{empLogs} יומנים</span>}
                     </div>
                   </div>
                 );
@@ -1050,45 +1050,45 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
           {/* טסט קרוב לרכב שלי */}
           {testsSoon.length > 0 && (
-            <button onClick={() => setTab("vehicles")} style={{ display: "flex", alignItems: "center", gap: 12, background: (testsSoon[0].days as number) < 0 ? "#FEF3F2" : "#FFFAEB", border: `1px solid ${(testsSoon[0].days as number) < 0 ? "#FECDCA" : "#FEDF89"}`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", fontFamily: "inherit", textAlign: "right" }}>
+            <button onClick={() => setTab("vehicles")} style={{ display: "flex", alignItems: "center", gap: 12, background: (testsSoon[0].days as number) < 0 ? "var(--tint-red)" : "var(--tint-amber)", border: `1px solid ${(testsSoon[0].days as number) < 0 ? "var(--tint-red-line)" : "var(--tint-amber-line)"}`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", fontFamily: "inherit", textAlign: "right" }}>
               <IconChip name="alert" section={(testsSoon[0].days as number) < 0 ? "service" : "tasks"} size={40} />
               <span style={{ display: "grid", gap: 2 }}>
                 <span style={{ fontWeight: 800, fontSize: 15 }}>טסט לרכב {testsSoon[0].v.license_plate}</span>
-                <span style={{ fontSize: 14, color: "#475467" }}>{(testsSoon[0].days as number) < 0 ? `התוקף עבר לפני ${-(testsSoon[0].days as number)} ימים` : testsSoon[0].days === 0 ? "היום!" : `בעוד ${testsSoon[0].days} ימים`}</span>
+                <span style={{ fontSize: 14, color: "var(--text-3)" }}>{(testsSoon[0].days as number) < 0 ? `התוקף עבר לפני ${-(testsSoon[0].days as number)} ימים` : testsSoon[0].days === 0 ? "היום!" : `בעוד ${testsSoon[0].days} ימים`}</span>
               </span>
             </button>
           )}
 
           {/* כרטיסי פעולה מהירה */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <button onClick={() => setTab("service")} style={{ background: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#fef2f2" : "#f0fdf4", border: `2px solid ${serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#fca5a5" : "#86efac"}`, borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
+            <button onClick={() => setTab("service")} style={{ background: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "var(--tint-red)" : "var(--tint-green)", border: `2px solid ${serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "var(--tint-red-line)" : "var(--tint-green-line)"}`, borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
               <IconChip name="service" size={40} />
-              <div style={{ fontSize: 26, fontWeight: 900, color: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#dc2626" : "#16a34a", marginTop: 6 }}>{serviceCalls.filter(s => s.status !== "הושלם").length}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>קריאות פתוחות</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "var(--red)" : "var(--green)", marginTop: 6 }}>{serviceCalls.filter(s => s.status !== "הושלם").length}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-3)", marginTop: 2 }}>קריאות פתוחות</div>
             </button>
 
-            <button onClick={() => setTab("tasks")} style={{ background: tasks.filter(t => t.status === "פתוח").length > 0 ? "#fffbeb" : "#f0fdf4", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#fcd34d" : "#86efac"}`, borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
+            <button onClick={() => setTab("tasks")} style={{ background: tasks.filter(t => t.status === "פתוח").length > 0 ? "var(--tint-amber)" : "var(--tint-green)", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "var(--tint-amber-line)" : "var(--tint-green-line)"}`, borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
               <IconChip name="tasks" size={40} />
-              <div style={{ fontSize: 26, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#d97706" : "#16a34a", marginTop: 6 }}>{tasks.filter(t => t.status === "פתוח").length}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>משימות פתוחות</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#d97706" : "var(--green)", marginTop: 6 }}>{tasks.filter(t => t.status === "פתוח").length}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-3)", marginTop: 2 }}>משימות פתוחות</div>
             </button>
 
-            <button onClick={() => setTab("worklogs")} style={{ background: "#f8fafc", border: "2px solid #e2e8f0", borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
+            <button onClick={() => setTab("worklogs")} style={{ background: "var(--surface-2)", border: "2px solid var(--line)", borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
               <IconChip name="worklogs" size={40} />
-              <div style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", marginTop: 6 }}>{workLogs.length}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>יומני עבודה</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: "var(--text)", marginTop: 6 }}>{workLogs.length}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-3)", marginTop: 2 }}>יומני עבודה</div>
             </button>
 
-            <button onClick={() => setTab("inventory")} style={{ background: "#faf5ff", border: "2px solid #d8b4fe", borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
+            <button onClick={() => setTab("inventory")} style={{ background: "var(--tint-purple)", border: "2px solid var(--tint-purple-line)", borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
               <IconChip name="inventory" size={40} />
               <div style={{ fontSize: 26, fontWeight: 900, color: "#7c3aed", marginTop: 6 }}>{inventoryItems?.filter((i: any) => i.status === "חסר").length || 0}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>ציוד חסר</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-3)", marginTop: 2 }}>ציוד חסר</div>
             </button>
           </div>
 
           {/* כפתורי פעולה מהירה */}
-          <div style={{ background: "#fff", borderRadius: 20, padding: 16, border: "1px solid #e2e8f0" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "#475467", marginBottom: 12 }}><Icon name="bolt" size={16} />פעולה מהירה</div>
+          <div style={{ background: "var(--card)", borderRadius: 20, padding: 16, border: "1px solid var(--line)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "var(--text-3)", marginBottom: 12 }}><Icon name="bolt" size={16} />פעולה מהירה</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <button className="btn btn-primary" style={{ height: 52, fontSize: 14, borderRadius: 14 }} onClick={() => { setTab("worklogs"); setShowForm(true); }}>+ יומן עבודה</button>
               <button className="btn btn-outline" style={{ height: 52, fontSize: 14, borderRadius: 14 }} onClick={() => { setTab("service"); setShowForm(true); }}>+ קריאת שירות</button>
@@ -1097,17 +1097,17 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
           {/* קריאות דחופות */}
           {serviceCalls.filter(s => s.status !== "הושלם" && (s.urgency === "דחוף מאוד" || s.urgency === "גבוהה")).length > 0 && (
-            <div style={{ background: "#fef2f2", borderRadius: 20, padding: 16, border: "1px solid #fca5a5" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 800, color: "#B42318", marginBottom: 12 }}><Icon name="alert" size={18} />קריאות דחופות</div>
+            <div style={{ background: "var(--tint-red)", borderRadius: 20, padding: 16, border: "1px solid var(--tint-red-line)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 800, color: "var(--red-ink)", marginBottom: 12 }}><Icon name="alert" size={18} />קריאות דחופות</div>
               {serviceCalls.filter(s => s.status !== "הושלם" && (s.urgency === "דחוף מאוד" || s.urgency === "גבוהה")).slice(0, 3).map(s => (
-                <div key={s.id} onClick={() => { setSelectedServiceCall(s); }} style={{ background: "#fff", borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer", borderRight: "4px solid #dc2626" }}>
+                <div key={s.id} onClick={() => { setSelectedServiceCall(s); }} style={{ background: "var(--card)", borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer", borderRight: "4px solid var(--red)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontWeight: 800, fontSize: 14 }}>{s.issue}</span>
                     <Badge value={s.urgency} />
                   </div>
-                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{s.client_name || "-"} {s.location ? `· ${s.location}` : ""}</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{s.client_name || "-"} {s.location ? `· ${s.location}` : ""}</div>
                   {s.contact_phone && (
-                    <a href={`tel:${s.contact_phone}`} onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, background: "#dcfce7", color: "#16a34a", borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 700, textDecoration: "none" }}><Icon name="phone" size={14} />{s.contact_phone}</a>
+                    <a href={`tel:${s.contact_phone}`} onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, background: "var(--tint-green)", color: "var(--green)", borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 700, textDecoration: "none" }}><Icon name="phone" size={14} />{s.contact_phone}</a>
                   )}
                 </div>
               ))}
@@ -1116,12 +1116,12 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
           {/* משימות דחופות */}
           {tasks.filter(t => t.status === "פתוח" && (t.priority === "דחופה" || t.priority === "גבוהה")).length > 0 && (
-            <div style={{ background: "#fffbeb", borderRadius: 20, padding: 16, border: "1px solid #fcd34d" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 800, color: "#B45309", marginBottom: 12 }}><Icon name="tasks" size={18} />משימות דחופות</div>
+            <div style={{ background: "var(--tint-amber)", borderRadius: 20, padding: 16, border: "1px solid var(--tint-amber-line)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 800, color: "var(--amber-ink)", marginBottom: 12 }}><Icon name="tasks" size={18} />משימות דחופות</div>
               {tasks.filter(t => t.status === "פתוח" && (t.priority === "דחופה" || t.priority === "גבוהה")).slice(0, 3).map(t => (
-                <div key={t.id} style={{ background: "#fff", borderRadius: 12, padding: "12px 14px", marginBottom: 8, borderRight: "4px solid #f59e0b" }}>
+                <div key={t.id} style={{ background: "var(--card)", borderRadius: 12, padding: "12px 14px", marginBottom: 8, borderRight: "4px solid #f59e0b" }}>
                   <div style={{ fontWeight: 800, fontSize: 14 }}>{t.title}</div>
-                  {t.due_date && <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
+                  {t.due_date && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
                 </div>
               ))}
             </div>
@@ -1129,17 +1129,17 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
           {/* הרכב שלי */}
           {vehicles.length > 0 && (
-            <div style={{ background: "#eff6ff", borderRadius: 20, padding: 16, border: "1px solid #bfdbfe", cursor: "pointer" }} onClick={() => setTab("vehicles")}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "#0369A1", marginBottom: 10 }}><Icon name="vehicles" size={18} />הרכב שלי</div>
+            <div style={{ background: "var(--tint-blue)", borderRadius: 20, padding: 16, border: "1px solid var(--tint-blue-line)", cursor: "pointer" }} onClick={() => setTab("vehicles")}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "var(--sky-ink)", marginBottom: 10 }}><Icon name="vehicles" size={18} />הרכב שלי</div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: "#1e40af" }}>{vehicles[0]?.license_plate}</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: "var(--blue-ink)" }}>{vehicles[0]?.license_plate}</div>
                   <div style={{ fontSize: 13, color: "#3b82f6" }}>{vehicles[0]?.model} {vehicles[0]?.year}</div>
                 </div>
                 {vehicles[0]?.next_test_date && (
-                  <div style={{ textAlign: "center", background: "#fff", borderRadius: 12, padding: "8px 14px" }}>
-                    <div style={{ fontSize: 11, color: "#94a3b8" }}>טסט הבא</div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "#1e40af" }}>{new Date(vehicles[0].next_test_date).toLocaleDateString("he-IL")}</div>
+                  <div style={{ textAlign: "center", background: "var(--card)", borderRadius: 12, padding: "8px 14px" }}>
+                    <div style={{ fontSize: 11, color: "var(--muted-2)" }}>טסט הבא</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "var(--blue-ink)" }}>{new Date(vehicles[0].next_test_date).toLocaleDateString("he-IL")}</div>
                   </div>
                 )}
               </div>
@@ -1152,7 +1152,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         <div className="card">
           <div className="section-top"><SectionTitle icon="vehicles">רכבים</SectionTitle><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף רכב</button></div>
           {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+            <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>לוחית רישוי *</label><input className="input" value={vehicleForm.license_plate} onChange={e => setVehicleForm({...vehicleForm, license_plate: e.target.value})} placeholder="12-345-67" /></div>
                 <div className="field"><label>דגם</label><input className="input" value={vehicleForm.model} onChange={e => setVehicleForm({...vehicleForm, model: e.target.value})} /></div>
@@ -1165,7 +1165,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveVehicle} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
-          {vehicles.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="vehicles" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין רכבים עדיין</div></div>
+          {vehicles.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="vehicles" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין רכבים עדיין</div></div>
           : (
             <div style={{ display: "grid", gap: 12 }}>
               {vehicles.map(v => {
@@ -1173,15 +1173,15 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 const daysToTest = nextTest ? Math.ceil((nextTest.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
                 const testAlert = daysToTest !== null && daysToTest <= 30;
                 return (
-                  <div key={v.id} style={{ border: `1px solid ${testAlert ? "#fca5a5" : "#e8eef6"}`, borderRadius: 16, padding: 16, background: testAlert ? "#fff7f7" : "#fff" }}>
+                  <div key={v.id} style={{ border: `1px solid ${testAlert ? "var(--tint-red-line)" : "var(--line)"}`, borderRadius: 16, padding: 16, background: testAlert ? "var(--tint-red)" : "#fff" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                           <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 18, fontWeight: 800 }}><IconChip name="vehicles" size={34} />{v.license_plate}</span>
                           <Badge value={v.status} />
-                          {testAlert && <span style={{ background: "#dc2626", color: "#fff", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>טסט בקרוב!</span>}
+                          {testAlert && <span style={{ background: "var(--red)", color: "#fff", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>טסט בקרוב!</span>}
                         </div>
-                        <div style={{ fontSize: 14, color: "#64748b" }}>{v.model || "-"} · {v.year || "-"}{v.driver ? ` · ${v.driver}` : ""}</div>
+                        <div style={{ fontSize: 14, color: "var(--muted)" }}>{v.model || "-"} · {v.year || "-"}{v.driver ? ` · ${v.driver}` : ""}</div>
                       </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                         <button className="btn btn-secondary" style={{ fontSize: 13 }} onClick={() => setSelectedVehicle(v)}><Icon name="service" size={16} />טיפולים</button>
@@ -1191,12 +1191,12 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                           <input type="file" hidden accept="image/*,application/pdf" disabled={uploadingVehicleId === v.id} onChange={e => { const f = e.target.files?.[0]; if (f) uploadGarageDoc(v.id, f); e.target.value = ""; }} />
                         </label>
                         <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setEditingVehicle({...v, test_date: v.test_date || "", next_test_date: v.next_test_date || "", notes: v.notes || "", driver: v.driver || ""})}>עריכה</button>
-                        <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_vehicles", v.id)}>מחק</button>
+                        <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deleteItem("ngs_vehicles", v.id)}>מחק</button>
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 24, marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
-                      <div><div style={{ fontSize: 11, color: "#94a3b8" }}>טסט אחרון</div><div style={{ fontSize: 14, fontWeight: 700 }}>{v.test_date ? new Date(v.test_date).toLocaleDateString("he-IL") : "-"}</div></div>
-                      <div><div style={{ fontSize: 11, color: "#94a3b8" }}>טסט הבא</div><div style={{ fontSize: 14, fontWeight: 700, color: testAlert ? "#dc2626" : "#0f172a" }}>{nextTest ? `${new Date(v.next_test_date).toLocaleDateString("he-IL")} (${(daysToTest || 0) <= 0 ? "עבר!" : (daysToTest || 0) + " ימים"})` : "-"}</div></div>
+                    <div style={{ display: "flex", gap: 24, marginTop: 12, borderTop: "1px solid var(--surface-3)", paddingTop: 10 }}>
+                      <div><div style={{ fontSize: 11, color: "var(--muted-2)" }}>טסט אחרון</div><div style={{ fontSize: 14, fontWeight: 700 }}>{v.test_date ? new Date(v.test_date).toLocaleDateString("he-IL") : "-"}</div></div>
+                      <div><div style={{ fontSize: 11, color: "var(--muted-2)" }}>טסט הבא</div><div style={{ fontSize: 14, fontWeight: 700, color: testAlert ? "var(--red)" : "var(--text)" }}>{nextTest ? `${new Date(v.next_test_date).toLocaleDateString("he-IL")} (${(daysToTest || 0) <= 0 ? "עבר!" : (daysToTest || 0) + " ימים"})` : "-"}</div></div>
                     </div>
                   </div>
                 );
@@ -1205,7 +1205,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           )}
           {editingVehicle && (
             <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-              <div style={{ background: "white", borderRadius: 20, padding: 28, maxWidth: 520, width: "100%" }}>
+              <div style={{ background: "var(--card)", borderRadius: 20, padding: 28, maxWidth: 520, width: "100%" }}>
                 <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 900 }}>עריכת רכב — {editingVehicle.license_plate}</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
                   <div className="field"><label>לוחית רישוי</label><input className="input" value={editingVehicle.license_plate} onChange={e => setEditingVehicle({...editingVehicle, license_plate: e.target.value})} /></div>
@@ -1231,7 +1231,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         <div className="card">
           <div className="section-top"><SectionTitle icon="employees">עובדים</SectionTitle><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף עובד</button></div>
           {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+            <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>שם *</label><input className="input" value={employeeForm.name} onChange={e => setEmployeeForm({...employeeForm, name: e.target.value})} /></div>
                 <div className="field"><label>טלפון</label><input className="input" value={employeeForm.phone} onChange={e => setEmployeeForm({...employeeForm, phone: e.target.value})} /></div>
@@ -1241,8 +1241,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveEmployee} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
-          {employees.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="employees" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין עובדים עדיין</div></div>
-          : <div className="table-wrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>{employees.map(e => (<tr key={e.id}><td style={{ fontWeight: 800 }}>{e.name}</td><td>{e.phone || "-"}</td><td>{e.role || "-"}</td><td><Badge value={e.status} /></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_employees", e.id)}>מחק</button></td></tr>))}</tbody></table></div>}
+          {employees.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="employees" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין עובדים עדיין</div></div>
+          : <div className="table-wrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>{employees.map(e => (<tr key={e.id}><td style={{ fontWeight: 800 }}>{e.name}</td><td>{e.phone || "-"}</td><td>{e.role || "-"}</td><td><Badge value={e.status} /></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deleteItem("ngs_employees", e.id)}>מחק</button></td></tr>))}</tbody></table></div>}
         </div>
       )}
 
@@ -1250,7 +1250,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         <div className="card">
           <div className="section-top"><SectionTitle icon="clients">לקוחות</SectionTitle><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף לקוח</button></div>
           {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+            <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>שם *</label><input className="input" value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} /></div>
                 <div className="field"><label>טלפון</label><input className="input" value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone: e.target.value})} /></div>
@@ -1260,8 +1260,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveClient} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
-          {clients.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="clients" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין לקוחות עדיין</div></div>
-          : <div className="table-wrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>אימייל</th><th>כתובת</th><th>פעולות</th></tr></thead><tbody>{clients.map(c => (<tr key={c.id}><td style={{ fontWeight: 800 }}>{c.name}</td><td>{c.phone || "-"}</td><td>{c.email || "-"}</td><td>{c.address || "-"}</td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_clients", c.id)}>מחק</button></td></tr>))}</tbody></table></div>}
+          {clients.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="clients" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין לקוחות עדיין</div></div>
+          : <div className="table-wrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>אימייל</th><th>כתובת</th><th>פעולות</th></tr></thead><tbody>{clients.map(c => (<tr key={c.id}><td style={{ fontWeight: 800 }}>{c.name}</td><td>{c.phone || "-"}</td><td>{c.email || "-"}</td><td>{c.address || "-"}</td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deleteItem("ngs_clients", c.id)}>מחק</button></td></tr>))}</tbody></table></div>}
         </div>
       )}
 
@@ -1269,7 +1269,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         <div className="card">
           <div className="section-top"><SectionTitle icon="projects">פרויקטים</SectionTitle><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ פרויקט חדש</button></div>
           {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+            <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>שם פרויקט *</label><input className="input" value={projectForm.name} onChange={e => setProjectForm({...projectForm, name: e.target.value})} /></div>
                 <div className="field"><label>לקוח</label><select className="input" value={projectForm.client_name} onChange={e => setProjectForm({...projectForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">אחר</option></select></div>
@@ -1280,8 +1280,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveProject} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
-          {projects.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="projects" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין פרויקטים עדיין</div></div>
-          : <div className="table-wrap"><table><thead><tr><th>שם פרויקט</th><th>לקוח</th><th>התחלה</th><th>סיום</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>{projects.map(p => (<tr key={p.id}><td style={{ fontWeight: 800 }}>{p.name}</td><td>{p.client_name || "-"}</td><td>{p.start_date ? new Date(p.start_date).toLocaleDateString("he-IL") : "-"}</td><td>{p.end_date ? new Date(p.end_date).toLocaleDateString("he-IL") : "-"}</td><td><Badge value={p.status} /></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_projects", p.id)}>מחק</button></td></tr>))}</tbody></table></div>}
+          {projects.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="projects" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין פרויקטים עדיין</div></div>
+          : <div className="table-wrap"><table><thead><tr><th>שם פרויקט</th><th>לקוח</th><th>התחלה</th><th>סיום</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>{projects.map(p => (<tr key={p.id}><td style={{ fontWeight: 800 }}>{p.name}</td><td>{p.client_name || "-"}</td><td>{p.start_date ? new Date(p.start_date).toLocaleDateString("he-IL") : "-"}</td><td>{p.end_date ? new Date(p.end_date).toLocaleDateString("he-IL") : "-"}</td><td><Badge value={p.status} /></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deleteItem("ngs_projects", p.id)}>מחק</button></td></tr>))}</tbody></table></div>}
         </div>
       )}
 
@@ -1295,7 +1295,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             {["הכל", "חדשה", "בטיפול", "הושלם"].map(f => (<button key={f} className={`btn ${serviceCallFilter === f ? "btn-primary" : "btn-outline"}`} onClick={() => setServiceCallFilter(f)}>{f}</button>))}
           </div>
           {!isWorker && showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+            <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>לקוח</label><select className="input" value={serviceCallForm.client_name} onChange={e => setServiceCallForm({...serviceCallForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
                 <div className="field"><label>נושא *</label><input className="input" value={serviceCallForm.issue} onChange={e => setServiceCallForm({...serviceCallForm, issue: e.target.value})} /></div>
@@ -1334,25 +1334,25 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   { label: "בטיפול", value: serviceCalls.filter(s => s.status === "בטיפול").length, color: "#fbbf24" },
                   { label: "הושלמו", value: serviceCalls.filter(s => s.status === "הושלם").length, color: "#34d399" },
                   { label: "טופלו החודש", value: completedThisMonth.length, color: "#a78bfa" },
-                  { label: overdueCount > 0 ? "מעל 3 ימים" : "ממוצע ימים", value: overdueCount > 0 ? overdueCount : (avgDays !== null ? avgDays : "-"), color: overdueCount > 0 ? "#f87171" : "#94a3b8" },
+                  { label: overdueCount > 0 ? "מעל 3 ימים" : "ממוצע ימים", value: overdueCount > 0 ? overdueCount : (avgDays !== null ? avgDays : "-"), color: overdueCount > 0 ? "#f87171" : "var(--muted-2)" },
                 ].map(item => (
                   <div key={item.label} style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 22, fontWeight: 900, color: item.color }}>{item.value}</div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{item.label}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 2 }}>{item.label}</div>
                   </div>
                 ))}
               </div>
             );
           })()}
           {serviceCalls.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="service" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
+            <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="service" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
           ) : (
             <div className="table-wrap">
               <table>
                 <thead><tr><th>תאריך</th><th>לקוח</th><th>נושא</th><th>מיקום</th><th>דחיפות</th><th>אחראי</th><th>סטטוס</th>{!isWorker && <th>טופל ע"י</th>}<th>פעולות</th></tr></thead>
                 <tbody>
                   {serviceCalls.filter(s => serviceCallFilter === "הכל" ? true : s.status === serviceCallFilter).map(s => (
-                    <tr key={s.id} style={{ background: s.status !== "הושלם" && s.created_at && (Date.now() - new Date(s.created_at).getTime()) / (1000*60*60*24) > 3 ? "#fff5f5" : "" }}>
+                    <tr key={s.id} style={{ background: s.status !== "הושלם" && s.created_at && (Date.now() - new Date(s.created_at).getTime()) / (1000*60*60*24) > 3 ? "var(--tint-red)" : "" }}>
                       <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td>
                       <td>{s.client_name || "-"}</td>
                       <td style={{ fontWeight: 700 }}>{s.issue}</td>
@@ -1363,21 +1363,21 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                         {isWorker ? (
                           <button
                             className="btn btn-outline"
-                            style={{ fontSize: 12, padding: "4px 12px", background: s.status === "הושלם" ? "#dcfce7" : "", color: s.status === "הושלם" ? "#16a34a" : "" }}
+                            style={{ fontSize: 12, padding: "4px 12px", background: s.status === "הושלם" ? "var(--tint-green)" : "", color: s.status === "הושלם" ? "var(--green)" : "" }}
                             onClick={() => s.status !== "הושלם" && updateServiceCallStatus(s.id, "הושלם", workerName)}
                             disabled={s.status === "הושלם"}>
                             {s.status === "הושלם" ? "טופל" : "סמן טופל"}
                           </button>
                         ) : (
-                          <select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
+                          <select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
                             <option>חדשה</option><option>בטיפול</option><option>הושלם</option>
                           </select>
                         )}
                       </td>
-                      {!isWorker && <td style={{ fontSize: 13, color: s.completed_by ? "#16a34a" : "#94a3b8", fontWeight: s.completed_by ? 700 : 400 }}>{s.completed_by || "-"}</td>}
+                      {!isWorker && <td style={{ fontSize: 13, color: s.completed_by ? "var(--green)" : "var(--muted-2)", fontWeight: s.completed_by ? 700 : 400 }}>{s.completed_by || "-"}</td>}
                       <td style={{ display: "flex", gap: 6 }}>
                         <button className="btn btn-primary" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setSelectedServiceCall(s)}>צפייה</button>
-                        {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button>}
+                        {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button>}
                       </td>
                     </tr>
                   ))}
@@ -1391,7 +1391,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       {!loading && tab === "hours" && !isWorker && (() => {
         const fmt = (n: number) => String(Math.round(n * 100) / 100);
         const clientNames = Array.from(new Set(hourAgreements.map((a: any) => a.client_name)));
-        const barColor = (pct: number) => pct >= 100 ? "#dc2626" : pct >= 80 ? "#d97706" : "#16a34a";
+        const barColor = (pct: number) => pct >= 100 ? "var(--red)" : pct >= 80 ? "#d97706" : "var(--green)";
         const selUsage = selectedAgreement ? agreementUsage(selectedAgreement) : null;
         return (
           <div style={{ display: "grid", gap: 16 }}>
@@ -1404,7 +1404,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ תחנה / הסכם חדש</button>
               </div>
               {showForm && (
-                <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginTop: 14 }}>
+                <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 16, marginTop: 14 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                     <div className="field"><label>לקוח *</label><select className="input" value={agreementForm.client_name} onChange={e => setAgreementForm({...agreementForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
                     <div className="field"><label>שם התחנה *</label><input className="input" value={agreementForm.station_name} onChange={e => setAgreementForm({...agreementForm, station_name: e.target.value})} placeholder="למשל: תחנת חיפה מרכז" /></div>
@@ -1420,7 +1420,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             </div>
 
             {clientNames.length === 0 ? (
-              <div className="card" style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+              <div className="card" style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="hours" size={56} /></div>
                 <div style={{ fontWeight: 700, marginTop: 8 }}>אין הסכמי שעות עדיין</div>
                 <div style={{ fontSize: 13, marginTop: 4 }}>הוסף תחנה עם מכסת שעות כדי להתחיל לעקוב</div>
@@ -1434,10 +1434,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 <div key={cn} className="card">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
                     <SectionTitle icon="clients">{cn}</SectionTitle>
-                    <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#475569" }}>
+                    <div style={{ display: "flex", gap: 16, fontSize: 13, color: "var(--text-3)" }}>
                       <span>מאושר: <b>{fmt(totals.approved)}</b></span>
                       <span>בוצע: <b>{fmt(totals.used)}</b></span>
-                      <span>נותר: <b style={{ color: totals.approved - totals.used < 0 ? "#dc2626" : "#16a34a" }}>{fmt(totals.approved - totals.used)}</b></span>
+                      <span>נותר: <b style={{ color: totals.approved - totals.used < 0 ? "var(--red)" : "var(--green)" }}>{fmt(totals.approved - totals.used)}</b></span>
                     </div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
@@ -1445,32 +1445,32 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       const u = agreementUsage(a);
                       const col = barColor(u.pct);
                       return (
-                        <div key={a.id} style={{ border: `1px solid ${u.pct >= 80 ? col + "66" : "#e8eef6"}`, borderRadius: 16, padding: 16, background: u.pct >= 100 ? "#fff7f7" : "#fff" }}>
+                        <div key={a.id} style={{ border: `1px solid ${u.pct >= 80 ? `color-mix(in srgb, ${col} 40%, transparent)` : "var(--line)"}`, borderRadius: 16, padding: 16, background: u.pct >= 100 ? "var(--tint-red)" : "#fff" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                             <div style={{ fontWeight: 900, fontSize: 16 }}>{a.station_name}</div>
                             <div style={{ display: "flex", gap: 6 }}>
                               <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px" }} onClick={() => setEditingAgreement({ ...a, approved_hours: String(a.approved_hours ?? ""), notes: a.notes || "" })}></button>
-                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "#dc2626" }} onClick={() => deleteItem("ngs_hour_agreements", a.id)}>מחק</button>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "var(--red)" }} onClick={() => deleteItem("ngs_hour_agreements", a.id)}>מחק</button>
                             </div>
                           </div>
-                          {a.notes && <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{a.notes}</div>}
-                          <div style={{ marginTop: 14, height: 10, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
+                          {a.notes && <div style={{ fontSize: 12, color: "var(--muted-2)", marginTop: 4 }}>{a.notes}</div>}
+                          <div style={{ marginTop: 14, height: 10, background: "var(--surface-3)", borderRadius: 999, overflow: "hidden" }}>
                             <div style={{ width: `${Math.min(u.pct, 100)}%`, height: "100%", background: col }} />
                           </div>
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8, marginTop: 12, textAlign: "center" }}>
-                            <div><div style={{ fontSize: 20, fontWeight: 900 }}>{fmt(u.approved)}</div><div style={{ fontSize: 11, color: "#94a3b8" }}>מאושר</div></div>
-                            <div><div style={{ fontSize: 20, fontWeight: 900, color: col }}>{fmt(u.used)}</div><div style={{ fontSize: 11, color: "#94a3b8" }}>בוצע</div></div>
-                            <div><div style={{ fontSize: 20, fontWeight: 900, color: u.remaining < 0 ? "#dc2626" : "#16a34a" }}>{fmt(Math.abs(u.remaining))}</div><div style={{ fontSize: 11, color: "#94a3b8" }}>{u.remaining < 0 ? "חריגה" : "נותר"}</div></div>
+                            <div><div style={{ fontSize: 20, fontWeight: 900 }}>{fmt(u.approved)}</div><div style={{ fontSize: 11, color: "var(--muted-2)" }}>מאושר</div></div>
+                            <div><div style={{ fontSize: 20, fontWeight: 900, color: col }}>{fmt(u.used)}</div><div style={{ fontSize: 11, color: "var(--muted-2)" }}>בוצע</div></div>
+                            <div><div style={{ fontSize: 20, fontWeight: 900, color: u.remaining < 0 ? "var(--red)" : "var(--green)" }}>{fmt(Math.abs(u.remaining))}</div><div style={{ fontSize: 11, color: "var(--muted-2)" }}>{u.remaining < 0 ? "חריגה" : "נותר"}</div></div>
                           </div>
-                          {u.pct >= 100 && <div style={{ marginTop: 10, background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>{u.remaining < 0 ? "חרגת מהמכסה המאושרת" : "המכסה נגמרה"}</div>}
-                          {u.pct >= 80 && u.pct < 100 && <div style={{ marginTop: 10, background: "#fef3c7", color: "#92400e", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>נותרו {fmt(u.remaining)} שעות בלבד</div>}
+                          {u.pct >= 100 && <div style={{ marginTop: 10, background: "var(--tint-red)", color: "var(--red)", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>{u.remaining < 0 ? "חרגת מהמכסה המאושרת" : "המכסה נגמרה"}</div>}
+                          {u.pct >= 80 && u.pct < 100 && <div style={{ marginTop: 10, background: "var(--tint-amber)", color: "var(--amber-ink)", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>נותרו {fmt(u.remaining)} שעות בלבד</div>}
                           <button className="btn btn-primary" style={{ width: "100%", marginTop: 12, fontSize: 13 }} onClick={() => setSelectedAgreement(a)}>יומנים ({u.logs.length})</button>
                         </div>
                       );
                     })}
                   </div>
                   {unlinked.length > 0 && (
-                    <div style={{ marginTop: 14, background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: 12, padding: "10px 14px", fontSize: 13, color: "#475569" }}>
+                    <div style={{ marginTop: 14, background: "var(--surface-2)", border: "1px dashed var(--line-strong)", borderRadius: 12, padding: "10px 14px", fontSize: 13, color: "var(--text-3)" }}>
                       {unlinked.length} יומנים של {cn} ({fmt(unlinkedHours)} שעות) לא משויכים לתחנה. אפשר לשייך דרך עריכה ביומן עבודה.
                     </div>
                   )}
@@ -1480,7 +1480,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
             {editingAgreement && (
               <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-                <div style={{ background: "white", borderRadius: 20, padding: 28, maxWidth: 520, width: "100%" }}>
+                <div style={{ background: "var(--card)", borderRadius: 20, padding: 28, maxWidth: 520, width: "100%" }}>
                   <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 900 }}>עריכת הסכם — {editingAgreement.station_name}</h3>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
                     <div className="field"><label>לקוח</label><select className="input" value={editingAgreement.client_name} onChange={e => setEditingAgreement({...editingAgreement, client_name: e.target.value})}>{clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}{!clients.some((c: any) => c.name === editingAgreement.client_name) && <option value={editingAgreement.client_name}>{editingAgreement.client_name}</option>}</select></div>
@@ -1498,28 +1498,28 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
             {selectedAgreement && selUsage && (
               <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-                <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                  <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div style={{ background: "var(--card)", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                  <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--surface-3)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
                       <div style={{ fontSize: 20, fontWeight: 900 }}>{selectedAgreement.station_name}</div>
-                      <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedAgreement.client_name} · מאושר {fmt(selUsage.approved)} · בוצע {fmt(selUsage.used)} · {selUsage.remaining < 0 ? `חריגה ${fmt(-selUsage.remaining)}` : `נותר ${fmt(selUsage.remaining)}`}</div>
+                      <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>{selectedAgreement.client_name} · מאושר {fmt(selUsage.approved)} · בוצע {fmt(selUsage.used)} · {selUsage.remaining < 0 ? `חריגה ${fmt(-selUsage.remaining)}` : `נותר ${fmt(selUsage.remaining)}`}</div>
                     </div>
-                    <button onClick={() => setSelectedAgreement(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "#64748b" }}>×</button>
+                    <button onClick={() => setSelectedAgreement(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "var(--muted)" }}>×</button>
                   </div>
                   <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
                     {selUsage.logs.length === 0 ? (
-                      <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="worklogs" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומנים משויכים לתחנה הזו</div></div>
+                      <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="worklogs" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומנים משויכים לתחנה הזו</div></div>
                     ) : (
                       <div style={{ display: "grid", gap: 8 }}>
                         {selUsage.logs.map((w: any) => (
-                          <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          <div key={w.id} style={{ border: "1px solid var(--line)", borderRadius: 14, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                             <div>
                               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <span style={{ fontSize: 12, fontWeight: 900, background: "#EFF4FF", color: "#1D4ED8", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
+                                <span style={{ fontSize: 12, fontWeight: 900, background: "var(--tint-blue)", color: "var(--blue-ink)", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
                                 <span style={{ fontWeight: 800 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
-                                <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{fmt(parseFloat(w.hours) || 0)} שעות</span>
+                                <span style={{ background: "var(--tint-blue)", color: "var(--blue-ink)", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{fmt(parseFloat(w.hours) || 0)} שעות</span>
                               </div>
-                              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{w.branch ? `${w.branch}` : ""}{w.filled_by ? ` · ממלא: ${w.filled_by}` : ""}</div>
+                              <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>{w.branch ? `${w.branch}` : ""}{w.filled_by ? ` · ממלא: ${w.filled_by}` : ""}</div>
                             </div>
                             <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => { setSelectedAgreement(null); setSelectedWorkLog(w); }}>פתח יומן</button>
                           </div>
@@ -1527,7 +1527,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       </div>
                     )}
                   </div>
-                  <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end" }}>
+                  <div style={{ padding: "14px 24px", borderTop: "1px solid var(--surface-3)", display: "flex", justifyContent: "flex-end" }}>
                     <button className="btn btn-outline" onClick={() => setSelectedAgreement(null)}>סגור</button>
                   </div>
                 </div>
@@ -1565,7 +1565,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             </button>
           )}
           {!showForm && showWlFilters && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 14, marginBottom: 14, display: "grid", gap: 10 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 14, marginBottom: 14, display: "grid", gap: 10 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10 }}>
               <div className="field">
                 <label>חודש</label>
@@ -1596,7 +1596,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               </div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 13, color: "#64748b" }}>
+              <span style={{ fontSize: 13, color: "var(--muted)" }}>
                 {filteredWorkLogs.length} מתוך {workLogs.length} יומנים · {Math.round(filteredWorkLogs.reduce((sum, w) => sum + (parseFloat(w.hours) || 0), 0) * 10) / 10} שעות
               </span>
               {wlHasFilters && (
@@ -1610,10 +1610,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           )}
 
           {showForm && (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 14 }}>
-              <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>יומן עבודה חדש</div>
+            <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 14 }}>
+              <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid var(--line)", paddingBottom: 10 }}>יומן עבודה חדש</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-                <div className="field"><label>ממלא היומן</label><input className="input" value={workLogForm.filled_by} onChange={e => !isWorker && setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="שם הממלא" readOnly={isWorker} style={isWorker ? { background: "#f1f5f9", color: "#64748b" } : {}} /></div>
+                <div className="field"><label>ממלא היומן</label><input className="input" value={workLogForm.filled_by} onChange={e => !isWorker && setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="שם הממלא" readOnly={isWorker} style={isWorker ? { background: "var(--surface-3)", color: "var(--muted)" } : {}} /></div>
                 <div className="field"><label>לקוח</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value, agreement_id: ""})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">אחר</option></select></div>
                 <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
                 <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} step="0.5" /></div>
@@ -1630,13 +1630,13 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               </div>
               <div className="field"><label>הערות ללקוח</label><textarea className="input" value={workLogForm.client_notes} onChange={e => setWorkLogForm({...workLogForm, client_notes: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
               <div>
-                <div style={{ fontWeight: 600, fontSize: 13, color: "#475569", marginBottom: 8 }}>עובדים:</div>
+                <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-3)", marginBottom: 8 }}>עובדים:</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
                   {employees.filter(e => e.status === "פעיל").map(e => {
                     const selected = workLogForm.employee_name.split(",").map((s: string) => s.trim()).includes(e.name);
                     return (
                       <button key={e.id} type="button"
-                        style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #2563EB" : "1px solid #e2e8f0", background: selected ? "#EFF4FF" : "#f8fafc", color: selected ? "#1D4ED8" : "#475569" }}
+                        style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #2563EB" : "1px solid var(--line)", background: selected ? "var(--tint-blue)" : "var(--surface-2)", color: selected ? "var(--blue-ink)" : "var(--text-3)" }}
                         onClick={() => {
                           const current = workLogForm.employee_name ? workLogForm.employee_name.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
                           const updated = selected ? current.filter((n: string) => n !== e.name) : [...current, e.name];
@@ -1647,42 +1647,42 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 </div>
                 <input className="input" value={workLogForm.workers} onChange={e => setWorkLogForm({...workLogForm, workers: e.target.value})} placeholder="הוסף עובד ידנית..." />
               </div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: "#344054" }}>פירוט העבודה (עד 10 שורות):</div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text-2)" }}>פירוט העבודה (עד 10 שורות):</div>
               <div style={{ display: "grid", gap: 8 }}>
                 {(() => { let lastFilled = 0; for (let n = 1; n <= 10; n++) if ((workLogForm as any)[`line${n}`]) lastFilled = n; return Array.from({ length: Math.min(10, Math.max(3, lastFilled + 1)) }, (_, i) => i + 1); })().map(n => (
                   <div key={n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 700, minWidth: 24 }}>{n}.</span>
+                    <span style={{ fontSize: 13, color: "var(--muted-2)", fontWeight: 700, minWidth: 24 }}>{n}.</span>
                     <input className="input" style={{ flex: 1 }} value={(workLogForm as any)[`line${n}`]} onChange={e => setWorkLogForm({...workLogForm, [`line${n}`]: e.target.value})} placeholder={`שורה ${n}...`} />
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 13, color: "#475467" }}>שורה חדשה נפתחת אוטומטית כשממלאים את האחרונה. אחרי השמירה אפשר לפתוח את היומן ולצרף תמונות.</div>
+              <div style={{ fontSize: 13, color: "var(--text-3)" }}>שורה חדשה נפתחת אוטומטית כשממלאים את האחרונה. אחרי השמירה אפשר לפתוח את היומן ולצרף תמונות.</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button className="btn btn-primary" style={{ minHeight: 48, flex: "1 1 auto", maxWidth: 260 }} onClick={saveWorkLog} disabled={saving}>{saving ? "שומר..." : "שמור יומן"}</button>
                 <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
               </div>
             </div>
           )}
-          {filteredWorkLogs.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="worklogs" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>{wlHasFilters ? "לא נמצאו יומנים לחיפוש הזה" : "אין יומני עבודה"}</div></div>
+          {filteredWorkLogs.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="worklogs" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>{wlHasFilters ? "לא נמצאו יומנים לחיפוש הזה" : "אין יומני עבודה"}</div></div>
           : (
             <div style={{ display: "grid", gap: 10 }}>
               {filteredWorkLogs.map(w => (
-                <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: "14px 18px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                <div key={w.id} style={{ border: "1px solid var(--line)", borderRadius: 16, padding: "14px 18px", background: "var(--card)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 13, fontWeight: 900, background: "#EFF4FF", color: "#1D4ED8", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
+                        <span style={{ fontSize: 13, fontWeight: 900, background: "var(--tint-blue)", color: "var(--blue-ink)", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
                         <span style={{ fontSize: 18, fontWeight: 900 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
                       </div>
-                      <div style={{ fontSize: 14, color: "#64748b", marginTop: 2 }}>{w.branch ? `${w.branch}` : ""}{w.project_name ? ` · ${w.project_name}` : ""}</div>
-                      {w.filled_by && <div style={{ fontSize: 13, color: "#475467" }}>ממלא: {w.filled_by}{Array.isArray(w.photos) && w.photos.length > 0 ? ` · ${w.photos.length} תמונות` : ""}</div>}
+                      <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 2 }}>{w.branch ? `${w.branch}` : ""}{w.project_name ? ` · ${w.project_name}` : ""}</div>
+                      {w.filled_by && <div style={{ fontSize: 13, color: "var(--text-3)" }}>ממלא: {w.filled_by}{Array.isArray(w.photos) && w.photos.length > 0 ? ` · ${w.photos.length} תמונות` : ""}</div>}
                       {w.agreement_id && (() => {
                         const ag = hourAgreements.find((a: any) => a.id === w.agreement_id);
-                        return ag ? <div style={{ marginTop: 4 }}><span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{ag.station_name}</span></div> : null;
+                        return ag ? <div style={{ marginTop: 4 }}><span style={{ background: "var(--tint-blue)", color: "var(--blue-ink)", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{ag.station_name}</span></div> : null;
                       })()}
                     </div>
                     {!isWorker && (
-                      <span style={{ background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: w.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>
+                      <span style={{ background: w.performa === "יצאה פרפורמה" ? "var(--tint-green)" : "var(--tint-red)", color: w.performa === "יצאה פרפורמה" ? "var(--green)" : "var(--red)", borderRadius: 999, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>
                         {w.performa === "יצאה פרפורמה" ? "פרפורמה" : "לא טופל"}
                       </span>
                     )}
@@ -1710,12 +1710,12 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       }
                     }}>הדפס</button>
                     {!isWorker && (
-                      <select value={w.performa || "לא טופל"} onChange={async e => { if (check(await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id))) await load(); }} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2" }}>
+                      <select value={w.performa || "לא טופל"} onChange={async e => { if (check(await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id))) await load(); }} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "var(--tint-green)" : "var(--tint-red)" }}>
                         <option value="לא טופל">לא טופל</option>
                         <option value="יצאה פרפורמה">יצאה פרפורמה</option>
                       </select>
                     )}
-                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "6px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>}
+                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "6px 10px", color: "var(--red)" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>}
                   </div>
                 </div>
               ))}
