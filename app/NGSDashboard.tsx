@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Icon } from "./icons";
-import { SECTION, IconChip, SectionTitle, EmptyState, Toaster, notify, check, PhotoStrip, exportWorkLogsCSV, loadLastWorkLog, saveLastWorkLog, todayISO, daysUntil } from "./ngs-ui";
+import { SECTION, IconChip, SectionTitle, EmptyState, Toaster, notify, check, PhotoStrip, PendingPhotos, uploadPhotos, exportWorkLogsCSV, loadLastWorkLog, saveLastWorkLog, todayISO, daysUntil } from "./ngs-ui";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -452,6 +452,15 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   }
   const [workLogForm, setWorkLogForm] = useState(emptyWorkLog);
   const [wlMonth, setWlMonth] = useState("");
+  // תמונות שנבחרו בטופס פתיחה, לפני השמירה
+  const [newCallPhotos, setNewCallPhotos] = useState<File[]>([]);
+  const [newLogPhotos, setNewLogPhotos] = useState<File[]>([]);
+  // אחרי שמירה: מעלה את התמונות ומצרף אותן לשורה החדשה
+  async function attachPhotos(table: "ngs_service_calls" | "ngs_work_logs", id: string | undefined, files: File[]) {
+    if (!id || !files.length) return;
+    const urls = await uploadPhotos(supabase, table, id, files);
+    if (urls.length) check(await supabase.from(table).update({ photos: urls }).eq("id", id));
+  }
   // בטלפון החיפוש מקופל כברירת מחדל כדי שהיומנים יופיעו מיד
   const [showWlFilters, setShowWlFilters] = useState(() => typeof window === "undefined" || window.innerWidth > 640);
 
@@ -538,7 +547,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   }
   async function saveServiceCall() {
     if (!serviceCallForm.issue) return; setSaving(true);
-    if (!check(await supabase.from("ngs_service_calls").insert(serviceCallForm), "הקריאה נפתחה")) { setSaving(false); return; }
+    const scRes = await supabase.from("ngs_service_calls").insert(serviceCallForm).select("id").single();
+    if (!check(scRes, "הקריאה נפתחה")) { setSaving(false); return; }
+    await attachPhotos("ngs_service_calls", scRes.data?.id, newCallPhotos);
+    setNewCallPhotos([]);
     // שליחת מייל התראה
     fetch("/api/send-email", {
       method: "POST",
@@ -579,7 +591,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
   async function saveWorkLog() {
     if (!workLogForm.employee_name && !workLogForm.filled_by) return; setSaving(true);
-    if (!check(await supabase.from("ngs_work_logs").insert({ ...workLogForm, date: workLogForm.date || null, agreement_id: workLogForm.agreement_id || null, hours: parseFloat(workLogForm.hours) || 0 }), "היומן נשמר")) { setSaving(false); return; }
+    const wlRes = await supabase.from("ngs_work_logs").insert({ ...workLogForm, date: workLogForm.date || null, agreement_id: workLogForm.agreement_id || null, hours: parseFloat(workLogForm.hours) || 0 }).select("id").single();
+    if (!check(wlRes, "היומן נשמר")) { setSaving(false); return; }
+    await attachPhotos("ngs_work_logs", wlRes.data?.id, newLogPhotos);
+    setNewLogPhotos([]);
     saveLastWorkLog({ project_name: workLogForm.project_name, branch: workLogForm.branch, agreement_id: workLogForm.agreement_id, filled_by: workLogForm.filled_by });
     setWorkLogForm(emptyWorkLog());
     setShowForm(false); await load(); setSaving(false);
@@ -1306,7 +1321,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 <div className="field"><label>טלפון איש קשר</label><input className="input" value={serviceCallForm.contact_phone} onChange={e => setServiceCallForm({...serviceCallForm, contact_phone: e.target.value})} placeholder="050-0000000" /></div>
               </div>
               <div className="field" style={{ marginTop: 10 }}><label>תיאור</label><textarea className="input" value={serviceCallForm.description} onChange={e => setServiceCallForm({...serviceCallForm, description: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveServiceCall} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
+              <div style={{ marginTop: 10 }}><PendingPhotos files={newCallPhotos} onChange={setNewCallPhotos} /></div>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveServiceCall} disabled={saving}>{saving ? (newCallPhotos.length ? "שומר ומעלה תמונות..." : "שומר...") : "שמור"}</button><button className="btn btn-outline" onClick={() => { setShowForm(false); setNewCallPhotos([]); }}>ביטול</button></div>
             </div>
           )}
           {serviceCalls.length > 0 && (() => {
@@ -1551,7 +1567,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             <SectionTitle icon="worklogs">יומני עבודה</SectionTitle>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {!isWorker && <button className="btn btn-outline" disabled={filteredWorkLogs.length === 0} onClick={() => exportWorkLogsCSV(filteredWorkLogs, hourAgreements, [wlClient, wlMonth || [wlDateFrom, wlDateTo].filter(Boolean).join("_")].filter(Boolean).join("-"), formatSerial)}><Icon name="download" size={18} />ייצוא לאקסל ({filteredWorkLogs.length})</button>}
-              <button className="btn btn-primary" onClick={() => { if (!showForm) setWorkLogForm(emptyWorkLog()); setShowForm(!showForm); }}>+ יומן חדש</button>
+              <button className="btn btn-primary" onClick={() => { if (!showForm) { setWorkLogForm(emptyWorkLog()); setNewLogPhotos([]); } setShowForm(!showForm); }}>+ יומן חדש</button>
             </div>
           </div>
           <div className="chips" style={{ marginBottom: 12, marginTop: 8 }}>
@@ -1656,9 +1672,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 13, color: "var(--text-3)" }}>שורה חדשה נפתחת אוטומטית כשממלאים את האחרונה. אחרי השמירה אפשר לפתוח את היומן ולצרף תמונות.</div>
+              <PendingPhotos files={newLogPhotos} onChange={setNewLogPhotos} />
+              <div style={{ fontSize: 13, color: "var(--text-3)" }}>שורה חדשה נפתחת אוטומטית כשממלאים את האחרונה.</div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn btn-primary" style={{ minHeight: 48, flex: "1 1 auto", maxWidth: 260 }} onClick={saveWorkLog} disabled={saving}>{saving ? "שומר..." : "שמור יומן"}</button>
+                <button className="btn btn-primary" style={{ minHeight: 48, flex: "1 1 auto", maxWidth: 260 }} onClick={saveWorkLog} disabled={saving}>{saving ? (newLogPhotos.length ? "שומר ומעלה תמונות..." : "שומר...") : "שמור יומן"}</button>
                 <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
               </div>
             </div>
