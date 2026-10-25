@@ -105,23 +105,80 @@ async function shrinkImage(file: File, maxSide = 1600): Promise<Blob> {
   }
 }
 
+// מעלה תמונות לתיקיית המסמכים ומחזיר את הקישורים שלהן
+export async function uploadPhotos(supabase: any, table: string, rowId: string, files: File[]): Promise<string[]> {
+  const urls: string[] = [];
+  for (const f of files) {
+    const blob = await shrinkImage(f);
+    const path = `ngs-photos/${table}/${rowId}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
+    const { error } = await supabase.storage.from("documents").upload(path, blob, { contentType: "image/jpeg" });
+    if (error) { notify("שגיאה בהעלאת תמונה: " + error.message, "error"); continue; }
+    urls.push(supabase.storage.from("documents").getPublicUrl(path).data.publicUrl);
+  }
+  return urls;
+}
+
+// שני כפתורים: צילום במצלמה, או בחירה מהגלריה (בטלפון)
+function PhotoButtons({ busy, onFiles }: { busy?: boolean; onFiles: (files: File[]) => void }) {
+  const pick = (e: React.ChangeEvent<HTMLInputElement>) => { const f = Array.from(e.target.files || []); e.target.value = ""; if (f.length) onFiles(f); };
+  return (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <label className="btn btn-outline" style={{ cursor: busy ? "default" : "pointer" }}>
+        <Icon name="camera" size={18} />{busy ? "מעלה..." : "צלם"}
+        <input type="file" accept="image/*" capture="environment" hidden disabled={busy} onChange={pick} />
+      </label>
+      <label className="btn btn-outline" style={{ cursor: busy ? "default" : "pointer" }}>
+        <Icon name="upload" size={18} />מהגלריה
+        <input type="file" accept="image/*" multiple hidden disabled={busy} onChange={pick} />
+      </label>
+    </div>
+  );
+}
+
+function Thumbs({ items, onRemove, onOpen }: { items: { key: string; src: string }[]; onRemove?: (key: string) => void; onOpen?: (src: string) => void }) {
+  if (!items.length) return null;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 8 }}>
+      {items.map(it => (
+        <div key={it.key} style={{ position: "relative" }}>
+          <button type="button" onClick={() => onOpen?.(it.src)} aria-label="הגדל תמונה" style={{ padding: 0, border: "none", background: "none", cursor: onOpen ? "zoom-in" : "default", width: "100%", display: "block" }}>
+            <img src={it.src} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 10, display: "block" }} />
+          </button>
+          {onRemove && <button type="button" onClick={() => onRemove(it.key)} aria-label="הסר תמונה" style={{ position: "absolute", top: 4, left: 4, width: 28, height: 28, borderRadius: 999, border: "none", background: "rgba(16,24,40,0.7)", color: "#fff", cursor: "pointer", display: "grid", placeItems: "center" }}><Icon name="close" size={14} /></button>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// תמונות בטופס פתיחה (לפני שהקריאה/היומן נשמרו): נשמרות בזיכרון ועולות בלחיצה על "שמור"
+export function PendingPhotos({ files, onChange }: { files: File[]; onChange: (files: File[]) => void }) {
+  const [previews, setPreviews] = useState<string[]>([]);
+  useEffect(() => {
+    const urls = files.map(f => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => urls.forEach(u => URL.revokeObjectURL(u));
+  }, [files]);
+  return (
+    <div style={{ display: "grid", gap: 10, background: "var(--surface-2)", border: "1px dashed var(--line-strong)", borderRadius: 12, padding: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}><Icon name="camera" size={18} />תמונות ({files.length})</div>
+        <PhotoButtons onFiles={f => onChange([...files, ...f])} />
+      </div>
+      <Thumbs items={previews.map((src, i) => ({ key: String(i), src }))} onRemove={k => onChange(files.filter((_, i) => String(i) !== k))} />
+    </div>
+  );
+}
+
 export function PhotoStrip({ supabase, table, row, onChange, canEdit = true }:
   { supabase: any; table: "ngs_work_logs" | "ngs_service_calls"; row: any; onChange: (photos: string[]) => void; canEdit?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [big, setBig] = useState<string | null>(null);
   const photos: string[] = Array.isArray(row.photos) ? row.photos : [];
 
-  async function add(files: FileList | null) {
-    if (!files || !files.length) return;
+  async function add(files: File[]) {
     setBusy(true);
-    const urls: string[] = [];
-    for (const f of Array.from(files)) {
-      const blob = await shrinkImage(f);
-      const path = `ngs-photos/${table}/${row.id}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
-      const { error } = await supabase.storage.from("documents").upload(path, blob, { contentType: "image/jpeg" });
-      if (error) { notify("שגיאה בהעלאת תמונה: " + error.message, "error"); continue; }
-      urls.push(supabase.storage.from("documents").getPublicUrl(path).data.publicUrl);
-    }
+    const urls = await uploadPhotos(supabase, table, row.id, files);
     if (urls.length) {
       const next = [...photos, ...urls];
       const res = await supabase.from(table).update({ photos: next }).eq("id", row.id);
@@ -139,27 +196,11 @@ export function PhotoStrip({ supabase, table, row, onChange, canEdit = true }:
 
   return (
     <div style={{ display: "grid", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
         <div style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}><Icon name="camera" size={18} />תמונות ({photos.length})</div>
-        {canEdit && (
-          <label className="btn btn-outline" style={{ cursor: busy ? "default" : "pointer" }}>
-            <Icon name="camera" size={18} />{busy ? "מעלה..." : "הוסף תמונה"}
-            <input type="file" accept="image/*" capture="environment" multiple hidden disabled={busy} onChange={e => { add(e.target.files); e.target.value = ""; }} />
-          </label>
-        )}
+        {canEdit && <PhotoButtons busy={busy} onFiles={add} />}
       </div>
-      {photos.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 8 }}>
-          {photos.map(p => (
-            <div key={p} style={{ position: "relative" }}>
-              <button onClick={() => setBig(p)} aria-label="הגדל תמונה" style={{ padding: 0, border: "none", background: "none", cursor: "zoom-in", width: "100%", display: "block" }}>
-                <img src={p} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 10, display: "block" }} />
-              </button>
-              {canEdit && <button onClick={() => remove(p)} aria-label="הסר תמונה" style={{ position: "absolute", top: 4, left: 4, width: 28, height: 28, borderRadius: 999, border: "none", background: "rgba(16,24,40,0.7)", color: "#fff", cursor: "pointer", display: "grid", placeItems: "center" }}><Icon name="close" size={14} /></button>}
-            </div>
-          ))}
-        </div>
-      )}
+      <Thumbs items={photos.map(p => ({ key: p, src: p }))} onRemove={canEdit ? remove : undefined} onOpen={setBig} />
       {big && (
         <div onClick={() => setBig(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 4000, display: "grid", placeItems: "center", padding: 16, cursor: "zoom-out" }}>
           <img src={big} alt="" style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 12 }} />
