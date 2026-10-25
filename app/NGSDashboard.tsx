@@ -584,26 +584,39 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   }
 
   async function saveAgreement() {
-    if (!agreementForm.client_name || !agreementForm.station_name || !agreementForm.approved_hours) return;
+    if (!agreementForm.client_name || !agreementForm.station_name || !agreementForm.approved_hours) {
+      alert("יש למלא לקוח, שם תחנה ושעות מאושרות");
+      return;
+    }
     setSaving(true);
-    await supabase.from("ngs_hour_agreements").insert({
+    const { error } = await supabase.from("ngs_hour_agreements").insert({
       client_name: agreementForm.client_name,
       station_name: agreementForm.station_name,
       approved_hours: parseFloat(agreementForm.approved_hours) || 0,
       notes: agreementForm.notes,
     });
+    if (error) {
+      alert("שגיאה בשמירת ההסכם: " + error.message);
+      setSaving(false);
+      return;
+    }
     setAgreementForm({ client_name: "", station_name: "", approved_hours: "", notes: "" });
     setShowForm(false); await load(); setSaving(false);
   }
   async function updateAgreement() {
     if (!editingAgreement) return;
     setSaving(true);
-    await supabase.from("ngs_hour_agreements").update({
+    const { error } = await supabase.from("ngs_hour_agreements").update({
       client_name: editingAgreement.client_name,
       station_name: editingAgreement.station_name,
       approved_hours: parseFloat(editingAgreement.approved_hours) || 0,
       notes: editingAgreement.notes || "",
     }).eq("id", editingAgreement.id);
+    if (error) {
+      alert("שגיאה בעדכון ההסכם: " + error.message);
+      setSaving(false);
+      return;
+    }
     setEditingAgreement(null); await load(); setSaving(false);
   }
   // חישוב ניצול שעות להסכם: סכום שעות כל היומנים ששויכו אליו
