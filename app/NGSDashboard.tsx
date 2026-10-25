@@ -306,11 +306,11 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
                   <label>שייך למי?</label>
                   <div style={{ display: "flex", gap: 8, marginBottom: 10, marginTop: 6 }}>
                     <button type="button" onClick={() => { setAssignMode("all"); setSelectedWorkers([]); }}
-                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "all" ? "2px solid #c9a227" : "1px solid #e2e8f0", background: assignMode === "all" ? "#fef9ec" : "#f8fafc", color: assignMode === "all" ? "#92710d" : "#475569" }}>
+                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "all" ? "2px solid #2563EB" : "1px solid #e2e8f0", background: assignMode === "all" ? "#EFF4FF" : "#f8fafc", color: assignMode === "all" ? "#1D4ED8" : "#475569" }}>
                       👥 כל העובדים
                     </button>
                     <button type="button" onClick={() => setAssignMode("specific")}
-                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "specific" ? "2px solid #c9a227" : "1px solid #e2e8f0", background: assignMode === "specific" ? "#fef9ec" : "#f8fafc", color: assignMode === "specific" ? "#92710d" : "#475569" }}>
+                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "specific" ? "2px solid #2563EB" : "1px solid #e2e8f0", background: assignMode === "specific" ? "#EFF4FF" : "#f8fafc", color: assignMode === "specific" ? "#1D4ED8" : "#475569" }}>
                       👤 עובדים ספציפיים
                     </button>
                   </div>
@@ -838,18 +838,18 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         </div>
       )}
 
-      <div className="card" style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", color: "#fff", border: "none" }}>
+      <div className="card" style={{ background: "#1D4ED8", color: "#fff", border: "none" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <div>
-            <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 4 }}>מחלקת חברה</div>
+            <div style={{ fontSize: 13, color: "#DBEAFE", marginBottom: 4 }}>מחלקת חברה</div>
             <h2 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>🏗 נ.ג.ש מור הנדסה</h2>
-            <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 14 }}>ניהול רכבים, עובדים, לקוחות ופרויקטים</div>
+            <div style={{ color: "#DBEAFE", marginTop: 4, fontSize: 14 }}>ניהול רכבים, עובדים, לקוחות ופרויקטים</div>
           </div>
           <div style={{ display: "flex", gap: 16 }}>
-            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{employees.filter(e => e.status === "פעיל").length}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>עובדים</div></div>
-            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#d5b57a" }}>{vehicles.length}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>רכבים</div></div>
-            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: openServiceCalls.length > 0 ? "#dc2626" : "#16a34a" }}>{openServiceCalls.length}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>קריאות פתוחות</div></div>
-            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: workLogs.filter(w => w.performa !== "יצאה פרפורמה").length > 0 ? "#f59e0b" : "#16a34a" }}>{workLogs.filter(w => w.performa !== "יצאה פרפורמה").length}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>יומנים לא מטופלים</div></div>
+            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#fff" }}>{employees.filter(e => e.status === "פעיל").length}</div><div style={{ fontSize: 12, color: "#DBEAFE" }}>עובדים</div></div>
+            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#fff" }}>{vehicles.length}</div><div style={{ fontSize: 12, color: "#DBEAFE" }}>רכבים</div></div>
+            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: openServiceCalls.length > 0 ? "#FECACA" : "#BBF7D0" }}>{openServiceCalls.length}</div><div style={{ fontSize: 12, color: "#DBEAFE" }}>קריאות פתוחות</div></div>
+            <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: workLogs.filter(w => w.performa !== "יצאה פרפורמה").length > 0 ? "#FDE68A" : "#BBF7D0" }}>{workLogs.filter(w => w.performa !== "יצאה פרפורמה").length}</div><div style={{ fontSize: 12, color: "#DBEAFE" }}>יומנים לא מטופלים</div></div>
           </div>
         </div>
       </div>
@@ -864,10 +864,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         <div style={{ display: "grid", gap: 16 }}>
 
           {/* כותרת */}
-          <div style={{ background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", borderRadius: 24, padding: "28px", color: "#fff" }}>
-            <div style={{ fontSize: 14, color: "#94a3b8", marginBottom: 6 }}>שלום 👋</div>
+          <div style={{ background: "#1D4ED8", borderRadius: 24, padding: "28px", color: "#fff" }}>
+            <div style={{ fontSize: 14, color: "#DBEAFE", marginBottom: 6 }}>שלום 👋</div>
             <div style={{ fontSize: 26, fontWeight: 900, color: "#fff", marginBottom: 4 }}>נ.ג.ש מור הנדסה</div>
-            <div style={{ fontSize: 14, color: "#64748b" }}>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div>
+            <div style={{ fontSize: 14, color: "#DBEAFE" }}>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div>
           </div>
 
           {/* 4 כרטיסים גדולים וברורים */}
@@ -949,7 +949,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 const empLogs = workLogs.filter(w => w.employee_name?.includes(e.name) || w.filled_by === e.name).length;
                 return (
                   <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", background: "#f8fafc", borderRadius: 14 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#1e293b", color: "#d5b57a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, flexShrink: 0 }}>{e.name?.[0]}</div>
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#EFF4FF", color: "#1D4ED8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, flexShrink: 0 }}>{e.name?.[0]}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 800, fontSize: 15 }}>{e.name}</div>
                       <div style={{ fontSize: 12, color: "#94a3b8" }}>{e.role || "עובד"} {e.phone ? `· ${e.phone}` : ""}</div>
@@ -969,12 +969,12 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       {!loading && tab === "overview" && isWorker && (
         <div style={{ display: "grid", gap: 14 }}>
           {/* כרטיס ברוך הבא */}
-          <div style={{ background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", borderRadius: 24, padding: "24px 24px 20px", color: "#fff", position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: -40, left: -40, width: 200, height: 200, background: "rgba(213,181,122,0.08)", borderRadius: "50%" }} />
+          <div style={{ background: "#1D4ED8", borderRadius: 24, padding: "24px 24px 20px", color: "#fff", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: -40, left: -40, width: 200, height: 200, background: "rgba(255,255,255,0.08)", borderRadius: "50%" }} />
             <div style={{ position: "relative" }}>
-              <div style={{ fontSize: 13, color: "#94a3b8" }}>שלום 👋</div>
+              <div style={{ fontSize: 13, color: "#DBEAFE" }}>שלום 👋</div>
               <h1 style={{ margin: "4px 0 2px", fontSize: 28, fontWeight: 900 }}>{workerName}</h1>
-              <div style={{ color: "#64748b", fontSize: 13 }}>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}</div>
+              <div style={{ color: "#DBEAFE", fontSize: 13 }}>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}</div>
             </div>
           </div>
 
@@ -1243,7 +1243,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             return (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 16, background: "#1e293b", borderRadius: 16, padding: "14px 20px" }}>
                 {[
-                  { label: "סהג", value: serviceCalls.length, color: "#d5b57a" },
+                  { label: "סהג", value: serviceCalls.length, color: "#2563EB" },
                   { label: "חדשות", value: serviceCalls.filter(s => s.status === "חדשה").length, color: "#60a5fa" },
                   { label: "בטיפול", value: serviceCalls.filter(s => s.status === "בטיפול").length, color: "#fbbf24" },
                   { label: "הושלמו", value: serviceCalls.filter(s => s.status === "הושלם").length, color: "#34d399" },
@@ -1429,7 +1429,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                           <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                             <div>
                               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <span style={{ fontSize: 12, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
+                                <span style={{ fontSize: 12, fontWeight: 900, background: "#EFF4FF", color: "#1D4ED8", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
                                 <span style={{ fontWeight: 800 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
                                 <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{fmt(parseFloat(w.hours) || 0)} שעות</span>
                               </div>
@@ -1529,7 +1529,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                     const selected = workLogForm.employee_name.split(",").map((s: string) => s.trim()).includes(e.name);
                     return (
                       <button key={e.id} type="button"
-                        style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #c9a227" : "1px solid #e2e8f0", background: selected ? "#fef9ec" : "#f8fafc", color: selected ? "#92710d" : "#475569" }}
+                        style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #2563EB" : "1px solid #e2e8f0", background: selected ? "#EFF4FF" : "#f8fafc", color: selected ? "#1D4ED8" : "#475569" }}
                         onClick={() => {
                           const current = workLogForm.employee_name ? workLogForm.employee_name.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
                           const updated = selected ? current.filter((n: string) => n !== e.name) : [...current, e.name];
@@ -1563,7 +1563,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 13, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
+                        <span style={{ fontSize: 13, fontWeight: 900, background: "#EFF4FF", color: "#1D4ED8", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
                         <span style={{ fontSize: 18, fontWeight: 900 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
                       </div>
                       <div style={{ fontSize: 14, color: "#64748b", marginTop: 2 }}>{w.branch ? `📍 ${w.branch}` : ""}{w.project_name ? ` · 🤝 ${w.project_name}` : ""}</div>
