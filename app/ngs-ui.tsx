@@ -5,16 +5,16 @@ import { Icon } from "./icons";
 
 // ── צבע לכל אזור ──  c = צבע טקסט/אייקון, bg = רקע בהיר, solid = צבע מלא
 export const SECTION: Record<string, { c: string; bg: string; solid: string }> = {
-  overview:  { c: "#1D4ED8", bg: "#DBEAFE", solid: "#2563EB" },
-  vehicles:  { c: "#0369A1", bg: "#E0F2FE", solid: "#0284C7" },
-  employees: { c: "#047857", bg: "#D1FAE5", solid: "#059669" },
-  clients:   { c: "#BE185D", bg: "#FCE7F3", solid: "#DB2777" },
-  projects:  { c: "#4338CA", bg: "#E0E7FF", solid: "#4F46E5" },
-  service:   { c: "#B91C1C", bg: "#FEE2E2", solid: "#DC2626" },
-  worklogs:  { c: "#1D4ED8", bg: "#DBEAFE", solid: "#2563EB" },
-  hours:     { c: "#0F766E", bg: "#CCFBF1", solid: "#0D9488" },
-  tasks:     { c: "#B45309", bg: "#FEF3C7", solid: "#D97706" },
-  inventory: { c: "#6D28D9", bg: "#EDE9FE", solid: "#7C3AED" },
+  overview:  { c: "var(--blue-ink)", bg: "var(--tint-blue)", solid: "#2563EB" },
+  vehicles:  { c: "var(--sky-ink)", bg: "var(--tint-blue)", solid: "#0284C7" },
+  employees: { c: "var(--green-ink)", bg: "var(--tint-green)", solid: "#059669" },
+  clients:   { c: "var(--pink-ink)", bg: "var(--tint-pink)", solid: "#DB2777" },
+  projects:  { c: "var(--indigo-ink)", bg: "var(--tint-blue)", solid: "#4F46E5" },
+  service:   { c: "var(--red-ink)", bg: "var(--tint-red)", solid: "var(--red)" },
+  worklogs:  { c: "var(--blue-ink)", bg: "var(--tint-blue)", solid: "#2563EB" },
+  hours:     { c: "var(--teal-ink)", bg: "var(--tint-teal)", solid: "#0D9488" },
+  tasks:     { c: "var(--amber-ink)", bg: "var(--tint-amber)", solid: "#D97706" },
+  inventory: { c: "var(--purple-ink)", bg: "var(--tint-purple)", solid: "#7C3AED" },
 };
 
 export function IconChip({ name, section, size = 40, iconSize }: { name: string; section?: string; size?: number; iconSize?: number }) {
@@ -37,7 +37,7 @@ export function SectionTitle({ icon, section, children }: { icon: string; sectio
 
 export function EmptyState({ icon, section, text, sub }: { icon: string; section?: string; text: string; sub?: string }) {
   return (
-    <div style={{ padding: 30, textAlign: "center", color: "#475467", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+    <div style={{ padding: 30, textAlign: "center", color: "var(--text-3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
       <IconChip name={icon} section={section} size={56} />
       <div style={{ fontWeight: 700 }}>{text}</div>
       {sub && <div style={{ fontSize: 14 }}>{sub}</div>}
@@ -79,7 +79,7 @@ export function Toaster() {
   return (
     <div role="status" aria-live="polite" style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 5000, display: "flex", flexDirection: "column", gap: 8, width: "min(92vw, 420px)" }}>
       {toasts.map(t => (
-        <div key={t.id} style={{ background: t.kind === "error" ? "#B42318" : "#067647", color: "#fff", borderRadius: 12, padding: "12px 16px", fontWeight: 600, fontSize: 15, boxShadow: "0 8px 24px rgba(16,24,40,0.18)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div key={t.id} style={{ background: t.kind === "error" ? "var(--red-ink)" : "var(--green-ink)", color: "#fff", borderRadius: 12, padding: "12px 16px", fontWeight: 600, fontSize: 15, boxShadow: "0 8px 24px rgba(16,24,40,0.18)", display: "flex", alignItems: "center", gap: 10 }}>
           <Icon name={t.kind === "error" ? "alert" : "tasks"} size={20} />
           <span style={{ flex: 1 }}>{t.msg}</span>
         </div>
