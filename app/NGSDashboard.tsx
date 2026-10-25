@@ -424,6 +424,11 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const [savingEdit, setSavingEdit] = useState(false);
   const [selectedServiceCall, setSelectedServiceCall] = useState<any>(null);
   const [workLogFilter, setWorkLogFilter] = useState("לא טופל");
+  // חיפוש ביומני עבודה
+  const [wlSearch, setWlSearch] = useState("");
+  const [wlClient, setWlClient] = useState("");
+  const [wlDateFrom, setWlDateFrom] = useState("");
+  const [wlDateTo, setWlDateTo] = useState("");
   const [serviceCallFilter, setServiceCallFilter] = useState("חדשה");
   const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", driver: "", notes: "" });
   const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "פעיל" });
@@ -590,6 +595,29 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   ];
   const openServiceCalls = serviceCalls.filter(s => s.status !== "הושלם");
   const activeProjects = projects.filter(p => p.status === "פעיל");
+
+  // חיפוש וסינון יומני עבודה
+  const wlHasFilters = !!(wlSearch.trim() || wlClient || wlDateFrom || wlDateTo);
+  const filteredWorkLogs = workLogs.filter(w => {
+    // סטטוס פרפורמה: רק למנהל
+    if (!isWorker) {
+      if (workLogFilter === "לא טופל" && w.performa === "יצאה פרפורמה") return false;
+      if (workLogFilter === "יצאה פרפורמה" && w.performa !== "יצאה פרפורמה") return false;
+    }
+    // לקוח
+    if (wlClient && w.project_name !== wlClient) return false;
+    // טווח תאריכים (date הוא בפורמט YYYY-MM-DD, אז השוואת מחרוזות עובדת)
+    if (wlDateFrom && (!w.date || w.date < wlDateFrom)) return false;
+    if (wlDateTo && (!w.date || w.date > wlDateTo)) return false;
+    // טקסט חופשי: מיקום / לקוח / מספר יומן / ממלא
+    const q = wlSearch.trim().toLowerCase();
+    if (q) {
+      const haystack = [w.branch, w.project_name, w.filled_by, formatSerial(w.serial_number)]
+        .filter(Boolean).join(" ").toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
@@ -1226,6 +1254,43 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           <div className="chips" style={{ marginBottom: 12, marginTop: 8 }}>
             {!isWorker && ["הכל", "לא טופל", "יצאה פרפורמה"].map(f => (<button key={f} className={`btn ${workLogFilter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setWorkLogFilter(f)}>{f}</button>))}
           </div>
+
+          {/* חיפוש יומנים */}
+          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 14, marginBottom: 14, display: "grid", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 10 }}>
+              <div className="field">
+                <label>🔍 חיפוש (מיקום / לקוח / מס׳ יומן)</label>
+                <input className="input" value={wlSearch} onChange={e => setWlSearch(e.target.value)} placeholder="למשל: חיפה, 0042..." />
+              </div>
+              <div className="field">
+                <label>🤝 לקוח</label>
+                <select className="input" value={wlClient} onChange={e => setWlClient(e.target.value)}>
+                  <option value="">כל הלקוחות</option>
+                  {clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label>📅 מתאריך</label>
+                <input className="input" type="date" value={wlDateFrom} onChange={e => setWlDateFrom(e.target.value)} />
+              </div>
+              <div className="field">
+                <label>📅 עד תאריך</label>
+                <input className="input" type="date" value={wlDateTo} onChange={e => setWlDateTo(e.target.value)} />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 13, color: "#64748b" }}>
+                {filteredWorkLogs.length} מתוך {workLogs.length} יומנים
+              </span>
+              {wlHasFilters && (
+                <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }}
+                  onClick={() => { setWlSearch(""); setWlClient(""); setWlDateFrom(""); setWlDateTo(""); }}>
+                  ✖ נקה חיפוש
+                </button>
+              )}
+            </div>
+          </div>
+
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 14 }}>
               <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>📋 יומן עבודה חדש</div>
@@ -1270,10 +1335,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               </div>
             </div>
           )}
-          {workLogs.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📋</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומני עבודה</div></div>
+          {filteredWorkLogs.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📋</div><div style={{ fontWeight: 700, marginTop: 8 }}>{wlHasFilters ? "לא נמצאו יומנים לחיפוש הזה" : "אין יומני עבודה"}</div></div>
           : (
             <div style={{ display: "grid", gap: 10 }}>
-              {workLogs.filter(w => workLogFilter === "הכל" ? true : workLogFilter === "לא טופל" ? w.performa !== "יצאה פרפורמה" : w.performa === "יצאה פרפורמה").map(w => (
+              {filteredWorkLogs.map(w => (
                 <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: "14px 18px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <div>
