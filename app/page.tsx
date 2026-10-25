@@ -27,9 +27,16 @@ const navItems = [
 ];
 
 
+// צבע האייקון של כל פריט בתפריט
+const NAV_COLORS: Record<string, string> = {
+  dashboard: "#2563EB", tenantPortal: "#2563EB", owners: "#DB2777", buildings: "#4F46E5", apartments: "#0284C7",
+  requests: "#DC2626", leases: "#D97706", payments: "#059669", workcontracts: "#7C3AED", documents: "#0D9488",
+  ngs: "#EA580C", users: "#667085", activity: "#667085", settings: "#667085",
+};
+
 function NavBtn({ k, label, isActive, setActivePage, sub }: { k: string; label: string; isActive: (k: string) => boolean; setActivePage: (p: string) => void; sub?: boolean }) {
   return (
-    <button className={`nav-btn ${sub ? "nav-sub" : ""} ${isActive(k) ? "active" : ""}`} onClick={() => setActivePage(k)}>
+    <button className={`nav-btn ${sub ? "nav-sub" : ""} ${isActive(k) ? "active" : ""}`} style={{ ["--ic" as any]: NAV_COLORS[k] }} onClick={() => setActivePage(k)}>
       <Icon name={k} size={sub ? 18 : 20} /><span>{label}</span>
     </button>
   );
@@ -109,6 +116,19 @@ export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedBuildingId, setSelectedBuildingId] = useState<any>("");
   const [selectedOwnerId, setSelectedOwnerId] = useState(1);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // כשפותחים/מרעננים את האתר: אם המשתמש כבר מחובר – נכנסים ישר בלי להתחבר שוב
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      const user = data.session?.user;
+      if (user) {
+        setEmail(user.email || "");
+        await enterApp(user.id, user.email || "", false);
+      }
+      setCheckingSession(false);
+    });
+  }, []);
 
   async function handleForgotPassword() {
     if (!resetEmail) return;
@@ -138,6 +158,12 @@ export default function Home() {
       return;
     }
 
+    await enterApp(userId, email, true);
+    setLoginLoading(false);
+  }
+
+  // טוען את הפרופיל ומכניס את המשתמש למסך המתאים לתפקיד שלו
+  async function enterApp(userId: string, userEmail: string, logActivity: boolean) {
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("*")
@@ -146,7 +172,6 @@ export default function Home() {
 
     if (profileError) {
       setLoginError(profileError.message);
-      setLoginLoading(false);
       return;
     }
 
@@ -154,36 +179,35 @@ export default function Home() {
       setUserRole("admin");
       setActivePage("dashboard");
       setLoggedIn(true);
-      setLoginLoading(false);
       return;
     }
 
     if (profile.status === "ממתין לאישור") {
       setPendingApproval(true);
       await supabase.auth.signOut();
-      setLoginLoading(false);
       return;
     }
 
     setUserProfile(profile);
     setUserRole(profile.role || "admin");
 
-    // רישום כניסה למערכת
-    supabase.from("user_activity").insert({
-      user_id: userId,
-      user_email: email,
-      user_name: profile.full_name || email,
-      user_role: profile.role || "admin",
-      action: "login",
-      session_start: new Date().toISOString(),
-    }).then(() => {});
+    if (logActivity) {
+      // רישום כניסה למערכת
+      supabase.from("user_activity").insert({
+        user_id: userId,
+        user_email: userEmail,
+        user_name: profile.full_name || userEmail,
+        user_role: profile.role || "admin",
+        action: "login",
+        session_start: new Date().toISOString(),
+      }).then(() => {});
+    }
 
     if (profile.role === "tenant") setActivePage("tenantPortal");
     else if (profile.role === "ngs_worker") setActivePage("ngs");
     else setActivePage("dashboard");
 
     setLoggedIn(true);
-    setLoginLoading(false);
   }
 
   async function handleRegister() {
@@ -227,6 +251,10 @@ export default function Home() {
       case "ngs": return <div key={refreshKey}><NGSDashboard userProfile={userProfile} userRole={userRole} /></div>;
       default: return null;
     }
+  }
+
+  if (checkingSession) {
+    return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "#475467", fontFamily: "inherit" }}>טוען...</div>;
   }
 
   if (!loggedIn) {
