@@ -429,17 +429,22 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const [wlClient, setWlClient] = useState("");
   const [wlDateFrom, setWlDateFrom] = useState("");
   const [wlDateTo, setWlDateTo] = useState("");
+  // הסכמי שעות
+  const [hourAgreements, setHourAgreements] = useState<any[]>([]);
+  const [agreementForm, setAgreementForm] = useState({ client_name: "", station_name: "", approved_hours: "", notes: "" });
+  const [editingAgreement, setEditingAgreement] = useState<any>(null);
+  const [selectedAgreement, setSelectedAgreement] = useState<any>(null);
   const [serviceCallFilter, setServiceCallFilter] = useState("חדשה");
   const [vehicleForm, setVehicleForm] = useState({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", driver: "", notes: "" });
   const [employeeForm, setEmployeeForm] = useState({ name: "", phone: "", role: "", status: "פעיל" });
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
   const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "", contact_name: "", contact_phone: "" });
-  const [workLogForm, setWorkLogForm] = useState({ filled_by: isWorker ? workerName : "", employee_name: isWorker ? workerName : "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+  const [workLogForm, setWorkLogForm] = useState({ agreement_id: "", filled_by: isWorker ? workerName : "", employee_name: isWorker ? workerName : "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
 
   async function load() {
     setLoading(true);
-    const [v, e, c, p, s, w, t, inv] = await Promise.all([
+    const [v, e, c, p, s, w, t, inv, ha] = await Promise.all([
       supabase.from("ngs_vehicles").select("*").order("created_at", { ascending: false }),
       supabase.from("ngs_employees").select("*").order("name"),
       supabase.from("ngs_clients").select("*").order("name"),
@@ -448,6 +453,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       supabase.from("ngs_work_logs").select("*").order("date", { ascending: false }),
       supabase.from("ngs_tasks").select("*").order("created_at", { ascending: false }),
       supabase.from("ngs_inventory").select("*").order("created_at", { ascending: false }),
+      supabase.from("ngs_hour_agreements").select("*").order("created_at", { ascending: true }),
     ]);
 
     // סינון לפי עובד
@@ -472,6 +478,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     setEmployees(e.data || []); setClients(c.data || []);
     setProjects(p.data || []); setServiceCalls(s.data || []);
     setInventoryItems(inv.data || []);
+    setHourAgreements(ha.data || []);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -533,6 +540,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     await supabase.from("ngs_work_logs").update({
       branch: editingWorkLog.branch || "",
       project_name: editingWorkLog.project_name || "",
+      agreement_id: editingWorkLog.agreement_id || null,
       date: editingWorkLog.date || null,
       hours: parseFloat(editingWorkLog.hours) || 0,
       client_notes: editingWorkLog.client_notes || "",
@@ -554,8 +562,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
   async function saveWorkLog() {
     if (!workLogForm.employee_name && !workLogForm.filled_by) return; setSaving(true);
-    await supabase.from("ngs_work_logs").insert({ ...workLogForm, hours: parseFloat(workLogForm.hours) || 0 });
-    setWorkLogForm({ filled_by: isWorker ? workerName : "", employee_name: isWorker ? workerName : "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+    await supabase.from("ngs_work_logs").insert({ ...workLogForm, agreement_id: workLogForm.agreement_id || null, hours: parseFloat(workLogForm.hours) || 0 });
+    setWorkLogForm({ agreement_id: "", filled_by: isWorker ? workerName : "", employee_name: isWorker ? workerName : "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
     setShowForm(false); await load(); setSaving(false);
   }
   async function updateServiceCallStatus(id: string, status: string, completedBy?: string) {
@@ -575,6 +583,37 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     await supabase.from(table).delete().eq("id", id); await load();
   }
 
+  async function saveAgreement() {
+    if (!agreementForm.client_name || !agreementForm.station_name || !agreementForm.approved_hours) return;
+    setSaving(true);
+    await supabase.from("ngs_hour_agreements").insert({
+      client_name: agreementForm.client_name,
+      station_name: agreementForm.station_name,
+      approved_hours: parseFloat(agreementForm.approved_hours) || 0,
+      notes: agreementForm.notes,
+    });
+    setAgreementForm({ client_name: "", station_name: "", approved_hours: "", notes: "" });
+    setShowForm(false); await load(); setSaving(false);
+  }
+  async function updateAgreement() {
+    if (!editingAgreement) return;
+    setSaving(true);
+    await supabase.from("ngs_hour_agreements").update({
+      client_name: editingAgreement.client_name,
+      station_name: editingAgreement.station_name,
+      approved_hours: parseFloat(editingAgreement.approved_hours) || 0,
+      notes: editingAgreement.notes || "",
+    }).eq("id", editingAgreement.id);
+    setEditingAgreement(null); await load(); setSaving(false);
+  }
+  // חישוב ניצול שעות להסכם: סכום שעות כל היומנים ששויכו אליו
+  function agreementUsage(a: any) {
+    const logs = workLogs.filter((w: any) => w.agreement_id === a.id);
+    const used = logs.reduce((sum: number, w: any) => sum + (parseFloat(w.hours) || 0), 0);
+    const approved = parseFloat(a.approved_hours) || 0;
+    return { logs, used, approved, remaining: approved - used, pct: approved > 0 ? (used / approved) * 100 : 0 };
+  }
+
   const tabs = isWorker ? [
     { key: "overview", label: "🏠 סקירה" },
     { key: "worklogs", label: "📋 יומני עבודה" },
@@ -590,6 +629,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     { key: "projects", label: "📁 פרויקטים" },
     { key: "service", label: "🔧 קריאות שירות" },
     { key: "worklogs", label: "📋 יומני עבודה" },
+    { key: "hours", label: "⏱ הסכמי שעות" },
     { key: "tasks", label: "✅ משימות" },
     { key: "inventory", label: "🛒 ציוד חסר" },
   ];
@@ -707,7 +747,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                 <div className="field">
                   <label>לקוח</label>
-                  <select className="input" value={editingWorkLog.project_name || ""} onChange={e => setEditingWorkLog({...editingWorkLog, project_name: e.target.value})}>
+                  <select className="input" value={editingWorkLog.project_name || ""} onChange={e => setEditingWorkLog({...editingWorkLog, project_name: e.target.value, agreement_id: ""})}>
                     <option value="">בחר לקוח</option>
                     {clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
                     <option value="אחר">✏️ אחר</option>
@@ -715,6 +755,15 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 </div>
                 <div className="field"><label>סניף / אתר</label><input className="input" value={editingWorkLog.branch || ""} onChange={e => setEditingWorkLog({...editingWorkLog, branch: e.target.value})} /></div>
                 <div className="field"><label>תאריך</label><input className="input" type="date" value={editingWorkLog.date || ""} onChange={e => setEditingWorkLog({...editingWorkLog, date: e.target.value})} /></div>
+                {hourAgreements.some((a: any) => a.client_name === editingWorkLog.project_name) && (
+                  <div className="field">
+                    <label>⏱ תחנה / הסכם שעות</label>
+                    <select className="input" value={editingWorkLog.agreement_id || ""} onChange={e => setEditingWorkLog({...editingWorkLog, agreement_id: e.target.value})}>
+                      <option value="">ללא שיוך</option>
+                      {hourAgreements.filter((a: any) => a.client_name === editingWorkLog.project_name).map((a: any) => <option key={a.id} value={a.id}>{a.station_name}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={editingWorkLog.hours || ""} onChange={e => setEditingWorkLog({...editingWorkLog, hours: e.target.value})} step="0.5" /></div>
               </div>
               <div className="field"><label>📝 הערות ללקוח</label><textarea className="input" value={editingWorkLog.client_notes || ""} onChange={e => setEditingWorkLog({...editingWorkLog, client_notes: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
@@ -1240,6 +1289,155 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         </div>
       )}
 
+      {!loading && tab === "hours" && !isWorker && (() => {
+        const fmt = (n: number) => String(Math.round(n * 100) / 100);
+        const clientNames = Array.from(new Set(hourAgreements.map((a: any) => a.client_name)));
+        const barColor = (pct: number) => pct >= 100 ? "#dc2626" : pct >= 80 ? "#d97706" : "#16a34a";
+        const selUsage = selectedAgreement ? agreementUsage(selectedAgreement) : null;
+        return (
+          <div style={{ display: "grid", gap: 16 }}>
+            <div className="card">
+              <div className="section-top">
+                <div>
+                  <h3 className="card-title" style={{ margin: 0 }}>⏱ הסכמי שעות</h3>
+                  <div className="muted" style={{ marginTop: 4 }}>מכסה מאושרת לכל תחנה. השעות יורדות אוטומטית מיומני עבודה ששויכו להסכם.</div>
+                </div>
+                <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ תחנה / הסכם חדש</button>
+              </div>
+              {showForm && (
+                <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginTop: 14 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                    <div className="field"><label>לקוח *</label><select className="input" value={agreementForm.client_name} onChange={e => setAgreementForm({...agreementForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
+                    <div className="field"><label>שם התחנה *</label><input className="input" value={agreementForm.station_name} onChange={e => setAgreementForm({...agreementForm, station_name: e.target.value})} placeholder="למשל: תחנת חיפה מרכז" /></div>
+                    <div className="field"><label>שעות מאושרות *</label><input className="input" type="number" step="0.5" value={agreementForm.approved_hours} onChange={e => setAgreementForm({...agreementForm, approved_hours: e.target.value})} placeholder="32" /></div>
+                  </div>
+                  <div className="field" style={{ marginTop: 10 }}><label>הערות</label><input className="input" value={agreementForm.notes} onChange={e => setAgreementForm({...agreementForm, notes: e.target.value})} placeholder="מספר הזמנה, אישור וכו׳..." /></div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button className="btn btn-primary" onClick={saveAgreement} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
+                    <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {clientNames.length === 0 ? (
+              <div className="card" style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+                <div style={{ fontSize: 40 }}>⏱</div>
+                <div style={{ fontWeight: 700, marginTop: 8 }}>אין הסכמי שעות עדיין</div>
+                <div style={{ fontSize: 13, marginTop: 4 }}>הוסף תחנה עם מכסת שעות כדי להתחיל לעקוב</div>
+              </div>
+            ) : clientNames.map((cn: any) => {
+              const list = hourAgreements.filter((a: any) => a.client_name === cn);
+              const totals = list.reduce((acc: any, a: any) => { const u = agreementUsage(a); return { approved: acc.approved + u.approved, used: acc.used + u.used }; }, { approved: 0, used: 0 });
+              const unlinked = workLogs.filter((w: any) => w.project_name === cn && !w.agreement_id);
+              const unlinkedHours = unlinked.reduce((s: number, w: any) => s + (parseFloat(w.hours) || 0), 0);
+              return (
+                <div key={cn} className="card">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+                    <h3 className="card-title" style={{ margin: 0 }}>🤝 {cn}</h3>
+                    <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#475569" }}>
+                      <span>מאושר: <b>{fmt(totals.approved)}</b></span>
+                      <span>בוצע: <b>{fmt(totals.used)}</b></span>
+                      <span>נותר: <b style={{ color: totals.approved - totals.used < 0 ? "#dc2626" : "#16a34a" }}>{fmt(totals.approved - totals.used)}</b></span>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+                    {list.map((a: any) => {
+                      const u = agreementUsage(a);
+                      const col = barColor(u.pct);
+                      return (
+                        <div key={a.id} style={{ border: `1px solid ${u.pct >= 80 ? col + "66" : "#e8eef6"}`, borderRadius: 16, padding: 16, background: u.pct >= 100 ? "#fff7f7" : "#fff" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                            <div style={{ fontWeight: 900, fontSize: 16 }}>🚒 {a.station_name}</div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px" }} onClick={() => setEditingAgreement({ ...a, approved_hours: String(a.approved_hours ?? ""), notes: a.notes || "" })}>✏️</button>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "#dc2626" }} onClick={() => deleteItem("ngs_hour_agreements", a.id)}>מחק</button>
+                            </div>
+                          </div>
+                          {a.notes && <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{a.notes}</div>}
+                          <div style={{ marginTop: 14, height: 10, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
+                            <div style={{ width: `${Math.min(u.pct, 100)}%`, height: "100%", background: col }} />
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 12, textAlign: "center" }}>
+                            <div><div style={{ fontSize: 20, fontWeight: 900 }}>{fmt(u.approved)}</div><div style={{ fontSize: 11, color: "#94a3b8" }}>מאושר</div></div>
+                            <div><div style={{ fontSize: 20, fontWeight: 900, color: col }}>{fmt(u.used)}</div><div style={{ fontSize: 11, color: "#94a3b8" }}>בוצע</div></div>
+                            <div><div style={{ fontSize: 20, fontWeight: 900, color: u.remaining < 0 ? "#dc2626" : "#16a34a" }}>{fmt(Math.abs(u.remaining))}</div><div style={{ fontSize: 11, color: "#94a3b8" }}>{u.remaining < 0 ? "חריגה" : "נותר"}</div></div>
+                          </div>
+                          {u.pct >= 100 && <div style={{ marginTop: 10, background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>{u.remaining < 0 ? "⚠️ חרגת מהמכסה המאושרת" : "⚠️ המכסה נגמרה"}</div>}
+                          {u.pct >= 80 && u.pct < 100 && <div style={{ marginTop: 10, background: "#fef3c7", color: "#92400e", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>⚠️ נותרו {fmt(u.remaining)} שעות בלבד</div>}
+                          <button className="btn btn-primary" style={{ width: "100%", marginTop: 12, fontSize: 13 }} onClick={() => setSelectedAgreement(a)}>📋 יומנים ({u.logs.length})</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {unlinked.length > 0 && (
+                    <div style={{ marginTop: 14, background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: 12, padding: "10px 14px", fontSize: 13, color: "#475569" }}>
+                      ℹ️ {unlinked.length} יומנים של {cn} ({fmt(unlinkedHours)} שעות) לא משויכים לתחנה. אפשר לשייך דרך ✏️ עריכה ביומן עבודה.
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {editingAgreement && (
+              <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+                <div style={{ background: "white", borderRadius: 20, padding: 28, maxWidth: 520, width: "100%" }}>
+                  <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 900 }}>✏️ עריכת הסכם — {editingAgreement.station_name}</h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div className="field"><label>לקוח</label><select className="input" value={editingAgreement.client_name} onChange={e => setEditingAgreement({...editingAgreement, client_name: e.target.value})}>{clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}{!clients.some((c: any) => c.name === editingAgreement.client_name) && <option value={editingAgreement.client_name}>{editingAgreement.client_name}</option>}</select></div>
+                    <div className="field"><label>שם התחנה</label><input className="input" value={editingAgreement.station_name} onChange={e => setEditingAgreement({...editingAgreement, station_name: e.target.value})} /></div>
+                    <div className="field"><label>שעות מאושרות</label><input className="input" type="number" step="0.5" value={editingAgreement.approved_hours} onChange={e => setEditingAgreement({...editingAgreement, approved_hours: e.target.value})} /></div>
+                    <div className="field"><label>הערות</label><input className="input" value={editingAgreement.notes} onChange={e => setEditingAgreement({...editingAgreement, notes: e.target.value})} /></div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                    <button className="btn btn-primary" onClick={updateAgreement} disabled={saving}>{saving ? "שומר..." : "💾 שמור"}</button>
+                    <button className="btn btn-outline" onClick={() => setEditingAgreement(null)}>ביטול</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedAgreement && selUsage && (
+              <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+                <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                  <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: 900 }}>🚒 {selectedAgreement.station_name}</div>
+                      <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedAgreement.client_name} · מאושר {fmt(selUsage.approved)} · בוצע {fmt(selUsage.used)} · {selUsage.remaining < 0 ? `חריגה ${fmt(-selUsage.remaining)}` : `נותר ${fmt(selUsage.remaining)}`}</div>
+                    </div>
+                    <button onClick={() => setSelectedAgreement(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "#64748b" }}>×</button>
+                  </div>
+                  <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
+                    {selUsage.logs.length === 0 ? (
+                      <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📋</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומנים משויכים לתחנה הזו</div></div>
+                    ) : (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {selUsage.logs.map((w: any) => (
+                          <div key={w.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <span style={{ fontSize: 12, fontWeight: 900, background: "#1e293b", color: "#d5b57a", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
+                                <span style={{ fontWeight: 800 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
+                                <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{fmt(parseFloat(w.hours) || 0)} שעות</span>
+                              </div>
+                              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{w.branch ? `📍 ${w.branch}` : ""}{w.filled_by ? ` · ממלא: ${w.filled_by}` : ""}</div>
+                            </div>
+                            <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => { setSelectedAgreement(null); setSelectedWorkLog(w); }}>📄 פתח יומן</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end" }}>
+                    <button className="btn btn-outline" onClick={() => setSelectedAgreement(null)}>סגור</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {!loading && tab === "tasks" && (
         <TasksTab tasks={tasks} employees={employees} isWorker={isWorker} workerName={workerName} onRefresh={load} />
       )}
@@ -1296,10 +1494,19 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>📋 יומן עבודה חדש</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                 <div className="field"><label>ממלא היומן</label><input className="input" value={workLogForm.filled_by} onChange={e => !isWorker && setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="שם הממלא" readOnly={isWorker} style={isWorker ? { background: "#f1f5f9", color: "#64748b" } : {}} /></div>
-                <div className="field"><label>לקוח</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">✏️ אחר</option></select></div>
+                <div className="field"><label>לקוח</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value, agreement_id: ""})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">✏️ אחר</option></select></div>
                 <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
                 <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} step="0.5" /></div>
                 <div className="field"><label>תאריך</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
+                {hourAgreements.some((a: any) => a.client_name === workLogForm.project_name) && (
+                  <div className="field">
+                    <label>⏱ תחנה / הסכם שעות</label>
+                    <select className="input" value={workLogForm.agreement_id} onChange={e => setWorkLogForm({...workLogForm, agreement_id: e.target.value})}>
+                      <option value="">ללא שיוך</option>
+                      {hourAgreements.filter((a: any) => a.client_name === workLogForm.project_name).map((a: any) => <option key={a.id} value={a.id}>{a.station_name}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
               <div className="field"><label>📝 הערות ללקוח</label><textarea className="input" value={workLogForm.client_notes} onChange={e => setWorkLogForm({...workLogForm, client_notes: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
               <div>
@@ -1348,6 +1555,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       </div>
                       <div style={{ fontSize: 14, color: "#64748b", marginTop: 2 }}>{w.branch ? `📍 ${w.branch}` : ""}{w.project_name ? ` · 🤝 ${w.project_name}` : ""}</div>
                       {w.filled_by && <div style={{ fontSize: 13, color: "#94a3b8" }}>ממלא: {w.filled_by}</div>}
+                      {w.agreement_id && (() => {
+                        const ag = hourAgreements.find((a: any) => a.id === w.agreement_id);
+                        return ag ? <div style={{ marginTop: 4 }}><span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>⏱ {ag.station_name}</span></div> : null;
+                      })()}
                     </div>
                     {!isWorker && (
                       <span style={{ background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: w.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>
