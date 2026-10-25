@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { NGSDashboard } from "./NGSDashboard";
+import { Icon } from "./icons";
 import { Dashboard, Owners, OwnerDetails, Buildings, BuildingDetails, Settings, OwnerDashboard, TenantPortal, Apartments, ApartmentDetails, ServiceRequests, Leases, PaymentsTracker, WorkContracts, ActivityLog, UsersManagement, Placeholder } from "./PropertyDashboard";
 
 const supabase = createClient(
@@ -26,48 +27,57 @@ const navItems = [
 ];
 
 
+function NavBtn({ k, label, isActive, setActivePage, sub }: { k: string; label: string; isActive: (k: string) => boolean; setActivePage: (p: string) => void; sub?: boolean }) {
+  return (
+    <button className={`nav-btn ${sub ? "nav-sub" : ""} ${isActive(k) ? "active" : ""}`} onClick={() => setActivePage(k)}>
+      <Icon name={k} size={sub ? 18 : 20} /><span>{label}</span>
+    </button>
+  );
+}
+
 function SidebarNav({ activePage, setActivePage, isActive, userRole }: { activePage: string; setActivePage: (p: string) => void; isActive: (k: string) => boolean; userRole: string }) {
   const [openGroup, setOpenGroup] = useState<string | null>("property");
-  if (userRole === "tenant") return (<>{[{ key: "tenantPortal", label: "🏠 הבית שלי" }, { key: "requests", label: "🔧 קריאות שירות" }].map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</>);
-  if (userRole === "owner") return (<>{[{ key: "dashboard", label: "🏠 סיכום" }, { key: "apartments", label: "🚪 הדירות שלי" }, { key: "leases", label: "📋 חוזים" }].map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</>);
-  if (userRole === "ngs_worker") return <button className={`nav-btn ${isActive("ngs") ? "active" : ""}`} onClick={() => setActivePage("ngs")}>🏗 נ.ג.ש מור</button>;
+  const nb = (k: string, label: string, sub = false) => <NavBtn key={k} k={k} label={label} isActive={isActive} setActivePage={setActivePage} sub={sub} />;
+  if (userRole === "tenant") return <>{nb("tenantPortal", "הבית שלי")}{nb("requests", "קריאות שירות")}</>;
+  if (userRole === "owner") return <>{nb("dashboard", "סיכום")}{nb("apartments", "הדירות שלי")}{nb("leases", "חוזים")}</>;
+  if (userRole === "ngs_worker") return nb("ngs", "נ.ג.ש מור");
   const propertyItems = [
-    { key: "owners", label: "👤 בעלי נכסים" }, { key: "buildings", label: "🏢 מבנים" },
-    { key: "apartments", label: "🚪 דירות" }, { key: "requests", label: "🔧 קריאות שירות" },
-    { key: "leases", label: "📋 חוזים" }, { key: "payments", label: "💰 תשלומים" }, { key: "workcontracts", label: "📝 חוזי עבודה" },
-    { key: "documents", label: "📄 מסמכים" },
+    { key: "owners", label: "בעלי נכסים" }, { key: "buildings", label: "מבנים" },
+    { key: "apartments", label: "דירות" }, { key: "requests", label: "קריאות שירות" },
+    { key: "leases", label: "חוזים" }, { key: "payments", label: "תשלומים" }, { key: "workcontracts", label: "חוזי עבודה" },
+    { key: "documents", label: "מסמכים" },
   ];
   const isPropertyActive = propertyItems.some(i => isActive(i.key));
+  const open = openGroup === "property";
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
-      <div>
-        <button className={`nav-btn ${isActive("dashboard") ? "active" : ""}`} onClick={() => setActivePage("dashboard")}>🏠 דשבורד</button>
-        <div style={{ marginTop: 4 }}>
-          <button onClick={() => setOpenGroup(openGroup === "property" ? null : "property")} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", background: isPropertyActive ? "rgba(213,181,122,0.15)" : openGroup === "property" ? "rgba(255,255,255,0.05)" : "transparent", border: "none", cursor: "pointer", color: isPropertyActive || openGroup === "property" ? "#d5b57a" : "#94a3b8", fontWeight: 700, fontSize: 14, borderRadius: 12, marginBottom: 2 }}>
-            <span>🏢 ניהול נכסים</span><span style={{ fontSize: 11, transform: openGroup === "property" ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▾</span>
-          </button>
-          {openGroup === "property" && (<div style={{ paddingRight: 10, borderRight: "2px solid rgba(213,181,122,0.25)", marginRight: 10, marginBottom: 4 }}>{propertyItems.map(item => (<button key={item.key} className={`nav-btn ${isActive(item.key) ? "active" : ""}`} style={{ fontSize: 13, padding: "8px 12px" }} onClick={() => setActivePage(item.key)}>{item.label}</button>))}</div>)}
-        </div>
-        <button className={`nav-btn ${isActive("ngs") ? "active" : ""}`} style={{ marginTop: 4 }} onClick={() => setActivePage("ngs")}>🏗 נ.ג.ש מור</button>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {nb("dashboard", "דשבורד")}
+        <button className={`nav-group ${isPropertyActive ? "has-active" : ""}`} aria-expanded={open} onClick={() => setOpenGroup(open ? null : "property")}>
+          <Icon name="property" /><span style={{ flex: 1 }}>ניהול נכסים</span>
+          <span style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s", display: "flex" }}><Icon name="chevron" size={16} /></span>
+        </button>
+        {open && <div className="nav-group-items">{propertyItems.map(i => nb(i.key, i.label, true))}</div>}
+        <div className="nav-section">הנדסה</div>
+        {nb("ngs", "נ.ג.ש מור")}
       </div>
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10, marginTop: 10 }}>
-        <button className={`nav-btn ${isActive("users") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("users")}>👥 משתמשים</button>
-        <button className={`nav-btn ${isActive("activity") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("activity")}>👁️ פעילות</button>
-        <button className={`nav-btn ${isActive("settings") ? "active" : ""}`} style={{ fontSize: 13 }} onClick={() => setActivePage("settings")}>⚙️ הגדרות</button>
+      <div className="nav-bottom">
+        {nb("users", "משתמשים")}
+        {nb("activity", "פעילות")}
+        {nb("settings", "הגדרות")}
       </div>
     </div>
   );
 }
 
 function getNavIcon(key: string) {
-  const icons: Record<string, string> = { dashboard: "🏠", owners: "👤", buildings: "🏢", apartments: "🚪", requests: "🔧", leases: "📋", documents: "📄", tenantPortal: "🏠", settings: "⚙️", users: "👥", workcontracts: "📝", ngs: "🏗" };
-  return icons[key] || "•";
+  return <Icon name={key} size={22} />;
 }
 
 function getNavItemsForRole(role: string) {
   if (role === "tenant") return [{ key: "tenantPortal", label: "הבית שלי" }, { key: "requests", label: "קריאות שירות" }];
   if (role === "owner") return [{ key: "dashboard", label: "סיכום" }, { key: "apartments", label: "הדירות שלי" }, { key: "leases", label: "חוזים" }];
-  if (role === "ngs_worker") return [{ key: "ngs", label: "🏗 נ.ג.ש מור" }];
+  if (role === "ngs_worker") return [{ key: "ngs", label: "נ.ג.ש מור" }];
   return navItems;
 }
 
@@ -229,8 +239,8 @@ export default function Home() {
               <h1 className="login-title">מערכת ניהול משולבת לנ.ג.ש מור הנדסה</h1>
               <div className="login-sub">פלטפורמה מתקדמת לניהול רכבים, עובדים, לקוחות, פרויקטים, קריאות שירות ויומני עבודה.</div>
               <div className="hero-grid">
-                {[["🚗","צי רכבים"],["👷","ניהול עובדים"],["📁","פרויקטים"],["📋","יומני עבודה"]].map(([icon, label]) => (
-                  <div key={label} className="hero-stat"><div className="num" style={{fontSize:32}}>{icon}</div><div className="label">{label}</div></div>
+                {[["ngs","צי רכבים"],["team","ניהול עובדים"],["folder","פרויקטים"],["clipboard","יומני עבודה"]].map(([icon, label]) => (
+                  <div key={label} className="hero-stat"><div className="num"><Icon name={icon} size={28} /></div><div className="label">{label}</div></div>
                 ))}
               </div>
             </div>
@@ -243,7 +253,7 @@ export default function Home() {
                 <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 48, marginBottom: 16 }}>✅</div><h2>הבקשה נשלחה!</h2><button className="btn btn-primary" style={{ marginTop: 16, width: "100%" }} onClick={() => { setRegSuccess(false); setAuthMode("login"); }}>חזרה להתחברות</button></div>
               ) : authMode === "login" ? (
                 <>
-                  <div style={{textAlign:"center",marginBottom:16}}><div style={{fontSize:48}}>🏗</div><h2 style={{margin:"8px 0 4px",fontSize:22,fontWeight:900}}>נ.ג.ש מור הנדסה</h2><div style={{fontSize:13,color:"#64748b",marginBottom:16}}>כניסה למערכת הניהול</div></div>
+                  <div style={{textAlign:"center",marginBottom:16}}><div className="login-logo">נג״ש</div><h2 style={{margin:"12px 0 4px",fontSize:22,fontWeight:800}}>נ.ג.ש מור הנדסה</h2><div style={{fontSize:13,color:"#64748b",marginBottom:16}}>כניסה למערכת הניהול</div></div>
                   <div className="field"><label>אימייל</label><input className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" /></div>
                   <div className="field"><label>סיסמה</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••" /></div>
                   {loginError && <div style={{color:"#dc2626", marginBottom:10, fontSize:14}}>{loginError}</div>}
@@ -292,21 +302,21 @@ export default function Home() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="brand"><div className="brand-icon">🏗</div><div><small>נ.ג.ש מור</small><strong>הנדסה</strong></div></div>
+        <div className="brand"><div className="brand-icon">נג״ש</div><div><strong>נ.ג.ש מור</strong><small>הנדסה</small></div></div>
         <nav className="nav"><SidebarNav activePage={activePage} setActivePage={setActivePage} isActive={isActive} userRole={userRole} /></nav>
         <div className="side-card">
           <div className="avatar">{email[0]?.toUpperCase()}</div>
           <div style={{ flex: 1 }}><div className="name">{userProfile?.full_name || email}</div><div className="role">{getRoleLabel(userRole)}</div></div>
-          <button onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 18 }} title="התנתק">🚪</button>
+          <button onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); }} className="icon-btn" aria-label="התנתק" title="התנתק"><Icon name="logout" /></button>
         </div>
       </aside>
       <main className="main">
         <div className="topbar">
-          <div><h1>שלום {userProfile?.full_name?.split(" ")[0] || email.split("@")[0]} 👋</h1><div className="sub">{getRoleLabel(userRole)}</div></div>
+          <div><h1>שלום, {userProfile?.full_name?.split(" ")[0] || email.split("@")[0]}</h1><div className="sub">{getRoleLabel(userRole)}</div></div>
           <div className="top-actions">
-            <input className="search" placeholder="חיפוש מהיר..." />
-            <button className="btn btn-outline" onClick={() => setRefreshKey(k => k + 1)} title="רענן נתונים" style={{ fontSize: 18, padding: "8px 14px" }}>🔄</button>
-            <button className="btn btn-outline" onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); }} style={{ color: "#dc2626", borderColor: "#dc2626" }}>התנתק</button>
+            <label className="search"><Icon name="search" size={18} /><input placeholder="חיפוש מהיר..." aria-label="חיפוש" /></label>
+            <button className="btn btn-outline btn-icon" onClick={() => setRefreshKey(k => k + 1)} title="רענן נתונים" aria-label="רענן נתונים"><Icon name="refresh" size={18} /></button>
+            <button className="btn btn-outline desktop-only" onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); }} style={{ color: "#B42318", borderColor: "#FECDCA" }}><Icon name="logout" size={18} />התנתק</button>
           </div>
         </div>
         {renderContent()}
@@ -319,31 +329,31 @@ export default function Home() {
           </button>
         ))}
         <button className={`mobile-nav-btn ${showMobileMenu ? "active" : ""}`} onClick={() => setShowMobileMenu(!showMobileMenu)}>
-          <span className="mobile-nav-icon">☰</span><span className="mobile-nav-label">עוד</span>
+          <span className="mobile-nav-icon"><Icon name="menu" size={22} /></span><span className="mobile-nav-label">עוד</span>
         </button>
       </nav>
       {showMobileMenu && (
         <div style={{ position: "fixed", inset: 0, zIndex: 500 }} onClick={() => setShowMobileMenu(false)}>
-          <div style={{ position: "fixed", bottom: 70, left: 0, right: 0, background: "white", borderRadius: "20px 20px 0 0", boxShadow: "0 -4px 30px rgba(0,0,0,0.15)", padding: "12px 0 20px", zIndex: 600 }} onClick={e => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, background: "#e2e8f0", borderRadius: 2, margin: "0 auto 16px" }} />
+          <div style={{ position: "fixed", bottom: 66, left: 0, right: 0, background: "white", borderRadius: "20px 20px 0 0", boxShadow: "0 -4px 30px rgba(16,24,40,0.12)", padding: "12px 0 20px", zIndex: 600 }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 36, height: 4, background: "#D0D5DD", borderRadius: 2, margin: "0 auto 16px" }} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, padding: "0 8px" }}>
               {navItemsForRole.slice(4).map((item) => (
-                <button key={item.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: isActive(item.key) ? "#fef9ec" : "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: isActive(item.key) ? "#c9a227" : "#475569" }}
+                <button key={item.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: isActive(item.key) ? "#EFF4FF" : "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: isActive(item.key) ? "#1D4ED8" : "#475467", fontFamily: "inherit", minHeight: 64 }}
                   onClick={() => { setActivePage(item.key); setShowMobileMenu(false); }}>
-                  <span style={{ fontSize: 22 }}>{getNavIcon(item.key)}</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, textAlign: "center" }}>{item.label}</span>
+                  {getNavIcon(item.key)}
+                  <span style={{ fontSize: 12, fontWeight: 600, textAlign: "center" }}>{item.label}</span>
                 </button>
               ))}
               {/* רענון והתנתקות במובייל */}
-              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: "#475569" }}
+              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: "#475467", fontFamily: "inherit", minHeight: 64 }}
                 onClick={() => { setShowMobileMenu(false); setRefreshKey(k => k + 1); }}>
-                <span style={{ fontSize: 22 }}>🔄</span>
-                <span style={{ fontSize: 11, fontWeight: 600 }}>רענון</span>
+                <Icon name="refresh" size={22} />
+                <span style={{ fontSize: 12, fontWeight: 600 }}>רענון</span>
               </button>
-              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: "#dc2626" }}
+              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 8px", background: "transparent", border: "none", cursor: "pointer", borderRadius: 12, color: "#B42318", fontFamily: "inherit", minHeight: 64 }}
                 onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); setShowMobileMenu(false); }}>
-                <span style={{ fontSize: 22 }}>🚪</span>
-                <span style={{ fontSize: 11, fontWeight: 600 }}>התנתק</span>
+                <Icon name="logout" size={22} />
+                <span style={{ fontSize: 12, fontWeight: 600 }}>התנתק</span>
               </button>
             </div>
           </div>
