@@ -1,11 +1,11 @@
 {
-  "name": "נ.ג.ש מור הנדסה",
-  "short_name": "נ.ג.ש מור",
-  "description": "מערכת ניהול משולבת לנ.ג.ש מור הנדסה",
+  "name": "נג\"ש מור הנדסה",
+  "short_name": "נג\"ש מור",
+  "description": "מערכת ניהול משולבת לנג\"ש מור הנדסה",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0f172a",
+  "theme_color": "#2563EB",
   "orientation": "portrait",
   "icons": [
     {
