@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { Icon } from "./icons";
+import { SECTION, IconChip, SectionTitle, EmptyState, Toaster, notify, check, PhotoStrip, exportWorkLogsCSV, loadLastWorkLog, saveLastWorkLog, todayISO, daysUntil } from "./ngs-ui";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,7 +41,8 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
   async function addService() {
     if (!form.service_type || !form.date) return;
     setSaving(true);
-    await supabase.from("ngs_vehicle_services").insert({ vehicle_id: vehicleId, ...form });
+    const res = await supabase.from("ngs_vehicle_services").insert({ vehicle_id: vehicleId, ...form });
+    if (!check(res, "הטיפול נשמר")) { setSaving(false); return; }
     setForm({ service_type: "", date: "", notes: "" });
     setShowForm(false);
     await load();
@@ -47,7 +50,7 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
   }
   async function deleteService(id: string) {
     if (!confirm("למחוק?")) return;
-    await supabase.from("ngs_vehicle_services").delete().eq("id", id);
+    check(await supabase.from("ngs_vehicle_services").delete().eq("id", id));
     await load();
   }
   const serviceTypes = ["טיפול שמן", "טסט", "גלגלים", "בלמים", "מצבר", "מזגן", "תיקון כללי", "אחר"];
@@ -55,7 +58,7 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>🔧 היסטוריית טיפולים</h3><div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>רכב: {licensePlate}</div></div>
+          <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>היסטוריית טיפולים</h3><div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>רכב: {licensePlate}</div></div>
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => setShowForm(!showForm)}>+ טיפול חדש</button>
             <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#64748b" }}>×</button>
@@ -76,13 +79,13 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
         )}
         <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
           {loading ? <div style={{ padding: 30, textAlign: "center" }}>טוען...</div> : services.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין טיפולים עדיין</div></div>
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="service" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין טיפולים עדיין</div></div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {services.map(s => (
                 <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
-                    <span style={{ fontWeight: 800 }}>🔧 {s.service_type}</span>
+                    <span style={{ fontWeight: 800 }}>{s.service_type}</span>
                     <span style={{ fontSize: 13, color: "#64748b", marginRight: 8 }}>{s.date ? new Date(s.date).toLocaleDateString("he-IL") : "-"}</span>
                     {s.notes && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.notes}</div>}
                   </div>
@@ -119,7 +122,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
   async function addItem() {
     if (!form.item) return;
     setSaving(true);
-    await supabase.from("ngs_inventory").insert({
+    const res = await supabase.from("ngs_inventory").insert({
       item: form.item,
       quantity: form.quantity,
       category: form.category,
@@ -127,6 +130,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
       status: "חסר",
       added_by: workerName || "מנהל",
     });
+    if (!check(res, "הפריט נוסף")) { setSaving(false); return; }
     setForm({ item: "", quantity: "", category: "כללי", notes: "" });
     setShowForm(false);
     await load();
@@ -134,13 +138,13 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
   }
 
   async function updateStatus(id: string, status: string) {
-    await supabase.from("ngs_inventory").update({ status }).eq("id", id);
+    check(await supabase.from("ngs_inventory").update({ status }).eq("id", id));
     await load();
   }
 
   async function deleteItem(id: string) {
     if (!confirm("למחוק?")) return;
-    await supabase.from("ngs_inventory").delete().eq("id", id);
+    check(await supabase.from("ngs_inventory").delete().eq("id", id));
     await load();
   }
 
@@ -156,7 +160,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
   return (
     <div style={{ display: "grid", gap: 16 }}>
       {/* כרטיסי סיכום */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         {[
           { label: "פריטים חסרים", value: missing, color: "#dc2626", bg: "#fee2e2" },
           { label: "הוזמנו", value: ordered, color: "#d97706", bg: "#fef3c7" },
@@ -172,7 +176,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
       <div className="card">
         <div className="section-top">
           <div>
-            <h3 className="card-title" style={{ margin: 0 }}>🛒 ציוד חסר / רשימת קניות</h3>
+            <SectionTitle icon="inventory">ציוד חסר / רשימת קניות</SectionTitle>
             <div className="muted" style={{ marginTop: 4 }}>רשום כאן כל פריט שחסר — כולם רואים ויכולים לעדכן</div>
           </div>
           <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף פריט</button>
@@ -180,7 +184,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
 
         {showForm && (
           <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 12 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
               <div className="field"><label>שם הפריט *</label><input className="input" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="למשל: ברגים M6" autoFocus /></div>
               <div className="field"><label>כמות</label><input className="input" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} placeholder="למשל: 100 יח׳" /></div>
               <div className="field">
@@ -192,7 +196,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
               <div className="field" style={{ gridColumn: "span 3" }}><label>הערות</label><input className="input" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="פרטים נוספים, איפה נמצא, למה נחוץ..." /></div>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn btn-primary" onClick={addItem} disabled={saving}>{saving ? "שומר..." : "➕ הוסף לרשימה"}</button>
+              <button className="btn btn-primary" onClick={addItem} disabled={saving}>{saving ? "שומר..." : "הוסף לרשימה"}</button>
               <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
             </div>
           </div>
@@ -201,15 +205,15 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
         {/* סינון */}
         <div className="chips" style={{ marginBottom: 16 }}>
           {["הכל", "חסר", "הוזמן", "התקבל"].map(f => (
-            <button key={f} className={`btn ${filter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setFilter(f)}>{f}</button>
+            <button key={f} className={`btn ${filter === f ? "btn-primary" : "btn-outline"}`} onClick={() => setFilter(f)}>{f}</button>
           ))}
         </div>
 
         {loading ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>טוען...</div>
         : filtered.length === 0 ? (
           <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
-            <div style={{ fontSize: 40 }}>🛒</div>
-            <div style={{ fontWeight: 700, marginTop: 8 }}>{filter === "חסר" ? "אין פריטים חסרים כרגע! 🎉" : "אין פריטים"}</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="inventory" size={56} /></div>
+            <div style={{ fontWeight: 700, marginTop: 8 }}>{filter === "חסר" ? "אין פריטים חסרים כרגע! " : "אין פריטים"}</div>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
@@ -228,9 +232,9 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <select value={item.status} onChange={e => updateStatus(item.id, e.target.value)}
                     style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "5px 8px", fontSize: 12, background: `${statusColor[item.status]}10` }}>
-                    <option value="חסר">❌ חסר</option>
-                    <option value="הוזמן">🕐 הוזמן</option>
-                    <option value="התקבל">✅ התקבל</option>
+                    <option value="חסר">חסר</option>
+                    <option value="הוזמן">הוזמן</option>
+                    <option value="התקבל">התקבל</option>
                   </select>
                   {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem(item.id)}>מחק</button>}
                 </div>
@@ -254,7 +258,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
     if (!form.title) return;
     setSaving(true);
     const assignedTo = isWorker ? workerName : (assignMode === "all" ? "all" : selectedWorkers.join(","));
-    await supabase.from("ngs_tasks").insert({
+    const res = await supabase.from("ngs_tasks").insert({
       title: form.title,
       description: form.description,
       assigned_to: assignedTo,
@@ -263,6 +267,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
       status: "פתוח",
       created_by: workerName || "מנהל",
     });
+    if (!check(res, "המשימה נוצרה")) { setSaving(false); return; }
     setForm({ title: "", description: "", assigned_to: "all", priority: "רגילה", due_date: "" });
     setSelectedWorkers([]);
     setAssignMode("all");
@@ -272,13 +277,13 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
   }
 
   async function updateTaskStatus(id: string, status: string) {
-    await supabase.from("ngs_tasks").update({ status }).eq("id", id);
+    check(await supabase.from("ngs_tasks").update({ status }).eq("id", id));
     onRefresh();
   }
 
   async function deleteTask(id: string) {
     if (!confirm("למחוק את המשימה?")) return;
-    await supabase.from("ngs_tasks").delete().eq("id", id);
+    check(await supabase.from("ngs_tasks").delete().eq("id", id));
     onRefresh();
   }
 
@@ -291,7 +296,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
       <div className="card">
         <div className="section-top">
           <div>
-            <h3 className="card-title" style={{ margin: 0 }}>✅ {isWorker ? "המשימות שלי" : "משימות"}</h3>
+            <SectionTitle icon="tasks">{isWorker ? "המשימות שלי" : "משימות"}</SectionTitle>
             <div className="muted" style={{ marginTop: 4 }}>{isWorker ? "משימות שהוקצו לך + משימות שפתחת לעצמך" : "ניהול משימות לעובדים"}</div>
           </div>
           <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ {isWorker ? "משימה חדשה" : "משימה חדשה"}</button>
@@ -299,7 +304,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
 
         {showForm && (
           <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 12 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
               <div className="field"><label>כותרת משימה *</label><input className="input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="תאר את המשימה..." /></div>
               {!isWorker && (
                 <div className="field" style={{ gridColumn: "span 2" }}>
@@ -307,11 +312,11 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
                   <div style={{ display: "flex", gap: 8, marginBottom: 10, marginTop: 6 }}>
                     <button type="button" onClick={() => { setAssignMode("all"); setSelectedWorkers([]); }}
                       style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "all" ? "2px solid #2563EB" : "1px solid #e2e8f0", background: assignMode === "all" ? "#EFF4FF" : "#f8fafc", color: assignMode === "all" ? "#1D4ED8" : "#475569" }}>
-                      👥 כל העובדים
+                      כל העובדים
                     </button>
                     <button type="button" onClick={() => setAssignMode("specific")}
                       style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "specific" ? "2px solid #2563EB" : "1px solid #e2e8f0", background: assignMode === "specific" ? "#EFF4FF" : "#f8fafc", color: assignMode === "specific" ? "#1D4ED8" : "#475569" }}>
-                      👤 עובדים ספציפיים
+                      עובדים ספציפיים
                     </button>
                   </div>
                   {assignMode === "specific" && (
@@ -340,18 +345,18 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
               <div className="field"><label>תאריך יעד</label><input className="input" type="date" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})} /></div>
               <div className="field" style={{ gridColumn: "span 2" }}><label>תיאור</label><textarea className="input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} placeholder="פרטים נוספים..." /></div>
             </div>
-            {isWorker && <div style={{ fontSize: 13, color: "#64748b", background: "#f1f5f9", borderRadius: 10, padding: "8px 12px" }}>💡 המשימה תיווצר על שמך — המנהל יוכל לראות אותה</div>}
+            {isWorker && <div style={{ fontSize: 13, color: "#64748b", background: "#f1f5f9", borderRadius: 10, padding: "8px 12px" }}>המשימה תיווצר על שמך — המנהל יוכל לראות אותה</div>}
             <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn btn-primary" onClick={addTask} disabled={saving}>{saving ? "שומר..." : "➕ צור משימה"}</button>
+              <button className="btn btn-primary" onClick={addTask} disabled={saving}>{saving ? "שומר..." : "צור משימה"}</button>
               <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
             </div>
           </div>
         )}
 
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#0f172a" }}>📋 פתוחות ({open.length})</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#0f172a" }}>פתוחות ({open.length})</div>
           {open.length === 0 ? (
-            <div style={{ padding: 20, textAlign: "center", color: "#64748b", background: "#f8fafc", borderRadius: 12 }}>אין משימות פתוחות 🎉</div>
+            <div style={{ padding: 20, textAlign: "center", color: "#64748b", background: "#f8fafc", borderRadius: 12 }}>אין משימות פתוחות </div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {open.map(t => (
@@ -360,14 +365,14 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 800, fontSize: 15 }}>{t.title}</span>
                       <span style={{ background: `${priorityColor[t.priority]}20`, color: priorityColor[t.priority], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{t.priority}</span>
-                      {t.assigned_to === "all" ? <span style={{ fontSize: 12, color: "#64748b" }}>👥 כולם</span> : <span style={{ fontSize: 12, color: "#64748b" }}>👤 {t.assigned_to?.split(",").map((s: string) => s.trim()).join(", ")}</span>}
+                      {t.assigned_to === "all" ? <span style={{ fontSize: 12, color: "#64748b" }}>כולם</span> : <span style={{ fontSize: 12, color: "#64748b" }}>{t.assigned_to?.split(",").map((s: string) => s.trim()).join(", ")}</span>}
                       {t.created_by && t.created_by !== "מנהל" && <span style={{ fontSize: 11, color: "#94a3b8" }}>נפתח ע"י: {t.created_by}</span>}
                     </div>
                     {t.description && <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>{t.description}</div>}
-                    {t.due_date && <div style={{ fontSize: 12, color: new Date(t.due_date) < new Date() ? "#dc2626" : "#64748b" }}>📅 יעד: {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
+                    {t.due_date && <div style={{ fontSize: 12, color: new Date(t.due_date) < new Date() ? "#dc2626" : "#64748b" }}>יעד: {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 14px" }} onClick={() => updateTaskStatus(t.id, "הושלם")}>✅ סיימתי</button>
+                    <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 14px" }} onClick={() => updateTaskStatus(t.id, "הושלם")}>סיימתי</button>
                     {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "5px 10px", color: "#dc2626" }} onClick={() => deleteTask(t.id)}>מחק</button>}
                   </div>
                 </div>
@@ -378,13 +383,13 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
 
         {done.length > 0 && (
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#16a34a" }}>✅ הושלמו ({done.length})</div>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#16a34a" }}>הושלמו ({done.length})</div>
             <div style={{ display: "grid", gap: 8 }}>
               {done.map(t => (
                 <div key={t.id} style={{ border: "1px solid #dcfce7", borderRadius: 14, padding: 14, background: "#f0fdf4", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: 0.8 }}>
                   <div>
                     <span style={{ fontWeight: 700, textDecoration: "line-through", color: "#64748b" }}>{t.title}</span>
-                    {t.assigned_to !== "all" && <span style={{ fontSize: 12, color: "#94a3b8", marginRight: 10 }}>👤 {t.assigned_to}</span>}
+                    {t.assigned_to !== "all" && <span style={{ fontSize: 12, color: "#94a3b8", marginRight: 10 }}>{t.assigned_to}</span>}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => updateTaskStatus(t.id, "פתוח")}>פתח מחדש</button>}
@@ -440,7 +445,15 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const [clientForm, setClientForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [projectForm, setProjectForm] = useState({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" });
   const [serviceCallForm, setServiceCallForm] = useState({ client_name: "", issue: "", urgency: "בינונית", status: "חדשה", assigned_to: "", location: "", description: "", notes: "", contact_name: "", contact_phone: "" });
-  const [workLogForm, setWorkLogForm] = useState({ agreement_id: "", filled_by: isWorker ? workerName : "", employee_name: isWorker ? workerName : "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+  // טופס יומן חדש: תאריך של היום + הלקוח/האתר/התחנה מהיומן הקודם
+  function emptyWorkLog() {
+    const last = loadLastWorkLog();
+    return { agreement_id: last.agreement_id || "", filled_by: isWorker ? workerName : (last.filled_by || ""), employee_name: isWorker ? workerName : "", workers: "", branch: last.branch || "", date: todayISO(), hours: "", project_name: last.project_name || "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" };
+  }
+  const [workLogForm, setWorkLogForm] = useState(emptyWorkLog);
+  const [wlMonth, setWlMonth] = useState("");
+  // בטלפון החיפוש מקופל כברירת מחדל כדי שהיומנים יופיעו מיד
+  const [showWlFilters, setShowWlFilters] = useState(() => typeof window === "undefined" || window.innerWidth > 640);
 
   async function load() {
     setLoading(true);
@@ -455,6 +468,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       supabase.from("ngs_inventory").select("*").order("created_at", { ascending: false }),
       supabase.from("ngs_hour_agreements").select("*").order("created_at", { ascending: true }),
     ]);
+    const failed = [v, e, c, p, s, w, t, inv, ha].find((r: any) => r.error);
+    if (failed) notify("שגיאה בטעינת הנתונים: " + failed.error!.message, "error");
 
     // סינון לפי עובד
     const allVehicles = v.data || [];
@@ -485,44 +500,45 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
   async function saveVehicle() {
     if (!vehicleForm.license_plate) return; setSaving(true);
-    await supabase.from("ngs_vehicles").insert({ ...vehicleForm, test_date: vehicleForm.test_date || null, next_test_date: vehicleForm.next_test_date || null });
+    if (!check(await supabase.from("ngs_vehicles").insert({ ...vehicleForm, test_date: vehicleForm.test_date || null, next_test_date: vehicleForm.next_test_date || null }), "הרכב נשמר")) { setSaving(false); return; }
     setVehicleForm({ license_plate: "", model: "", year: "", status: "פעיל", test_date: "", next_test_date: "", driver: "", notes: "" });
     setShowForm(false); await load(); setSaving(false);
   }
   async function updateVehicle() {
     if (!editingVehicle) return; setSaving(true);
-    await supabase.from("ngs_vehicles").update({ license_plate: editingVehicle.license_plate, model: editingVehicle.model, year: editingVehicle.year, status: editingVehicle.status, test_date: editingVehicle.test_date || null, next_test_date: editingVehicle.next_test_date || null, notes: editingVehicle.notes, driver: editingVehicle.driver || null }).eq("id", editingVehicle.id);
+    if (!check(await supabase.from("ngs_vehicles").update({ license_plate: editingVehicle.license_plate, model: editingVehicle.model, year: editingVehicle.year, status: editingVehicle.status, test_date: editingVehicle.test_date || null, next_test_date: editingVehicle.next_test_date || null, notes: editingVehicle.notes, driver: editingVehicle.driver || null }).eq("id", editingVehicle.id), "הרכב עודכן")) { setSaving(false); return; }
     setEditingVehicle(null); await load(); setSaving(false);
   }
   async function uploadGarageDoc(vehicleId: string, file: File) {
     setUploadingVehicleId(vehicleId);
     const ext = file.name.split(".").pop();
-    const { error } = await supabase.storage.from("documents").upload(`garage-docs/${vehicleId}-${Date.now()}.${ext}`, file, { upsert: true });
-    if (!error) {
-      const { data: u } = supabase.storage.from("documents").getPublicUrl(`garage-docs/${vehicleId}-${Date.now()}.${ext}`);
-      await supabase.from("ngs_vehicles").update({ garage_doc_url: u.publicUrl }).eq("id", vehicleId);
-      await load();
+    // תיקון: פעם נוצרו שני שמות קובץ שונים, אז הקישור שנשמר לא עבד
+    const path = `garage-docs/${vehicleId}-${Date.now()}.${ext}`;
+    const up = await supabase.storage.from("documents").upload(path, file, { upsert: true });
+    if (check(up)) {
+      const { data: u } = supabase.storage.from("documents").getPublicUrl(path);
+      if (check(await supabase.from("ngs_vehicles").update({ garage_doc_url: u.publicUrl }).eq("id", vehicleId), "המסמך הועלה")) await load();
     }
     setUploadingVehicleId(null);
   }
   async function saveEmployee() {
     if (!employeeForm.name) return; setSaving(true);
-    await supabase.from("ngs_employees").insert(employeeForm);
+    if (!check(await supabase.from("ngs_employees").insert(employeeForm), "העובד נשמר")) { setSaving(false); return; }
     setEmployeeForm({ name: "", phone: "", role: "", status: "פעיל" }); setShowForm(false); await load(); setSaving(false);
   }
   async function saveClient() {
     if (!clientForm.name) return; setSaving(true);
-    await supabase.from("ngs_clients").insert(clientForm);
+    if (!check(await supabase.from("ngs_clients").insert(clientForm), "הלקוח נשמר")) { setSaving(false); return; }
     setClientForm({ name: "", phone: "", email: "", address: "", notes: "" }); setShowForm(false); await load(); setSaving(false);
   }
   async function saveProject() {
     if (!projectForm.name) return; setSaving(true);
-    await supabase.from("ngs_projects").insert({ ...projectForm, start_date: projectForm.start_date || null, end_date: projectForm.end_date || null });
+    if (!check(await supabase.from("ngs_projects").insert({ ...projectForm, start_date: projectForm.start_date || null, end_date: projectForm.end_date || null }), "הפרויקט נשמר")) { setSaving(false); return; }
     setProjectForm({ client_name: "", name: "", status: "פעיל", start_date: "", end_date: "", description: "" }); setShowForm(false); await load(); setSaving(false);
   }
   async function saveServiceCall() {
     if (!serviceCallForm.issue) return; setSaving(true);
-    await supabase.from("ngs_service_calls").insert(serviceCallForm);
+    if (!check(await supabase.from("ngs_service_calls").insert(serviceCallForm), "הקריאה נפתחה")) { setSaving(false); return; }
     // שליחת מייל התראה
     fetch("/api/send-email", {
       method: "POST",
@@ -537,7 +553,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   async function saveEditWorkLog() {
     if (!editingWorkLog) return;
     setSavingEdit(true);
-    await supabase.from("ngs_work_logs").update({
+    const res = await supabase.from("ngs_work_logs").update({
       branch: editingWorkLog.branch || "",
       project_name: editingWorkLog.project_name || "",
       agreement_id: editingWorkLog.agreement_id || null,
@@ -555,6 +571,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       line9: editingWorkLog.line9 || "",
       line10: editingWorkLog.line10 || "",
     }).eq("id", editingWorkLog.id);
+    if (!check(res, "היומן עודכן")) { setSavingEdit(false); return; }
     setEditingWorkLog(null);
     await load();
     setSavingEdit(false);
@@ -562,14 +579,15 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
   async function saveWorkLog() {
     if (!workLogForm.employee_name && !workLogForm.filled_by) return; setSaving(true);
-    await supabase.from("ngs_work_logs").insert({ ...workLogForm, agreement_id: workLogForm.agreement_id || null, hours: parseFloat(workLogForm.hours) || 0 });
-    setWorkLogForm({ agreement_id: "", filled_by: isWorker ? workerName : "", employee_name: isWorker ? workerName : "", workers: "", branch: "", date: "", hours: "", project_name: "", client_notes: "", performa: "לא טופל", line1: "", line2: "", line3: "", line4: "", line5: "", line6: "", line7: "", line8: "", line9: "", line10: "" });
+    if (!check(await supabase.from("ngs_work_logs").insert({ ...workLogForm, date: workLogForm.date || null, agreement_id: workLogForm.agreement_id || null, hours: parseFloat(workLogForm.hours) || 0 }), "היומן נשמר")) { setSaving(false); return; }
+    saveLastWorkLog({ project_name: workLogForm.project_name, branch: workLogForm.branch, agreement_id: workLogForm.agreement_id, filled_by: workLogForm.filled_by });
+    setWorkLogForm(emptyWorkLog());
     setShowForm(false); await load(); setSaving(false);
   }
   async function updateServiceCallStatus(id: string, status: string, completedBy?: string) {
     const updateData: any = { status };
     if (status === "הושלם" && completedBy) updateData.completed_by = completedBy;
-    await supabase.from("ngs_service_calls").update(updateData).eq("id", id);
+    if (!check(await supabase.from("ngs_service_calls").update(updateData).eq("id", id))) return;
     if (status === "הושלם") {
       const { data: ngsCall } = await supabase.from("ngs_service_calls").select("source_request_id").eq("id", id).single();
       if (ngsCall?.source_request_id) {
@@ -580,7 +598,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   }
   async function deleteItem(table: string, id: string) {
     if (!confirm("למחוק?")) return;
-    await supabase.from(table).delete().eq("id", id); await load();
+    if (check(await supabase.from(table).delete().eq("id", id), "נמחק")) await load();
   }
 
   async function saveAgreement() {
@@ -628,24 +646,31 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   }
 
   const tabs = isWorker ? [
-    { key: "overview", label: "🏠 סקירה" },
-    { key: "worklogs", label: "📋 יומני עבודה" },
-    { key: "service", label: "🔧 קריאות שירות" },
-    { key: "vehicles", label: "🚗 הרכב שלי" },
-    { key: "tasks", label: "✅ המשימות שלי" },
-    { key: "inventory", label: "🛒 ציוד חסר" },
+    { key: "overview", label: "סקירה" },
+    { key: "worklogs", label: "יומני עבודה" },
+    { key: "service", label: "קריאות שירות" },
+    { key: "vehicles", label: "הרכב שלי" },
+    { key: "tasks", label: "המשימות שלי" },
+    { key: "inventory", label: "ציוד חסר" },
   ] : [
-    { key: "overview", label: "📊 סקירה" },
-    { key: "vehicles", label: "🚗 רכבים" },
-    { key: "employees", label: "👷 עובדים" },
-    { key: "clients", label: "🤝 לקוחות" },
-    { key: "projects", label: "📁 פרויקטים" },
-    { key: "service", label: "🔧 קריאות שירות" },
-    { key: "worklogs", label: "📋 יומני עבודה" },
-    { key: "hours", label: "⏱ הסכמי שעות" },
-    { key: "tasks", label: "✅ משימות" },
-    { key: "inventory", label: "🛒 ציוד חסר" },
+    { key: "overview", label: "סקירה" },
+    { key: "vehicles", label: "רכבים" },
+    { key: "employees", label: "עובדים" },
+    { key: "clients", label: "לקוחות" },
+    { key: "projects", label: "פרויקטים" },
+    { key: "service", label: "קריאות שירות" },
+    { key: "worklogs", label: "יומני עבודה" },
+    { key: "hours", label: "הסכמי שעות" },
+    { key: "tasks", label: "משימות" },
+    { key: "inventory", label: "ציוד חסר" },
   ];
+  // רכבים שהטסט שלהם בעוד 30 יום או פחות (או שכבר עבר)
+  const testsSoon = vehicles
+    .map(v => ({ v, days: daysUntil(v.next_test_date) }))
+    .filter(x => x.days !== null && (x.days as number) <= 30)
+    .sort((a, b) => (a.days as number) - (b.days as number));
+  // הסכמי שעות שניצלו 80% ומעלה
+  const agreementsNearLimit = hourAgreements.map(a => ({ a, u: agreementUsage(a) })).filter(x => x.u.approved > 0 && x.u.pct >= 80).sort((x, y) => y.u.pct - x.u.pct);
   const openServiceCalls = serviceCalls.filter(s => s.status !== "הושלם");
   const activeProjects = projects.filter(p => p.status === "פעיל");
 
@@ -674,6 +699,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
+      <Toaster />
       {selectedVehicle && <VehicleServicesModal vehicleId={selectedVehicle.id} licensePlate={selectedVehicle.license_plate} onClose={() => setSelectedVehicle(null)} />}
 
       {selectedServiceCall && (
@@ -681,13 +707,13 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 540, maxHeight: "85vh", overflow: "auto" }}>
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>🔧 {selectedServiceCall.issue}</h3>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>{selectedServiceCall.issue}</h3>
                 <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedServiceCall.client_name || "-"}</div>
               </div>
               <button onClick={() => setSelectedServiceCall(null)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#64748b" }}>×</button>
             </div>
             <div style={{ padding: "20px 24px", display: "grid", gap: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
                 <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
                   <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>סטטוס</div>
                   <Badge value={selectedServiceCall.status} />
@@ -706,18 +732,18 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 </div>
                 {selectedServiceCall.location && (
                   <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14, gridColumn: "span 2" }}>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>📍 מיקום</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>מיקום</div>
                     <div style={{ fontWeight: 700 }}>{selectedServiceCall.location}</div>
                   </div>
                 )}
                 {selectedServiceCall.contact_name && (
                   <div style={{ background: "#eff6ff", borderRadius: 12, padding: 14, gridColumn: "span 2", border: "1px solid #bfdbfe" }}>
-                    <div style={{ fontSize: 11, color: "#1d4ed8", marginBottom: 8, fontWeight: 700 }}>👤 איש קשר</div>
+                    <div style={{ fontSize: 11, color: "#1d4ed8", marginBottom: 8, fontWeight: 700 }}>איש קשר</div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ fontWeight: 800, fontSize: 15 }}>{selectedServiceCall.contact_name}</div>
                       {selectedServiceCall.contact_phone && (
                         <a href={`tel:${selectedServiceCall.contact_phone}`} className="btn btn-primary" style={{ fontSize: 13, padding: "6px 16px", textDecoration: "none" }}>
-                          📞 {selectedServiceCall.contact_phone}
+                          <Icon name="phone" size={16} />{selectedServiceCall.contact_phone}
                         </a>
                       )}
                     </div>
@@ -725,10 +751,13 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 )}
                 {selectedServiceCall.completed_by && (
                   <div style={{ background: "#dcfce7", borderRadius: 12, padding: 14, gridColumn: "span 2" }}>
-                    <div style={{ fontSize: 11, color: "#166534", marginBottom: 4 }}>✅ טופל ע"י</div>
+                    <div style={{ fontSize: 11, color: "#166534", marginBottom: 4 }}>טופל ע"י</div>
                     <div style={{ fontWeight: 700, color: "#166534" }}>{selectedServiceCall.completed_by}</div>
                   </div>
                 )}
+              </div>
+              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                <PhotoStrip supabase={supabase} table="ngs_service_calls" row={selectedServiceCall} onChange={photos => { setSelectedServiceCall({ ...selectedServiceCall, photos }); setServiceCalls(list => list.map(x => x.id === selectedServiceCall.id ? { ...x, photos } : x)); }} />
               </div>
               {(selectedServiceCall.description || selectedServiceCall.notes) && (
                 <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
@@ -753,24 +782,24 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>✏️ עריכת יומן #{formatSerial(editingWorkLog.serial_number)}</h3>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>עריכת יומן #{formatSerial(editingWorkLog.serial_number)}</h3>
               <button onClick={() => setEditingWorkLog(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "#64748b" }}>×</button>
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: "20px 24px", display: "grid", gap: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field">
                   <label>לקוח</label>
                   <select className="input" value={editingWorkLog.project_name || ""} onChange={e => setEditingWorkLog({...editingWorkLog, project_name: e.target.value, agreement_id: ""})}>
                     <option value="">בחר לקוח</option>
                     {clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                    <option value="אחר">✏️ אחר</option>
+                    <option value="אחר">אחר</option>
                   </select>
                 </div>
                 <div className="field"><label>סניף / אתר</label><input className="input" value={editingWorkLog.branch || ""} onChange={e => setEditingWorkLog({...editingWorkLog, branch: e.target.value})} /></div>
                 <div className="field"><label>תאריך</label><input className="input" type="date" value={editingWorkLog.date || ""} onChange={e => setEditingWorkLog({...editingWorkLog, date: e.target.value})} /></div>
                 {hourAgreements.some((a: any) => a.client_name === editingWorkLog.project_name) && (
                   <div className="field">
-                    <label>⏱ תחנה / הסכם שעות</label>
+                    <label>תחנה / הסכם שעות</label>
                     <select className="input" value={editingWorkLog.agreement_id || ""} onChange={e => setEditingWorkLog({...editingWorkLog, agreement_id: e.target.value})}>
                       <option value="">ללא שיוך</option>
                       {hourAgreements.filter((a: any) => a.client_name === editingWorkLog.project_name).map((a: any) => <option key={a.id} value={a.id}>{a.station_name}</option>)}
@@ -779,8 +808,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 )}
                 <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={editingWorkLog.hours || ""} onChange={e => setEditingWorkLog({...editingWorkLog, hours: e.target.value})} step="0.5" /></div>
               </div>
-              <div className="field"><label>📝 הערות ללקוח</label><textarea className="input" value={editingWorkLog.client_notes || ""} onChange={e => setEditingWorkLog({...editingWorkLog, client_notes: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
-              <div style={{ fontWeight: 600, fontSize: 13, color: "#475569" }}>📝 פירוט העבודה:</div>
+              <div className="field"><label>הערות ללקוח</label><textarea className="input" value={editingWorkLog.client_notes || ""} onChange={e => setEditingWorkLog({...editingWorkLog, client_notes: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "#475569" }}>פירוט העבודה:</div>
               <div style={{ display: "grid", gap: 8 }}>
                 {([1,2,3,4,5,6,7,8,9,10] as number[]).map(n => (
                   <div key={n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -791,7 +820,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               </div>
             </div>
             <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f5f9", display: "flex", gap: 10 }}>
-              <button className="btn btn-primary" onClick={saveEditWorkLog} disabled={savingEdit}>{savingEdit ? "שומר..." : "💾 שמור שינויים"}</button>
+              <button className="btn btn-primary" onClick={saveEditWorkLog} disabled={savingEdit}>{savingEdit ? "שומר..." : "שמור שינויים"}</button>
               <button className="btn btn-outline" onClick={() => setEditingWorkLog(null)}>ביטול</button>
             </div>
           </div>
@@ -803,10 +832,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <div style={{ fontSize: 22, fontWeight: 900 }}>📋 #{formatSerial(selectedWorkLog.serial_number)} · {selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : "-"}</div>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>#{formatSerial(selectedWorkLog.serial_number)} · {selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : "-"}</div>
                 <div style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
-                  {selectedWorkLog.branch && <span>📍 {selectedWorkLog.branch} · </span>}
-                  {selectedWorkLog.project_name && <span>🤝 {selectedWorkLog.project_name} · </span>}
+                  {selectedWorkLog.branch && <span>{selectedWorkLog.branch} · </span>}
+                  {selectedWorkLog.project_name && <span>{selectedWorkLog.project_name} · </span>}
                   {selectedWorkLog.filled_by && <span>ממלא: {selectedWorkLog.filled_by}</span>}
                 </div>
               </div>
@@ -815,10 +844,15 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
               {selectedWorkLog.client_notes && (
                 <div style={{ marginBottom: 16, padding: 12, background: "#fffbeb", borderRadius: 12, border: "1px solid #fde68a" }}>
-                  <div style={{ fontSize: 11, color: "#92400e", fontWeight: 700, marginBottom: 4 }}>📝 הערות ללקוח</div>
+                  <div style={{ fontSize: 11, color: "#92400e", fontWeight: 700, marginBottom: 4 }}>הערות ללקוח</div>
                   <div style={{ fontSize: 14, color: "#78350f" }}>{selectedWorkLog.client_notes}</div>
                 </div>
               )}
+              <div style={{ marginBottom: 16, background: "#f8fafc", borderRadius: 12, padding: 14 }}>
+                <PhotoStrip supabase={supabase} table="ngs_work_logs" row={selectedWorkLog}
+                  canEdit={!isWorker || selectedWorkLog.filled_by === workerName || selectedWorkLog.employee_name?.includes(workerName)}
+                  onChange={photos => { setSelectedWorkLog({ ...selectedWorkLog, photos }); setWorkLogs(list => list.map(x => x.id === selectedWorkLog.id ? { ...x, photos } : x)); }} />
+              </div>
               <div style={{ fontWeight: 700, marginBottom: 12 }}>פירוט העבודה:</div>
               <div style={{ display: "grid", gap: 6 }}>
                 {[1,2,3,4,5,6,7,8,9,10].map(n => {
@@ -830,7 +864,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             </div>
             <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ background: selectedWorkLog.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: selectedWorkLog.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "4px 16px", fontSize: 13, fontWeight: 700 }}>
-                {selectedWorkLog.performa === "יצאה פרפורמה" ? "✅ יצאה פרפורמה" : "❌ לא טופל"}
+                {selectedWorkLog.performa === "יצאה פרפורמה" ? "יצאה פרפורמה" : "לא טופל"}
               </span>
               <button className="btn btn-outline" onClick={() => setSelectedWorkLog(null)}>סגור</button>
             </div>
@@ -838,11 +872,11 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         </div>
       )}
 
-      <div className="card" style={{ background: "#1D4ED8", color: "#fff", border: "none" }}>
+      <div className="card ngs-hero" style={{ color: "#fff", border: "none" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <div>
             <div style={{ fontSize: 13, color: "#DBEAFE", marginBottom: 4 }}>מחלקת חברה</div>
-            <h2 style={{ margin: 0, fontSize: 28, fontWeight: 900 }}>🏗 נ.ג.ש מור הנדסה</h2>
+            <h2 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>נ.ג.ש מור הנדסה</h2>
             <div style={{ color: "#DBEAFE", marginTop: 4, fontSize: 14 }}>ניהול רכבים, עובדים, לקוחות ופרויקטים</div>
           </div>
           <div style={{ display: "flex", gap: 16 }}>
@@ -855,7 +889,15 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       </div>
 
       <div className="tab-bar">
-        {tabs.map(t => <button key={t.key} className={`tab-btn ${tab === t.key ? "active" : ""}`} onClick={() => { setTab(t.key); setShowForm(false); }}>{t.label}</button>)}
+        {tabs.map(t => {
+          const sc = SECTION[t.key] || SECTION.overview;
+          const on = tab === t.key;
+          return (
+            <button key={t.key} className={`tab-btn ngs-tab ${on ? "active" : ""}`} style={on ? { background: sc.solid, borderColor: sc.solid, color: "#fff" } : undefined} onClick={() => { setTab(t.key); setShowForm(false); }}>
+              <span className="ngs-tab-ic" style={on ? { background: "rgba(255,255,255,0.2)", color: "#fff" } : { background: sc.bg, color: sc.c }}><Icon name={t.key} size={16} /></span>{t.label}
+            </button>
+          );
+        })}
       </div>
 
       {loading && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>}
@@ -863,62 +905,90 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       {!loading && tab === "overview" && !isWorker && (
         <div style={{ display: "grid", gap: 16 }}>
 
-          {/* כותרת */}
-          <div style={{ background: "#1D4ED8", borderRadius: 24, padding: "28px", color: "#fff" }}>
-            <div style={{ fontSize: 14, color: "#DBEAFE", marginBottom: 6 }}>שלום 👋</div>
-            <div style={{ fontSize: 26, fontWeight: 900, color: "#fff", marginBottom: 4 }}>נ.ג.ש מור הנדסה</div>
-            <div style={{ fontSize: 14, color: "#DBEAFE" }}>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div>
-          </div>
-
           {/* 4 כרטיסים גדולים וברורים */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
 
             {/* קריאות שירות */}
-            <button onClick={() => setTab("service")} style={{ background: "#fff", border: `3px solid ${openServiceCalls.filter(s => s.urgency === "דחוף מאוד").length > 0 ? "#dc2626" : "#e2e8f0"}`, borderRadius: 20, padding: "20px 16px", cursor: "pointer", textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>🔧</div>
+            <button onClick={() => setTab("service")} style={{ background: "#fff", border: `2px solid ${openServiceCalls.filter(s => s.urgency === "דחוף מאוד").length > 0 ? "#dc2626" : "#e2e8f0"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="service" size={52} /></div>
               <div style={{ fontSize: 32, fontWeight: 900, color: openServiceCalls.length > 0 ? "#dc2626" : "#16a34a" }}>{openServiceCalls.length}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#475569", marginTop: 4 }}>קריאות שירות</div>
               <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>פתוחות</div>
             </button>
 
             {/* יומני עבודה */}
-            <button onClick={() => setTab("worklogs")} style={{ background: "#fff", border: "3px solid #e2e8f0", borderRadius: 20, padding: "20px 16px", cursor: "pointer", textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>📋</div>
+            <button onClick={() => setTab("worklogs")} style={{ background: "#fff", border: "2px solid #e2e8f0", borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="worklogs" size={52} /></div>
               <div style={{ fontSize: 32, fontWeight: 900, color: "#0f172a" }}>{workLogs.filter(w => w.performa !== "יצאה פרפורמה").length}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#475569", marginTop: 4 }}>יומני עבודה</div>
               <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>לא טופלו</div>
             </button>
 
             {/* משימות */}
-            <button onClick={() => setTab("tasks")} style={{ background: "#fff", border: `3px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#f59e0b" : "#e2e8f0"}`, borderRadius: 20, padding: "20px 16px", cursor: "pointer", textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
+            <button onClick={() => setTab("tasks")} style={{ background: "#fff", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#f59e0b" : "#e2e8f0"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="tasks" size={52} /></div>
               <div style={{ fontSize: 32, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#d97706" : "#16a34a" }}>{tasks.filter(t => t.status === "פתוח").length}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#475569", marginTop: 4 }}>משימות</div>
               <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>פתוחות</div>
             </button>
 
             {/* ציוד חסר */}
-            <button onClick={() => setTab("inventory")} style={{ background: "#fff", border: `3px solid ${inventoryItems.filter((i: any) => i.status === "חסר").length > 0 ? "#a855f7" : "#e2e8f0"}`, borderRadius: 20, padding: "20px 16px", cursor: "pointer", textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>🛒</div>
+            <button onClick={() => setTab("inventory")} style={{ background: "#fff", border: `2px solid ${inventoryItems.filter((i: any) => i.status === "חסר").length > 0 ? "#a855f7" : "#e2e8f0"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="inventory" size={52} /></div>
               <div style={{ fontSize: 32, fontWeight: 900, color: "#7c3aed" }}>{inventoryItems.filter((i: any) => i.status === "חסר").length}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#475569", marginTop: 4 }}>ציוד חסר</div>
               <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>למחסן</div>
             </button>
           </div>
 
+          {/* טסטים קרובים */}
+          {testsSoon.length > 0 && (
+            <div style={{ background: "#F0F9FF", borderRadius: 18, padding: 18, border: "1px solid #BAE6FD" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: "#0369A1", marginBottom: 12 }}><IconChip name="vehicles" size={34} />טסטים קרובים</div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {testsSoon.slice(0, 5).map(({ v, days }) => (
+                  <button key={v.id} onClick={() => setTab("vehicles")} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, background: "#fff", border: "none", borderRadius: 12, padding: "12px 14px", cursor: "pointer", fontFamily: "inherit", textAlign: "right" }}>
+                    <span><span style={{ fontWeight: 800, fontSize: 15 }}>{v.license_plate}</span><span style={{ color: "#475467", fontSize: 14 }}>{v.driver ? ` · ${v.driver}` : ""}</span></span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: (days as number) < 0 ? "#B42318" : (days as number) <= 7 ? "#B54708" : "#0369A1", background: (days as number) < 0 ? "#FEE4E2" : (days as number) <= 7 ? "#FEF0C7" : "#E0F2FE", borderRadius: 999, padding: "4px 12px", whiteSpace: "nowrap" }}>
+                      {(days as number) < 0 ? `עבר לפני ${-(days as number)} ימים` : days === 0 ? "היום!" : `בעוד ${days} ימים`}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* הסכמי שעות שמתקרבים לסוף */}
+          {agreementsNearLimit.length > 0 && (
+            <div style={{ background: "#F0FDFA", borderRadius: 18, padding: 18, border: "1px solid #99F6E4" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: "#0F766E", marginBottom: 12 }}><IconChip name="hours" size={34} />הסכמי שעות שמתקרבים לסוף</div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {agreementsNearLimit.slice(0, 5).map(({ a, u }) => (
+                  <button key={a.id} onClick={() => setTab("hours")} style={{ background: "#fff", border: "none", borderRadius: 12, padding: "12px 14px", cursor: "pointer", fontFamily: "inherit", textAlign: "right", display: "grid", gap: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                      <span style={{ fontWeight: 800, fontSize: 15 }}>{a.station_name} <span style={{ fontWeight: 500, color: "#475467" }}>· {a.client_name}</span></span>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: u.pct >= 100 ? "#B42318" : "#B54708" }}>{u.remaining < 0 ? `חריגה ${Math.round(-u.remaining * 10) / 10}` : `נותרו ${Math.round(u.remaining * 10) / 10}`} שעות</span>
+                    </div>
+                    <div style={{ height: 8, background: "#E6F4F1", borderRadius: 999, overflow: "hidden" }}><div style={{ width: `${Math.min(u.pct, 100)}%`, height: "100%", background: u.pct >= 100 ? "#DC2626" : "#F59E0B" }} /></div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* קריאות דחופות */}
           {openServiceCalls.filter(s => s.urgency === "דחוף מאוד" || s.urgency === "גבוהה").length > 0 && (
             <div style={{ background: "#fef2f2", borderRadius: 20, padding: 18, border: "2px solid #fca5a5" }}>
-              <div style={{ fontSize: 16, fontWeight: 900, color: "#dc2626", marginBottom: 14 }}>🚨 דורש טיפול מיידי</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: "#B42318", marginBottom: 14 }}><IconChip name="alert" section="service" size={34} />דורש טיפול מיידי</div>
               {openServiceCalls.filter(s => s.urgency === "דחוף מאוד" || s.urgency === "גבוהה").slice(0, 3).map(s => (
                 <div key={s.id} onClick={() => setSelectedServiceCall(s)} style={{ background: "#fff", borderRadius: 14, padding: "14px 16px", marginBottom: 10, cursor: "pointer", borderRight: "5px solid #dc2626" }}>
                   <div style={{ fontSize: 16, fontWeight: 800 }}>{s.issue}</div>
-                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name || "-"} {s.location ? `· 📍 ${s.location}` : ""}</div>
+                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.client_name || "-"} {s.location ? `· ${s.location}` : ""}</div>
                   <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                     <Badge value={s.urgency} />
-                    {s.assigned_to && <span style={{ fontSize: 12, color: "#475569", background: "#f1f5f9", borderRadius: 999, padding: "2px 10px" }}>👷 {s.assigned_to}</span>}
+                    {s.assigned_to && <span style={{ fontSize: 12, color: "#475569", background: "#f1f5f9", borderRadius: 999, padding: "2px 10px" }}>{s.assigned_to}</span>}
                     {s.contact_phone && (
-                      <a href={`tel:${s.contact_phone}`} onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#dcfce7", color: "#16a34a", borderRadius: 999, padding: "4px 12px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>📞 {s.contact_phone}</a>
+                      <a href={`tel:${s.contact_phone}`} onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#dcfce7", color: "#16a34a", borderRadius: 999, padding: "4px 12px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><Icon name="phone" size={14} />{s.contact_phone}</a>
                     )}
                   </div>
                 </div>
@@ -928,19 +998,19 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
           {/* פעולות מהירות */}
           <div style={{ background: "#fff", borderRadius: 20, padding: 18, border: "1px solid #e2e8f0" }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", marginBottom: 14 }}>⚡ פעולה מהירה</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 800, color: "#101828", marginBottom: 14 }}><Icon name="bolt" size={18} />פעולה מהירה</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
               <button className="btn btn-primary" style={{ height: 56, fontSize: 15, borderRadius: 16 }} onClick={() => { setTab("service"); setShowForm(true); }}>+ קריאת שירות</button>
-              <button className="btn btn-dark" style={{ height: 56, fontSize: 15, borderRadius: 16 }} onClick={() => { setTab("worklogs"); setShowForm(true); }}>+ יומן עבודה</button>
-              <button className="btn btn-outline" style={{ height: 56, fontSize: 15, borderRadius: 16 }} onClick={() => { setTab("tasks"); }}>+ משימה</button>
-              <button className="btn btn-outline" style={{ height: 56, fontSize: 15, borderRadius: 16 }} onClick={() => setTab("employees")}>👷 עובדים</button>
+              <button className="btn" style={{ height: 56, fontSize: 15, borderRadius: 16, background: SECTION.hours.solid, color: "#fff" }} onClick={() => { setTab("worklogs"); setShowForm(true); }}>+ יומן עבודה</button>
+              <button className="btn" style={{ height: 56, fontSize: 15, borderRadius: 16, background: SECTION.tasks.bg, color: SECTION.tasks.c }} onClick={() => { setTab("tasks"); }}>+ משימה</button>
+              <button className="btn" style={{ height: 56, fontSize: 15, borderRadius: 16, background: SECTION.employees.bg, color: SECTION.employees.c }} onClick={() => setTab("employees")}><Icon name="employees" size={18} />עובדים</button>
             </div>
           </div>
 
           {/* רשימת עובדים */}
           <div className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <h3 className="card-title" style={{ margin: 0 }}>👷 הצוות שלי</h3>
+              <SectionTitle icon="employees">הצוות שלי</SectionTitle>
               <button className="btn btn-outline" style={{ fontSize: 13 }} onClick={() => setTab("employees")}>הכל</button>
             </div>
             <div style={{ display: "grid", gap: 10 }}>
@@ -949,7 +1019,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 const empLogs = workLogs.filter(w => w.employee_name?.includes(e.name) || w.filled_by === e.name).length;
                 return (
                   <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", background: "#f8fafc", borderRadius: 14 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#EFF4FF", color: "#1D4ED8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, flexShrink: 0 }}>{e.name?.[0]}</div>
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: SECTION.employees.bg, color: SECTION.employees.c, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, flexShrink: 0 }}>{e.name?.[0]}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 800, fontSize: 15 }}>{e.name}</div>
                       <div style={{ fontSize: 12, color: "#94a3b8" }}>{e.role || "עובד"} {e.phone ? `· ${e.phone}` : ""}</div>
@@ -969,37 +1039,48 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       {!loading && tab === "overview" && isWorker && (
         <div style={{ display: "grid", gap: 14 }}>
           {/* כרטיס ברוך הבא */}
-          <div style={{ background: "#1D4ED8", borderRadius: 24, padding: "24px 24px 20px", color: "#fff", position: "relative", overflow: "hidden" }}>
+          <div className="ngs-hero" style={{ borderRadius: 20, padding: "24px 24px 20px", color: "#fff", position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: -40, left: -40, width: 200, height: 200, background: "rgba(255,255,255,0.08)", borderRadius: "50%" }} />
             <div style={{ position: "relative" }}>
-              <div style={{ fontSize: 13, color: "#DBEAFE" }}>שלום 👋</div>
+              <div style={{ fontSize: 14, color: "#DBEAFE" }}>שלום</div>
               <h1 style={{ margin: "4px 0 2px", fontSize: 28, fontWeight: 900 }}>{workerName}</h1>
               <div style={{ color: "#DBEAFE", fontSize: 13 }}>{new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" })}</div>
             </div>
           </div>
 
+          {/* טסט קרוב לרכב שלי */}
+          {testsSoon.length > 0 && (
+            <button onClick={() => setTab("vehicles")} style={{ display: "flex", alignItems: "center", gap: 12, background: (testsSoon[0].days as number) < 0 ? "#FEF3F2" : "#FFFAEB", border: `1px solid ${(testsSoon[0].days as number) < 0 ? "#FECDCA" : "#FEDF89"}`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", fontFamily: "inherit", textAlign: "right" }}>
+              <IconChip name="alert" section={(testsSoon[0].days as number) < 0 ? "service" : "tasks"} size={40} />
+              <span style={{ display: "grid", gap: 2 }}>
+                <span style={{ fontWeight: 800, fontSize: 15 }}>טסט לרכב {testsSoon[0].v.license_plate}</span>
+                <span style={{ fontSize: 14, color: "#475467" }}>{(testsSoon[0].days as number) < 0 ? `התוקף עבר לפני ${-(testsSoon[0].days as number)} ימים` : testsSoon[0].days === 0 ? "היום!" : `בעוד ${testsSoon[0].days} ימים`}</span>
+              </span>
+            </button>
+          )}
+
           {/* כרטיסי פעולה מהירה */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <button onClick={() => setTab("service")} style={{ background: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#fef2f2" : "#f0fdf4", border: `2px solid ${serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#fca5a5" : "#86efac"}`, borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right" }}>
-              <div style={{ fontSize: 28 }}>🔧</div>
+            <button onClick={() => setTab("service")} style={{ background: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#fef2f2" : "#f0fdf4", border: `2px solid ${serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#fca5a5" : "#86efac"}`, borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
+              <IconChip name="service" size={40} />
               <div style={{ fontSize: 26, fontWeight: 900, color: serviceCalls.filter(s => s.status !== "הושלם").length > 0 ? "#dc2626" : "#16a34a", marginTop: 6 }}>{serviceCalls.filter(s => s.status !== "הושלם").length}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>קריאות פתוחות</div>
             </button>
 
-            <button onClick={() => setTab("tasks")} style={{ background: tasks.filter(t => t.status === "פתוח").length > 0 ? "#fffbeb" : "#f0fdf4", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#fcd34d" : "#86efac"}`, borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right" }}>
-              <div style={{ fontSize: 28 }}>✅</div>
+            <button onClick={() => setTab("tasks")} style={{ background: tasks.filter(t => t.status === "פתוח").length > 0 ? "#fffbeb" : "#f0fdf4", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#fcd34d" : "#86efac"}`, borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
+              <IconChip name="tasks" size={40} />
               <div style={{ fontSize: 26, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#d97706" : "#16a34a", marginTop: 6 }}>{tasks.filter(t => t.status === "פתוח").length}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>משימות פתוחות</div>
             </button>
 
-            <button onClick={() => setTab("worklogs")} style={{ background: "#f8fafc", border: "2px solid #e2e8f0", borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right" }}>
-              <div style={{ fontSize: 28 }}>📋</div>
+            <button onClick={() => setTab("worklogs")} style={{ background: "#f8fafc", border: "2px solid #e2e8f0", borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
+              <IconChip name="worklogs" size={40} />
               <div style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", marginTop: 6 }}>{workLogs.length}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>יומני עבודה</div>
             </button>
 
-            <button onClick={() => setTab("inventory")} style={{ background: "#faf5ff", border: "2px solid #d8b4fe", borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right" }}>
-              <div style={{ fontSize: 28 }}>🛒</div>
+            <button onClick={() => setTab("inventory")} style={{ background: "#faf5ff", border: "2px solid #d8b4fe", borderRadius: 18, padding: "18px 16px", cursor: "pointer", textAlign: "right", fontFamily: "inherit" }}>
+              <IconChip name="inventory" size={40} />
               <div style={{ fontSize: 26, fontWeight: 900, color: "#7c3aed", marginTop: 6 }}>{inventoryItems?.filter((i: any) => i.status === "חסר").length || 0}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginTop: 2 }}>ציוד חסר</div>
             </button>
@@ -1007,7 +1088,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
           {/* כפתורי פעולה מהירה */}
           <div style={{ background: "#fff", borderRadius: 20, padding: 16, border: "1px solid #e2e8f0" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8", marginBottom: 12 }}>⚡ פעולה מהירה</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "#475467", marginBottom: 12 }}><Icon name="bolt" size={16} />פעולה מהירה</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <button className="btn btn-primary" style={{ height: 52, fontSize: 14, borderRadius: 14 }} onClick={() => { setTab("worklogs"); setShowForm(true); }}>+ יומן עבודה</button>
               <button className="btn btn-outline" style={{ height: 52, fontSize: 14, borderRadius: 14 }} onClick={() => { setTab("service"); setShowForm(true); }}>+ קריאת שירות</button>
@@ -1017,7 +1098,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           {/* קריאות דחופות */}
           {serviceCalls.filter(s => s.status !== "הושלם" && (s.urgency === "דחוף מאוד" || s.urgency === "גבוהה")).length > 0 && (
             <div style={{ background: "#fef2f2", borderRadius: 20, padding: 16, border: "1px solid #fca5a5" }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626", marginBottom: 12 }}>🚨 קריאות דחופות</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 800, color: "#B42318", marginBottom: 12 }}><Icon name="alert" size={18} />קריאות דחופות</div>
               {serviceCalls.filter(s => s.status !== "הושלם" && (s.urgency === "דחוף מאוד" || s.urgency === "גבוהה")).slice(0, 3).map(s => (
                 <div key={s.id} onClick={() => { setSelectedServiceCall(s); }} style={{ background: "#fff", borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer", borderRight: "4px solid #dc2626" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1026,7 +1107,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   </div>
                   <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{s.client_name || "-"} {s.location ? `· ${s.location}` : ""}</div>
                   {s.contact_phone && (
-                    <a href={`tel:${s.contact_phone}`} onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, background: "#dcfce7", color: "#16a34a", borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>📞 {s.contact_phone}</a>
+                    <a href={`tel:${s.contact_phone}`} onClick={e => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, background: "#dcfce7", color: "#16a34a", borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 700, textDecoration: "none" }}><Icon name="phone" size={14} />{s.contact_phone}</a>
                   )}
                 </div>
               ))}
@@ -1036,11 +1117,11 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           {/* משימות דחופות */}
           {tasks.filter(t => t.status === "פתוח" && (t.priority === "דחופה" || t.priority === "גבוהה")).length > 0 && (
             <div style={{ background: "#fffbeb", borderRadius: 20, padding: 16, border: "1px solid #fcd34d" }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#d97706", marginBottom: 12 }}>⚠️ משימות דחופות</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 800, color: "#B45309", marginBottom: 12 }}><Icon name="tasks" size={18} />משימות דחופות</div>
               {tasks.filter(t => t.status === "פתוח" && (t.priority === "דחופה" || t.priority === "גבוהה")).slice(0, 3).map(t => (
                 <div key={t.id} style={{ background: "#fff", borderRadius: 12, padding: "12px 14px", marginBottom: 8, borderRight: "4px solid #f59e0b" }}>
                   <div style={{ fontWeight: 800, fontSize: 14 }}>{t.title}</div>
-                  {t.due_date && <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>📅 {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
+                  {t.due_date && <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
                 </div>
               ))}
             </div>
@@ -1049,7 +1130,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           {/* הרכב שלי */}
           {vehicles.length > 0 && (
             <div style={{ background: "#eff6ff", borderRadius: 20, padding: 16, border: "1px solid #bfdbfe", cursor: "pointer" }} onClick={() => setTab("vehicles")}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", marginBottom: 10 }}>🚗 הרכב שלי</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "#0369A1", marginBottom: 10 }}><Icon name="vehicles" size={18} />הרכב שלי</div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <div style={{ fontSize: 20, fontWeight: 900, color: "#1e40af" }}>{vehicles[0]?.license_plate}</div>
@@ -1069,22 +1150,22 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
       {!loading && tab === "vehicles" && (
         <div className="card">
-          <div className="section-top"><h3 className="card-title" style={{ margin: 0 }}>🚗 רכבים</h3><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף רכב</button></div>
+          <div className="section-top"><SectionTitle icon="vehicles">רכבים</SectionTitle><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף רכב</button></div>
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>לוחית רישוי *</label><input className="input" value={vehicleForm.license_plate} onChange={e => setVehicleForm({...vehicleForm, license_plate: e.target.value})} placeholder="12-345-67" /></div>
                 <div className="field"><label>דגם</label><input className="input" value={vehicleForm.model} onChange={e => setVehicleForm({...vehicleForm, model: e.target.value})} /></div>
                 <div className="field"><label>שנה</label><input className="input" value={vehicleForm.year} onChange={e => setVehicleForm({...vehicleForm, year: e.target.value})} /></div>
                 <div className="field"><label>סטטוס</label><select className="input" value={vehicleForm.status} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})}><option>פעיל</option><option>בתיקון</option><option>מושבת</option></select></div>
                 <div className="field"><label>טסט אחרון</label><input className="input" type="date" value={vehicleForm.test_date} onChange={e => setVehicleForm({...vehicleForm, test_date: e.target.value})} /></div>
                 <div className="field"><label>טסט הבא</label><input className="input" type="date" value={vehicleForm.next_test_date} onChange={e => setVehicleForm({...vehicleForm, next_test_date: e.target.value})} /></div>
-                <div className="field"><label>👤 נהג</label><select className="input" value={vehicleForm.driver} onChange={e => setVehicleForm({...vehicleForm, driver: e.target.value})}><option value="">-- בחר נהג --</option>{employees.filter(e => e.status === "פעיל").map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
+                <div className="field"><label>נהג</label><select className="input" value={vehicleForm.driver} onChange={e => setVehicleForm({...vehicleForm, driver: e.target.value})}><option value="">-- בחר נהג --</option>{employees.filter(e => e.status === "פעיל").map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveVehicle} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
-          {vehicles.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🚗</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין רכבים עדיין</div></div>
+          {vehicles.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="vehicles" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין רכבים עדיין</div></div>
           : (
             <div style={{ display: "grid", gap: 12 }}>
               {vehicles.map(v => {
@@ -1096,21 +1177,26 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                     <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                          <span style={{ fontSize: 18, fontWeight: 900 }}>🚗 {v.license_plate}</span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 18, fontWeight: 800 }}><IconChip name="vehicles" size={34} />{v.license_plate}</span>
                           <Badge value={v.status} />
-                          {testAlert && <span style={{ background: "#dc2626", color: "#fff", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ טסט בקרוב!</span>}
+                          {testAlert && <span style={{ background: "#dc2626", color: "#fff", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>טסט בקרוב!</span>}
                         </div>
-                        <div style={{ fontSize: 14, color: "#64748b" }}>{v.model || "-"} · {v.year || "-"}{v.driver ? ` · 👤 ${v.driver}` : ""}</div>
+                        <div style={{ fontSize: 14, color: "#64748b" }}>{v.model || "-"} · {v.year || "-"}{v.driver ? ` · ${v.driver}` : ""}</div>
                       </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                        <button className="btn btn-secondary" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => setSelectedVehicle(v)}>🔧 טיפולים</button>
-                        <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setEditingVehicle({...v, test_date: v.test_date || "", next_test_date: v.next_test_date || "", notes: v.notes || "", driver: v.driver || ""})}>✏️ עריכה</button>
+                        <button className="btn btn-secondary" style={{ fontSize: 13 }} onClick={() => setSelectedVehicle(v)}><Icon name="service" size={16} />טיפולים</button>
+                        {v.garage_doc_url && <a className="btn btn-outline" style={{ fontSize: 13, textDecoration: "none" }} href={v.garage_doc_url} target="_blank" rel="noreferrer"><Icon name="file" size={16} />מסמך מוסך</a>}
+                        <label className="btn btn-outline" style={{ fontSize: 13, cursor: "pointer" }}>
+                          <Icon name="upload" size={16} />{uploadingVehicleId === v.id ? "מעלה..." : v.garage_doc_url ? "החלף מסמך" : "העלה מסמך מוסך"}
+                          <input type="file" hidden accept="image/*,application/pdf" disabled={uploadingVehicleId === v.id} onChange={e => { const f = e.target.files?.[0]; if (f) uploadGarageDoc(v.id, f); e.target.value = ""; }} />
+                        </label>
+                        <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setEditingVehicle({...v, test_date: v.test_date || "", next_test_date: v.next_test_date || "", notes: v.notes || "", driver: v.driver || ""})}>עריכה</button>
                         <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_vehicles", v.id)}>מחק</button>
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 24, marginTop: 12, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
                       <div><div style={{ fontSize: 11, color: "#94a3b8" }}>טסט אחרון</div><div style={{ fontSize: 14, fontWeight: 700 }}>{v.test_date ? new Date(v.test_date).toLocaleDateString("he-IL") : "-"}</div></div>
-                      <div><div style={{ fontSize: 11, color: "#94a3b8" }}>טסט הבא</div><div style={{ fontSize: 14, fontWeight: 700, color: testAlert ? "#dc2626" : "#0f172a" }}>{nextTest ? `${new Date(v.next_test_date).toLocaleDateString("he-IL")} (${(daysToTest || 0) <= 0 ? "⚠️ עבר!" : (daysToTest || 0) + " ימים"})` : "-"}</div></div>
+                      <div><div style={{ fontSize: 11, color: "#94a3b8" }}>טסט הבא</div><div style={{ fontSize: 14, fontWeight: 700, color: testAlert ? "#dc2626" : "#0f172a" }}>{nextTest ? `${new Date(v.next_test_date).toLocaleDateString("he-IL")} (${(daysToTest || 0) <= 0 ? "עבר!" : (daysToTest || 0) + " ימים"})` : "-"}</div></div>
                     </div>
                   </div>
                 );
@@ -1120,19 +1206,19 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           {editingVehicle && (
             <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
               <div style={{ background: "white", borderRadius: 20, padding: 28, maxWidth: 520, width: "100%" }}>
-                <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 900 }}>✏️ עריכת רכב — {editingVehicle.license_plate}</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 900 }}>עריכת רכב — {editingVehicle.license_plate}</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
                   <div className="field"><label>לוחית רישוי</label><input className="input" value={editingVehicle.license_plate} onChange={e => setEditingVehicle({...editingVehicle, license_plate: e.target.value})} /></div>
                   <div className="field"><label>דגם</label><input className="input" value={editingVehicle.model} onChange={e => setEditingVehicle({...editingVehicle, model: e.target.value})} /></div>
                   <div className="field"><label>שנה</label><input className="input" value={editingVehicle.year} onChange={e => setEditingVehicle({...editingVehicle, year: e.target.value})} /></div>
                   <div className="field"><label>סטטוס</label><select className="input" value={editingVehicle.status} onChange={e => setEditingVehicle({...editingVehicle, status: e.target.value})}><option>פעיל</option><option>בתיקון</option><option>מושבת</option></select></div>
                   <div className="field"><label>טסט אחרון</label><input className="input" type="date" value={editingVehicle.test_date} onChange={e => setEditingVehicle({...editingVehicle, test_date: e.target.value})} /></div>
                   <div className="field"><label>טסט הבא</label><input className="input" type="date" value={editingVehicle.next_test_date} onChange={e => setEditingVehicle({...editingVehicle, next_test_date: e.target.value})} /></div>
-                  <div className="field"><label>👤 נהג</label><select className="input" value={editingVehicle.driver || ""} onChange={e => setEditingVehicle({...editingVehicle, driver: e.target.value})}><option value="">-- בחר נהג --</option>{employees.filter(e => e.status === "פעיל").map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
+                  <div className="field"><label>נהג</label><select className="input" value={editingVehicle.driver || ""} onChange={e => setEditingVehicle({...editingVehicle, driver: e.target.value})}><option value="">-- בחר נהג --</option>{employees.filter(e => e.status === "פעיל").map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
                   <div className="field" style={{ gridColumn: "span 2" }}><label>הערות</label><input className="input" value={editingVehicle.notes} onChange={e => setEditingVehicle({...editingVehicle, notes: e.target.value})} /></div>
                 </div>
                 <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                  <button className="btn btn-primary" onClick={updateVehicle} disabled={saving}>{saving ? "שומר..." : "💾 שמור"}</button>
+                  <button className="btn btn-primary" onClick={updateVehicle} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
                   <button className="btn btn-outline" onClick={() => setEditingVehicle(null)}>ביטול</button>
                 </div>
               </div>
@@ -1143,10 +1229,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
       {!loading && tab === "employees" && (
         <div className="card">
-          <div className="section-top"><h3 className="card-title" style={{ margin: 0 }}>👷 עובדים</h3><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף עובד</button></div>
+          <div className="section-top"><SectionTitle icon="employees">עובדים</SectionTitle><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף עובד</button></div>
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>שם *</label><input className="input" value={employeeForm.name} onChange={e => setEmployeeForm({...employeeForm, name: e.target.value})} /></div>
                 <div className="field"><label>טלפון</label><input className="input" value={employeeForm.phone} onChange={e => setEmployeeForm({...employeeForm, phone: e.target.value})} /></div>
                 <div className="field"><label>תפקיד</label><input className="input" value={employeeForm.role} onChange={e => setEmployeeForm({...employeeForm, role: e.target.value})} /></div>
@@ -1155,17 +1241,17 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveEmployee} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
-          {employees.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>👷</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין עובדים עדיין</div></div>
+          {employees.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="employees" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין עובדים עדיין</div></div>
           : <div className="table-wrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>תפקיד</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>{employees.map(e => (<tr key={e.id}><td style={{ fontWeight: 800 }}>{e.name}</td><td>{e.phone || "-"}</td><td>{e.role || "-"}</td><td><Badge value={e.status} /></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_employees", e.id)}>מחק</button></td></tr>))}</tbody></table></div>}
         </div>
       )}
 
       {!loading && tab === "clients" && (
         <div className="card">
-          <div className="section-top"><h3 className="card-title" style={{ margin: 0 }}>🤝 לקוחות</h3><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף לקוח</button></div>
+          <div className="section-top"><SectionTitle icon="clients">לקוחות</SectionTitle><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ הוסף לקוח</button></div>
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>שם *</label><input className="input" value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} /></div>
                 <div className="field"><label>טלפון</label><input className="input" value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone: e.target.value})} /></div>
                 <div className="field"><label>אימייל</label><input className="input" value={clientForm.email} onChange={e => setClientForm({...clientForm, email: e.target.value})} /></div>
@@ -1174,19 +1260,19 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveClient} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
-          {clients.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🤝</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין לקוחות עדיין</div></div>
+          {clients.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="clients" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין לקוחות עדיין</div></div>
           : <div className="table-wrap"><table><thead><tr><th>שם</th><th>טלפון</th><th>אימייל</th><th>כתובת</th><th>פעולות</th></tr></thead><tbody>{clients.map(c => (<tr key={c.id}><td style={{ fontWeight: 800 }}>{c.name}</td><td>{c.phone || "-"}</td><td>{c.email || "-"}</td><td>{c.address || "-"}</td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_clients", c.id)}>מחק</button></td></tr>))}</tbody></table></div>}
         </div>
       )}
 
       {!loading && tab === "projects" && (
         <div className="card">
-          <div className="section-top"><h3 className="card-title" style={{ margin: 0 }}>📁 פרויקטים</h3><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ פרויקט חדש</button></div>
+          <div className="section-top"><SectionTitle icon="projects">פרויקטים</SectionTitle><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ פרויקט חדש</button></div>
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>שם פרויקט *</label><input className="input" value={projectForm.name} onChange={e => setProjectForm({...projectForm, name: e.target.value})} /></div>
-                <div className="field"><label>לקוח</label><select className="input" value={projectForm.client_name} onChange={e => setProjectForm({...projectForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">✏️ אחר</option></select></div>
+                <div className="field"><label>לקוח</label><select className="input" value={projectForm.client_name} onChange={e => setProjectForm({...projectForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">אחר</option></select></div>
                 <div className="field"><label>סטטוס</label><select className="input" value={projectForm.status} onChange={e => setProjectForm({...projectForm, status: e.target.value})}><option>פעיל</option><option>הושלם</option><option>מושהה</option></select></div>
                 <div className="field"><label>התחלה</label><input className="input" type="date" value={projectForm.start_date} onChange={e => setProjectForm({...projectForm, start_date: e.target.value})} /></div>
                 <div className="field"><label>סיום</label><input className="input" type="date" value={projectForm.end_date} onChange={e => setProjectForm({...projectForm, end_date: e.target.value})} /></div>
@@ -1194,7 +1280,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveProject} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
-          {projects.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📁</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין פרויקטים עדיין</div></div>
+          {projects.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="projects" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין פרויקטים עדיין</div></div>
           : <div className="table-wrap"><table><thead><tr><th>שם פרויקט</th><th>לקוח</th><th>התחלה</th><th>סיום</th><th>סטטוס</th><th>פעולות</th></tr></thead><tbody>{projects.map(p => (<tr key={p.id}><td style={{ fontWeight: 800 }}>{p.name}</td><td>{p.client_name || "-"}</td><td>{p.start_date ? new Date(p.start_date).toLocaleDateString("he-IL") : "-"}</td><td>{p.end_date ? new Date(p.end_date).toLocaleDateString("he-IL") : "-"}</td><td><Badge value={p.status} /></td><td><button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_projects", p.id)}>מחק</button></td></tr>))}</tbody></table></div>}
         </div>
       )}
@@ -1202,24 +1288,24 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       {!loading && tab === "service" && (
         <div className="card">
           <div className="section-top">
-            <h3 className="card-title" style={{ margin: 0 }}>🔧 קריאות שירות</h3>
+            <SectionTitle icon="service">קריאות שירות</SectionTitle>
             {!isWorker && <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ קריאה חדשה</button>}
           </div>
           <div className="chips" style={{ marginBottom: 12, marginTop: 8 }}>
-            {["הכל", "חדשה", "בטיפול", "הושלם"].map(f => (<button key={f} className={`btn ${serviceCallFilter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setServiceCallFilter(f)}>{f}</button>))}
+            {["הכל", "חדשה", "בטיפול", "הושלם"].map(f => (<button key={f} className={`btn ${serviceCallFilter === f ? "btn-primary" : "btn-outline"}`} onClick={() => setServiceCallFilter(f)}>{f}</button>))}
           </div>
           {!isWorker && showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>לקוח</label><select className="input" value={serviceCallForm.client_name} onChange={e => setServiceCallForm({...serviceCallForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
                 <div className="field"><label>נושא *</label><input className="input" value={serviceCallForm.issue} onChange={e => setServiceCallForm({...serviceCallForm, issue: e.target.value})} /></div>
                 <div className="field"><label>דחיפות</label><select className="input" value={serviceCallForm.urgency} onChange={e => setServiceCallForm({...serviceCallForm, urgency: e.target.value})}><option>נמוכה</option><option>בינונית</option><option>גבוהה</option><option>דחוף מאוד</option></select></div>
                 <div className="field"><label>אחראי</label><select className="input" value={serviceCallForm.assigned_to} onChange={e => setServiceCallForm({...serviceCallForm, assigned_to: e.target.value})}><option value="">בחר עובד</option>{employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}</select></div>
-                <div className="field"><label>📍 מיקום</label><input className="input" value={serviceCallForm.location} onChange={e => setServiceCallForm({...serviceCallForm, location: e.target.value})} placeholder="כתובת / אתר..." /></div>
-                <div className="field"><label>👤 איש קשר</label><input className="input" value={serviceCallForm.contact_name} onChange={e => setServiceCallForm({...serviceCallForm, contact_name: e.target.value})} placeholder="שם איש הקשר" /></div>
-                <div className="field"><label>📞 טלפון איש קשר</label><input className="input" value={serviceCallForm.contact_phone} onChange={e => setServiceCallForm({...serviceCallForm, contact_phone: e.target.value})} placeholder="050-0000000" /></div>
+                <div className="field"><label>מיקום</label><input className="input" value={serviceCallForm.location} onChange={e => setServiceCallForm({...serviceCallForm, location: e.target.value})} placeholder="כתובת / אתר..." /></div>
+                <div className="field"><label>איש קשר</label><input className="input" value={serviceCallForm.contact_name} onChange={e => setServiceCallForm({...serviceCallForm, contact_name: e.target.value})} placeholder="שם איש הקשר" /></div>
+                <div className="field"><label>טלפון איש קשר</label><input className="input" value={serviceCallForm.contact_phone} onChange={e => setServiceCallForm({...serviceCallForm, contact_phone: e.target.value})} placeholder="050-0000000" /></div>
               </div>
-              <div className="field" style={{ marginTop: 10 }}><label>📝 תיאור</label><textarea className="input" value={serviceCallForm.description} onChange={e => setServiceCallForm({...serviceCallForm, description: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
+              <div className="field" style={{ marginTop: 10 }}><label>תיאור</label><textarea className="input" value={serviceCallForm.description} onChange={e => setServiceCallForm({...serviceCallForm, description: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="btn btn-primary" onClick={saveServiceCall} disabled={saving}>{saving ? "שומר..." : "שמור"}</button><button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button></div>
             </div>
           )}
@@ -1241,14 +1327,14 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               return (Date.now() - new Date(s.created_at).getTime()) / (1000 * 60 * 60 * 24) > 3;
             }).length;
             return (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 16, background: "#1e293b", borderRadius: 16, padding: "14px 20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 10, marginBottom: 16, background: "#1e293b", borderRadius: 16, padding: "14px 20px" }}>
                 {[
                   { label: "סהג", value: serviceCalls.length, color: "#2563EB" },
                   { label: "חדשות", value: serviceCalls.filter(s => s.status === "חדשה").length, color: "#60a5fa" },
                   { label: "בטיפול", value: serviceCalls.filter(s => s.status === "בטיפול").length, color: "#fbbf24" },
                   { label: "הושלמו", value: serviceCalls.filter(s => s.status === "הושלם").length, color: "#34d399" },
                   { label: "טופלו החודש", value: completedThisMonth.length, color: "#a78bfa" },
-                  { label: overdueCount > 0 ? "⚠️ מעל 3 ימים" : "ממוצע ימים", value: overdueCount > 0 ? overdueCount : (avgDays !== null ? avgDays : "-"), color: overdueCount > 0 ? "#f87171" : "#94a3b8" },
+                  { label: overdueCount > 0 ? "מעל 3 ימים" : "ממוצע ימים", value: overdueCount > 0 ? overdueCount : (avgDays !== null ? avgDays : "-"), color: overdueCount > 0 ? "#f87171" : "#94a3b8" },
                 ].map(item => (
                   <div key={item.label} style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 22, fontWeight: 900, color: item.color }}>{item.value}</div>
@@ -1259,7 +1345,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             );
           })()}
           {serviceCalls.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
+            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="service" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין קריאות שירות</div></div>
           ) : (
             <div className="table-wrap">
               <table>
@@ -1270,7 +1356,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       <td>{s.created_at ? new Date(s.created_at).toLocaleDateString("he-IL") : "-"}</td>
                       <td>{s.client_name || "-"}</td>
                       <td style={{ fontWeight: 700 }}>{s.issue}</td>
-                      <td>{s.location ? `📍 ${s.location}` : "-"}</td>
+                      <td>{s.location ? `${s.location}` : "-"}</td>
                       <td><Badge value={s.urgency} /></td>
                       <td>{s.assigned_to || "-"}</td>
                       <td>
@@ -1280,7 +1366,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                             style={{ fontSize: 12, padding: "4px 12px", background: s.status === "הושלם" ? "#dcfce7" : "", color: s.status === "הושלם" ? "#16a34a" : "" }}
                             onClick={() => s.status !== "הושלם" && updateServiceCallStatus(s.id, "הושלם", workerName)}
                             disabled={s.status === "הושלם"}>
-                            {s.status === "הושלם" ? "✅ טופל" : "סמן טופל"}
+                            {s.status === "הושלם" ? "טופל" : "סמן טופל"}
                           </button>
                         ) : (
                           <select value={s.status} onChange={e => updateServiceCallStatus(s.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
@@ -1290,7 +1376,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       </td>
                       {!isWorker && <td style={{ fontSize: 13, color: s.completed_by ? "#16a34a" : "#94a3b8", fontWeight: s.completed_by ? 700 : 400 }}>{s.completed_by || "-"}</td>}
                       <td style={{ display: "flex", gap: 6 }}>
-                        <button className="btn btn-primary" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setSelectedServiceCall(s)}>👁 צפייה</button>
+                        <button className="btn btn-primary" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setSelectedServiceCall(s)}>צפייה</button>
                         {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_service_calls", s.id)}>מחק</button>}
                       </td>
                     </tr>
@@ -1312,14 +1398,14 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             <div className="card">
               <div className="section-top">
                 <div>
-                  <h3 className="card-title" style={{ margin: 0 }}>⏱ הסכמי שעות</h3>
+                  <SectionTitle icon="hours">הסכמי שעות</SectionTitle>
                   <div className="muted" style={{ marginTop: 4 }}>מכסה מאושרת לכל תחנה. השעות יורדות אוטומטית מיומני עבודה ששויכו להסכם.</div>
                 </div>
                 <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ תחנה / הסכם חדש</button>
               </div>
               {showForm && (
                 <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginTop: 14 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                     <div className="field"><label>לקוח *</label><select className="input" value={agreementForm.client_name} onChange={e => setAgreementForm({...agreementForm, client_name: e.target.value})}><option value="">בחר לקוח</option>{clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
                     <div className="field"><label>שם התחנה *</label><input className="input" value={agreementForm.station_name} onChange={e => setAgreementForm({...agreementForm, station_name: e.target.value})} placeholder="למשל: תחנת חיפה מרכז" /></div>
                     <div className="field"><label>שעות מאושרות *</label><input className="input" type="number" step="0.5" value={agreementForm.approved_hours} onChange={e => setAgreementForm({...agreementForm, approved_hours: e.target.value})} placeholder="32" /></div>
@@ -1335,7 +1421,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
             {clientNames.length === 0 ? (
               <div className="card" style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
-                <div style={{ fontSize: 40 }}>⏱</div>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="hours" size={56} /></div>
                 <div style={{ fontWeight: 700, marginTop: 8 }}>אין הסכמי שעות עדיין</div>
                 <div style={{ fontSize: 13, marginTop: 4 }}>הוסף תחנה עם מכסת שעות כדי להתחיל לעקוב</div>
               </div>
@@ -1347,7 +1433,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
               return (
                 <div key={cn} className="card">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-                    <h3 className="card-title" style={{ margin: 0 }}>🤝 {cn}</h3>
+                    <SectionTitle icon="clients">{cn}</SectionTitle>
                     <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#475569" }}>
                       <span>מאושר: <b>{fmt(totals.approved)}</b></span>
                       <span>בוצע: <b>{fmt(totals.used)}</b></span>
@@ -1361,9 +1447,9 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       return (
                         <div key={a.id} style={{ border: `1px solid ${u.pct >= 80 ? col + "66" : "#e8eef6"}`, borderRadius: 16, padding: 16, background: u.pct >= 100 ? "#fff7f7" : "#fff" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                            <div style={{ fontWeight: 900, fontSize: 16 }}>🚒 {a.station_name}</div>
+                            <div style={{ fontWeight: 900, fontSize: 16 }}>{a.station_name}</div>
                             <div style={{ display: "flex", gap: 6 }}>
-                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px" }} onClick={() => setEditingAgreement({ ...a, approved_hours: String(a.approved_hours ?? ""), notes: a.notes || "" })}>✏️</button>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px" }} onClick={() => setEditingAgreement({ ...a, approved_hours: String(a.approved_hours ?? ""), notes: a.notes || "" })}></button>
                               <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "#dc2626" }} onClick={() => deleteItem("ngs_hour_agreements", a.id)}>מחק</button>
                             </div>
                           </div>
@@ -1371,21 +1457,21 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                           <div style={{ marginTop: 14, height: 10, background: "#f1f5f9", borderRadius: 999, overflow: "hidden" }}>
                             <div style={{ width: `${Math.min(u.pct, 100)}%`, height: "100%", background: col }} />
                           </div>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 12, textAlign: "center" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8, marginTop: 12, textAlign: "center" }}>
                             <div><div style={{ fontSize: 20, fontWeight: 900 }}>{fmt(u.approved)}</div><div style={{ fontSize: 11, color: "#94a3b8" }}>מאושר</div></div>
                             <div><div style={{ fontSize: 20, fontWeight: 900, color: col }}>{fmt(u.used)}</div><div style={{ fontSize: 11, color: "#94a3b8" }}>בוצע</div></div>
                             <div><div style={{ fontSize: 20, fontWeight: 900, color: u.remaining < 0 ? "#dc2626" : "#16a34a" }}>{fmt(Math.abs(u.remaining))}</div><div style={{ fontSize: 11, color: "#94a3b8" }}>{u.remaining < 0 ? "חריגה" : "נותר"}</div></div>
                           </div>
-                          {u.pct >= 100 && <div style={{ marginTop: 10, background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>{u.remaining < 0 ? "⚠️ חרגת מהמכסה המאושרת" : "⚠️ המכסה נגמרה"}</div>}
-                          {u.pct >= 80 && u.pct < 100 && <div style={{ marginTop: 10, background: "#fef3c7", color: "#92400e", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>⚠️ נותרו {fmt(u.remaining)} שעות בלבד</div>}
-                          <button className="btn btn-primary" style={{ width: "100%", marginTop: 12, fontSize: 13 }} onClick={() => setSelectedAgreement(a)}>📋 יומנים ({u.logs.length})</button>
+                          {u.pct >= 100 && <div style={{ marginTop: 10, background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>{u.remaining < 0 ? "חרגת מהמכסה המאושרת" : "המכסה נגמרה"}</div>}
+                          {u.pct >= 80 && u.pct < 100 && <div style={{ marginTop: 10, background: "#fef3c7", color: "#92400e", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>נותרו {fmt(u.remaining)} שעות בלבד</div>}
+                          <button className="btn btn-primary" style={{ width: "100%", marginTop: 12, fontSize: 13 }} onClick={() => setSelectedAgreement(a)}>יומנים ({u.logs.length})</button>
                         </div>
                       );
                     })}
                   </div>
                   {unlinked.length > 0 && (
                     <div style={{ marginTop: 14, background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: 12, padding: "10px 14px", fontSize: 13, color: "#475569" }}>
-                      ℹ️ {unlinked.length} יומנים של {cn} ({fmt(unlinkedHours)} שעות) לא משויכים לתחנה. אפשר לשייך דרך ✏️ עריכה ביומן עבודה.
+                      {unlinked.length} יומנים של {cn} ({fmt(unlinkedHours)} שעות) לא משויכים לתחנה. אפשר לשייך דרך עריכה ביומן עבודה.
                     </div>
                   )}
                 </div>
@@ -1395,15 +1481,15 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             {editingAgreement && (
               <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
                 <div style={{ background: "white", borderRadius: 20, padding: 28, maxWidth: 520, width: "100%" }}>
-                  <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 900 }}>✏️ עריכת הסכם — {editingAgreement.station_name}</h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 900 }}>עריכת הסכם — {editingAgreement.station_name}</h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
                     <div className="field"><label>לקוח</label><select className="input" value={editingAgreement.client_name} onChange={e => setEditingAgreement({...editingAgreement, client_name: e.target.value})}>{clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}{!clients.some((c: any) => c.name === editingAgreement.client_name) && <option value={editingAgreement.client_name}>{editingAgreement.client_name}</option>}</select></div>
                     <div className="field"><label>שם התחנה</label><input className="input" value={editingAgreement.station_name} onChange={e => setEditingAgreement({...editingAgreement, station_name: e.target.value})} /></div>
                     <div className="field"><label>שעות מאושרות</label><input className="input" type="number" step="0.5" value={editingAgreement.approved_hours} onChange={e => setEditingAgreement({...editingAgreement, approved_hours: e.target.value})} /></div>
                     <div className="field"><label>הערות</label><input className="input" value={editingAgreement.notes} onChange={e => setEditingAgreement({...editingAgreement, notes: e.target.value})} /></div>
                   </div>
                   <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                    <button className="btn btn-primary" onClick={updateAgreement} disabled={saving}>{saving ? "שומר..." : "💾 שמור"}</button>
+                    <button className="btn btn-primary" onClick={updateAgreement} disabled={saving}>{saving ? "שומר..." : "שמור"}</button>
                     <button className="btn btn-outline" onClick={() => setEditingAgreement(null)}>ביטול</button>
                   </div>
                 </div>
@@ -1415,14 +1501,14 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
                   <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
-                      <div style={{ fontSize: 20, fontWeight: 900 }}>🚒 {selectedAgreement.station_name}</div>
+                      <div style={{ fontSize: 20, fontWeight: 900 }}>{selectedAgreement.station_name}</div>
                       <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedAgreement.client_name} · מאושר {fmt(selUsage.approved)} · בוצע {fmt(selUsage.used)} · {selUsage.remaining < 0 ? `חריגה ${fmt(-selUsage.remaining)}` : `נותר ${fmt(selUsage.remaining)}`}</div>
                     </div>
                     <button onClick={() => setSelectedAgreement(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "#64748b" }}>×</button>
                   </div>
                   <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
                     {selUsage.logs.length === 0 ? (
-                      <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📋</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומנים משויכים לתחנה הזו</div></div>
+                      <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="worklogs" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>אין יומנים משויכים לתחנה הזו</div></div>
                     ) : (
                       <div style={{ display: "grid", gap: 8 }}>
                         {selUsage.logs.map((w: any) => (
@@ -1433,9 +1519,9 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                                 <span style={{ fontWeight: 800 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
                                 <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{fmt(parseFloat(w.hours) || 0)} שעות</span>
                               </div>
-                              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{w.branch ? `📍 ${w.branch}` : ""}{w.filled_by ? ` · ממלא: ${w.filled_by}` : ""}</div>
+                              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{w.branch ? `${w.branch}` : ""}{w.filled_by ? ` · ממלא: ${w.filled_by}` : ""}</div>
                             </div>
-                            <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => { setSelectedAgreement(null); setSelectedWorkLog(w); }}>📄 פתח יומן</button>
+                            <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => { setSelectedAgreement(null); setSelectedWorkLog(w); }}>פתח יומן</button>
                           </div>
                         ))}
                       </div>
@@ -1461,59 +1547,80 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
       {!loading && tab === "worklogs" && (
         <div className="card">
-          <div className="section-top"><h3 className="card-title" style={{ margin: 0 }}>📋 יומני עבודה</h3><button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>+ יומן חדש</button></div>
+          <div className="section-top">
+            <SectionTitle icon="worklogs">יומני עבודה</SectionTitle>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {!isWorker && <button className="btn btn-outline" disabled={filteredWorkLogs.length === 0} onClick={() => exportWorkLogsCSV(filteredWorkLogs, hourAgreements, [wlClient, wlMonth || [wlDateFrom, wlDateTo].filter(Boolean).join("_")].filter(Boolean).join("-"), formatSerial)}><Icon name="download" size={18} />ייצוא לאקסל ({filteredWorkLogs.length})</button>}
+              <button className="btn btn-primary" onClick={() => { if (!showForm) setWorkLogForm(emptyWorkLog()); setShowForm(!showForm); }}>+ יומן חדש</button>
+            </div>
+          </div>
           <div className="chips" style={{ marginBottom: 12, marginTop: 8 }}>
-            {!isWorker && ["הכל", "לא טופל", "יצאה פרפורמה"].map(f => (<button key={f} className={`btn ${workLogFilter === f ? "btn-dark" : "btn-outline"}`} onClick={() => setWorkLogFilter(f)}>{f}</button>))}
+            {!isWorker && ["הכל", "לא טופל", "יצאה פרפורמה"].map(f => (<button key={f} className={`btn ${workLogFilter === f ? "btn-primary" : "btn-outline"}`} onClick={() => setWorkLogFilter(f)}>{f}</button>))}
           </div>
 
           {/* חיפוש יומנים */}
+          {!showForm && !showWlFilters && (
+            <button className="btn btn-outline" style={{ width: "100%", marginBottom: 14 }} onClick={() => setShowWlFilters(true)}>
+              <Icon name="search" size={18} />חיפוש וסינון{wlHasFilters ? " (פעיל)" : ""}
+            </button>
+          )}
+          {!showForm && showWlFilters && (
           <div style={{ background: "#f8fafc", borderRadius: 16, padding: 14, marginBottom: 14, display: "grid", gap: 10 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10 }}>
               <div className="field">
-                <label>🔍 חיפוש (מיקום / לקוח / מס׳ יומן)</label>
+                <label>חודש</label>
+                <input className="input" type="month" value={wlMonth} onChange={e => {
+                  const m = e.target.value; setWlMonth(m);
+                  if (m) { const [y, mo] = m.split("-").map(Number); const last = new Date(y, mo, 0).getDate(); setWlDateFrom(`${m}-01`); setWlDateTo(`${m}-${String(last).padStart(2, "0")}`); }
+                  else { setWlDateFrom(""); setWlDateTo(""); }
+                }} />
+              </div>
+              <div className="field">
+                <label>חיפוש (מיקום / לקוח / מס׳ יומן)</label>
                 <input className="input" value={wlSearch} onChange={e => setWlSearch(e.target.value)} placeholder="למשל: חיפה, 0042..." />
               </div>
               <div className="field">
-                <label>🤝 לקוח</label>
+                <label>לקוח</label>
                 <select className="input" value={wlClient} onChange={e => setWlClient(e.target.value)}>
                   <option value="">כל הלקוחות</option>
                   {clients.map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
               <div className="field">
-                <label>📅 מתאריך</label>
-                <input className="input" type="date" value={wlDateFrom} onChange={e => setWlDateFrom(e.target.value)} />
+                <label>מתאריך</label>
+                <input className="input" type="date" value={wlDateFrom} onChange={e => { setWlDateFrom(e.target.value); setWlMonth(""); }} />
               </div>
               <div className="field">
-                <label>📅 עד תאריך</label>
-                <input className="input" type="date" value={wlDateTo} onChange={e => setWlDateTo(e.target.value)} />
+                <label>עד תאריך</label>
+                <input className="input" type="date" value={wlDateTo} onChange={e => { setWlDateTo(e.target.value); setWlMonth(""); }} />
               </div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 13, color: "#64748b" }}>
-                {filteredWorkLogs.length} מתוך {workLogs.length} יומנים
+                {filteredWorkLogs.length} מתוך {workLogs.length} יומנים · {Math.round(filteredWorkLogs.reduce((sum, w) => sum + (parseFloat(w.hours) || 0), 0) * 10) / 10} שעות
               </span>
               {wlHasFilters && (
                 <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }}
-                  onClick={() => { setWlSearch(""); setWlClient(""); setWlDateFrom(""); setWlDateTo(""); }}>
-                  ✖ נקה חיפוש
+                  onClick={() => { setWlSearch(""); setWlClient(""); setWlDateFrom(""); setWlDateTo(""); setWlMonth(""); }}>
+                  נקה חיפוש
                 </button>
               )}
             </div>
           </div>
+          )}
 
           {showForm && (
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 14 }}>
-              <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>📋 יומן עבודה חדש</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <div style={{ fontWeight: 700, fontSize: 15, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>יומן עבודה חדש</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field"><label>ממלא היומן</label><input className="input" value={workLogForm.filled_by} onChange={e => !isWorker && setWorkLogForm({...workLogForm, filled_by: e.target.value})} placeholder="שם הממלא" readOnly={isWorker} style={isWorker ? { background: "#f1f5f9", color: "#64748b" } : {}} /></div>
-                <div className="field"><label>לקוח</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value, agreement_id: ""})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">✏️ אחר</option></select></div>
+                <div className="field"><label>לקוח</label><select className="input" value={workLogForm.project_name} onChange={e => setWorkLogForm({...workLogForm, project_name: e.target.value, agreement_id: ""})}><option value="">בחר לקוח</option>{clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}<option value="אחר">אחר</option></select></div>
                 <div className="field"><label>סניף / אתר</label><input className="input" value={workLogForm.branch} onChange={e => setWorkLogForm({...workLogForm, branch: e.target.value})} placeholder="שם הסניף" /></div>
                 <div className="field"><label>שעות עבודה</label><input className="input" type="number" value={workLogForm.hours} onChange={e => setWorkLogForm({...workLogForm, hours: e.target.value})} step="0.5" /></div>
                 <div className="field"><label>תאריך</label><input className="input" type="date" value={workLogForm.date} onChange={e => setWorkLogForm({...workLogForm, date: e.target.value})} /></div>
                 {hourAgreements.some((a: any) => a.client_name === workLogForm.project_name) && (
                   <div className="field">
-                    <label>⏱ תחנה / הסכם שעות</label>
+                    <label>תחנה / הסכם שעות</label>
                     <select className="input" value={workLogForm.agreement_id} onChange={e => setWorkLogForm({...workLogForm, agreement_id: e.target.value})}>
                       <option value="">ללא שיוך</option>
                       {hourAgreements.filter((a: any) => a.client_name === workLogForm.project_name).map((a: any) => <option key={a.id} value={a.id}>{a.station_name}</option>)}
@@ -1521,9 +1628,9 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   </div>
                 )}
               </div>
-              <div className="field"><label>📝 הערות ללקוח</label><textarea className="input" value={workLogForm.client_notes} onChange={e => setWorkLogForm({...workLogForm, client_notes: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
+              <div className="field"><label>הערות ללקוח</label><textarea className="input" value={workLogForm.client_notes} onChange={e => setWorkLogForm({...workLogForm, client_notes: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} /></div>
               <div>
-                <div style={{ fontWeight: 600, fontSize: 13, color: "#475569", marginBottom: 8 }}>👷 עובדים:</div>
+                <div style={{ fontWeight: 600, fontSize: 13, color: "#475569", marginBottom: 8 }}>עובדים:</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
                   {employees.filter(e => e.status === "פעיל").map(e => {
                     const selected = workLogForm.employee_name.split(",").map((s: string) => s.trim()).includes(e.name);
@@ -1540,22 +1647,23 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 </div>
                 <input className="input" value={workLogForm.workers} onChange={e => setWorkLogForm({...workLogForm, workers: e.target.value})} placeholder="הוסף עובד ידנית..." />
               </div>
-              <div style={{ fontWeight: 600, fontSize: 13, color: "#475569" }}>📝 פירוט העבודה (עד 10 שורות):</div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "#344054" }}>פירוט העבודה (עד 10 שורות):</div>
               <div style={{ display: "grid", gap: 8 }}>
-                {([1,2,3,4,5,6,7,8,9,10] as number[]).map(n => (
+                {(() => { let lastFilled = 0; for (let n = 1; n <= 10; n++) if ((workLogForm as any)[`line${n}`]) lastFilled = n; return Array.from({ length: Math.min(10, Math.max(3, lastFilled + 1)) }, (_, i) => i + 1); })().map(n => (
                   <div key={n} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 700, minWidth: 24 }}>{n}.</span>
                     <input className="input" style={{ flex: 1 }} value={(workLogForm as any)[`line${n}`]} onChange={e => setWorkLogForm({...workLogForm, [`line${n}`]: e.target.value})} placeholder={`שורה ${n}...`} />
                   </div>
                 ))}
               </div>
+              <div style={{ fontSize: 13, color: "#475467" }}>שורה חדשה נפתחת אוטומטית כשממלאים את האחרונה. אחרי השמירה אפשר לפתוח את היומן ולצרף תמונות.</div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn btn-primary" onClick={saveWorkLog} disabled={saving}>{saving ? "שומר..." : "💾 שמור יומן"}</button>
+                <button className="btn btn-primary" style={{ minHeight: 48, flex: "1 1 auto", maxWidth: 260 }} onClick={saveWorkLog} disabled={saving}>{saving ? "שומר..." : "שמור יומן"}</button>
                 <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
               </div>
             </div>
           )}
-          {filteredWorkLogs.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>📋</div><div style={{ fontWeight: 700, marginTop: 8 }}>{wlHasFilters ? "לא נמצאו יומנים לחיפוש הזה" : "אין יומני עבודה"}</div></div>
+          {filteredWorkLogs.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}><IconChip name="worklogs" size={56} /></div><div style={{ fontWeight: 700, marginTop: 8 }}>{wlHasFilters ? "לא נמצאו יומנים לחיפוש הזה" : "אין יומני עבודה"}</div></div>
           : (
             <div style={{ display: "grid", gap: 10 }}>
               {filteredWorkLogs.map(w => (
@@ -1566,23 +1674,23 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                         <span style={{ fontSize: 13, fontWeight: 900, background: "#EFF4FF", color: "#1D4ED8", borderRadius: 999, padding: "2px 10px" }}>#{formatSerial(w.serial_number)}</span>
                         <span style={{ fontSize: 18, fontWeight: 900 }}>{w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"}</span>
                       </div>
-                      <div style={{ fontSize: 14, color: "#64748b", marginTop: 2 }}>{w.branch ? `📍 ${w.branch}` : ""}{w.project_name ? ` · 🤝 ${w.project_name}` : ""}</div>
-                      {w.filled_by && <div style={{ fontSize: 13, color: "#94a3b8" }}>ממלא: {w.filled_by}</div>}
+                      <div style={{ fontSize: 14, color: "#64748b", marginTop: 2 }}>{w.branch ? `${w.branch}` : ""}{w.project_name ? ` · ${w.project_name}` : ""}</div>
+                      {w.filled_by && <div style={{ fontSize: 13, color: "#475467" }}>ממלא: {w.filled_by}{Array.isArray(w.photos) && w.photos.length > 0 ? ` · ${w.photos.length} תמונות` : ""}</div>}
                       {w.agreement_id && (() => {
                         const ag = hourAgreements.find((a: any) => a.id === w.agreement_id);
-                        return ag ? <div style={{ marginTop: 4 }}><span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>⏱ {ag.station_name}</span></div> : null;
+                        return ag ? <div style={{ marginTop: 4 }}><span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{ag.station_name}</span></div> : null;
                       })()}
                     </div>
                     {!isWorker && (
                       <span style={{ background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2", color: w.performa === "יצאה פרפורמה" ? "#16a34a" : "#dc2626", borderRadius: 999, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>
-                        {w.performa === "יצאה פרפורמה" ? "✅ פרפורמה" : "❌ לא טופל"}
+                        {w.performa === "יצאה פרפורמה" ? "פרפורמה" : "לא טופל"}
                       </span>
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setSelectedWorkLog(w)}>📄 פתח יומן</button>
+                    <button className="btn btn-primary" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setSelectedWorkLog(w)}>פתח יומן</button>
                     {(isWorker ? (w.filled_by === workerName || w.employee_name?.includes(workerName)) : true) && (
-                      <button className="btn btn-outline" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => setEditingWorkLog({...w})}>✏️ עריכה</button>
+                      <button className="btn btn-outline" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => setEditingWorkLog({...w})}>עריכה</button>
                     )}
                     <button className="btn btn-outline" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => {
                       const lines = [1,2,3,4,5,6,7,8,9,10].map(n => w[`line${n}`]).filter(Boolean);
@@ -1590,21 +1698,21 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       const win = window.open("", "_blank");
                       if (win) {
                         win.document.write(`<html dir="rtl"><head><title>יומן עבודה #${formatSerial(w.serial_number)}</title><style>body{font-family:Arial,sans-serif;padding:32px;direction:rtl}h2{font-size:22px;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px}td,th{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f1f5f9}@media print{button{display:none}}</style></head><body>`);
-                        win.document.write(`<h2>📋 יומן עבודה #${formatSerial(w.serial_number)}</h2>`);
+                        win.document.write(`<h2>יומן עבודה #${formatSerial(w.serial_number)}</h2>`);
                         win.document.write(`<p>תאריך: ${w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"} | לקוח: ${w.project_name || "-"} | סניף: ${w.branch || "-"}</p>`);
                         win.document.write(`<p>עובדים: ${workers || "-"} | שעות: ${w.hours || "-"} | ממלא: ${w.filled_by || "-"}</p>`);
                         win.document.write(`<table><thead><tr><th>#</th><th>פירוט עבודה</th></tr></thead><tbody>`);
                         lines.forEach((l, i) => win.document.write(`<tr><td>${i+1}</td><td>${l}</td></tr>`));
                         win.document.write(`</tbody></table>`);
                         if (w.client_notes) win.document.write(`<p><strong>הערות ללקוח:</strong> ${w.client_notes}</p>`);
-                        win.document.write(`<br/><button onclick="window.print()">🖨️ הדפס</button></body></html>`);
+                        win.document.write(`<br/><button onclick="window.print()">הדפס</button></body></html>`);
                         win.document.close();
                       }
-                    }}>🖨️ הדפס</button>
+                    }}>הדפס</button>
                     {!isWorker && (
-                      <select value={w.performa || "לא טופל"} onChange={async e => { await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id); await load(); }} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2" }}>
-                        <option value="לא טופל">❌ לא טופל</option>
-                        <option value="יצאה פרפורמה">✅ יצאה פרפורמה</option>
+                      <select value={w.performa || "לא טופל"} onChange={async e => { if (check(await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id))) await load(); }} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "#dcfce7" : "#fee2e2" }}>
+                        <option value="לא טופל">לא טופל</option>
+                        <option value="יצאה פרפורמה">יצאה פרפורמה</option>
                       </select>
                     )}
                     {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "6px 10px", color: "#dc2626" }} onClick={() => deleteItem("ngs_work_logs", w.id)}>מחק</button>}
