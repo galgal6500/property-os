@@ -174,9 +174,9 @@ function IncomeChart() {
           const height = Math.max(40, (item.amount / max) * 220);
           return (
             <div key={item.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>{item.amount.toLocaleString("he-IL")} ₪</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 700 }}>{item.amount.toLocaleString("he-IL")} ₪</div>
               <div style={{ width: "100%", maxWidth: 56, height, borderRadius: "18px 18px 8px 8px", background: "#2563EB" }} />
-              <div style={{ fontSize: 13, color: "#475569", fontWeight: 700 }}>{item.month}</div>
+              <div style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 700 }}>{item.month}</div>
             </div>
           );
         })}
@@ -295,7 +295,7 @@ export function Dashboard({ openApartment, openBuilding }: { openApartment: (id:
               <thead><tr><th>דירה</th><th>תקלה</th><th>דחיפות</th><th>סטטוס</th></tr></thead>
               <tbody>
                 {recentRequests.length === 0 ? (
-                  <tr><td colSpan={4} style={{ textAlign: "center", color: "#64748b", padding: 20 }}>אין קריאות פתוחות 🎉</td></tr>
+                  <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--muted)", padding: 20 }}>אין קריאות פתוחות 🎉</td></tr>
                 ) : recentRequests.map((item) => (
                   <tr key={item.id}>
                     <td>{item.apartments?.buildings?.name} / {item.apartments?.apartment_number}</td>
@@ -318,7 +318,7 @@ export function Dashboard({ openApartment, openBuilding }: { openApartment: (id:
           </div>
 
           {quickAction === "owner" && (
-            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "#f8fafc", borderRadius: 12, padding: 16 }}>
+            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "var(--surface-2)", borderRadius: 12, padding: 16 }}>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>בעל נכס חדש</div>
               <input className="input" placeholder="שם מלא *" value={ownerForm.name} onChange={e => setOwnerForm({...ownerForm, name: e.target.value})} />
               <input className="input" placeholder="טלפון" value={ownerForm.phone} onChange={e => setOwnerForm({...ownerForm, phone: e.target.value})} />
@@ -331,7 +331,7 @@ export function Dashboard({ openApartment, openBuilding }: { openApartment: (id:
           )}
 
           {quickAction === "apt" && (
-            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "#f8fafc", borderRadius: 12, padding: 16 }}>
+            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "var(--surface-2)", borderRadius: 12, padding: 16 }}>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>דירה חדשה</div>
               <select className="input" value={aptForm.building_id} onChange={e => setAptForm({...aptForm, building_id: e.target.value})}>
                 <option value="">בחר מבנה</option>
@@ -351,7 +351,7 @@ export function Dashboard({ openApartment, openBuilding }: { openApartment: (id:
           )}
 
           {quickAction === "lease" && (
-            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "#f8fafc", borderRadius: 12, padding: 16 }}>
+            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "var(--surface-2)", borderRadius: 12, padding: 16 }}>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>חוזה חדש</div>
               <select className="input" value={leaseForm.apartment_id} onChange={e => setLeaseForm({...leaseForm, apartment_id: e.target.value})}>
                 <option value="">בחר דירה</option>
@@ -372,7 +372,7 @@ export function Dashboard({ openApartment, openBuilding }: { openApartment: (id:
           )}
 
           {quickAction === "req" && (
-            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "#f8fafc", borderRadius: 12, padding: 16 }}>
+            <div style={{ marginTop: 16, display: "grid", gap: 10, background: "var(--surface-2)", borderRadius: 12, padding: 16 }}>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>קריאת שירות חדשה</div>
               <select className="input" value={reqForm.apartment_id} onChange={e => setReqForm({...reqForm, apartment_id: e.target.value})}>
                 <option value="">בחר דירה</option>
@@ -403,7 +403,7 @@ export function Dashboard({ openApartment, openBuilding }: { openApartment: (id:
               <thead><tr><th>דירה</th><th>דייר</th><th>בעל נכס</th><th>תאריך סיום</th></tr></thead>
               <tbody>
                 {endingLeases.length === 0 ? (
-                  <tr><td colSpan={4} style={{ textAlign: "center", color: "#64748b", padding: 20 }}>אין חוזים קרובים לסיום ✅</td></tr>
+                  <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--muted)", padding: 20 }}>אין חוזים קרובים לסיום ✅</td></tr>
                 ) : endingLeases.map((item: any) => (
                   <tr key={item.id}><td>{item.apartments?.buildings?.name} / {item.apartments?.apartment_number}</td><td>{item.tenant_name}</td><td>-</td><td>{item.end_date ? new Date(item.end_date).toLocaleDateString("he-IL") : "-"}</td></tr>
                 ))}
@@ -415,7 +415,7 @@ export function Dashboard({ openApartment, openBuilding }: { openApartment: (id:
           <h3 className="card-title">דירות פנויות שצריך לקדם</h3>
           <div className="vacant-list">
             {vacantList.length === 0 ? (
-              <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין דירות פנויות 🎉</div>
+              <div style={{ padding: 20, textAlign: "center", color: "var(--muted)" }}>אין דירות פנויות 🎉</div>
             ) : vacantList.map((item: any) => (
               <div key={item.id} className="vacant-item" onClick={() => openApartment(item.id)} style={{ cursor: "pointer" }}>
                 <div style={{ fontWeight: 800 }}>{item.buildings?.name} / דירה {item.apartment_number}</div>
@@ -476,7 +476,7 @@ export function Owners({ openOwner }: { openOwner: (id: number) => void }) {
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>בעל נכס חדש</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="field"><label>שם מלא</label><input className="input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="יוסי כהן" /></div>
@@ -492,9 +492,9 @@ export function Owners({ openOwner }: { openOwner: (id: number) => void }) {
         )}
 
         {loading ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>טוען...</div>
         ) : dbOwners.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>👤</div>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>אין בעלי נכסים עדיין</div>
             <div>לחץ על "הוסף בעל נכס" כדי להתחיל</div>
@@ -692,7 +692,7 @@ export function Settings({ userEmail }: { userEmail: string }) {
         <div className="card">
           <div className="section-top" style={{ marginBottom: 16 }}>
             <h3 className="card-title" style={{ margin: 0 }}>פרטי העסק</h3>
-            {saved && <span style={{ color: "#16a34a", fontWeight: 700 }}>✅ נשמר!</span>}
+            {saved && <span style={{ color: "var(--green)", fontWeight: 700 }}>✅ נשמר!</span>}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div className="field"><label>שם העסק</label><input className="input" value={business.name} onChange={e => setBusiness({...business, name: e.target.value})} placeholder="GM ניהול נכסים" /></div>
@@ -711,9 +711,9 @@ export function Settings({ userEmail }: { userEmail: string }) {
           <div className="muted" style={{ marginBottom: 16 }}>סוגי התקלות שיופיעו בטופס קריאת שירות</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
             {issueTypes.map((issue, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, background: "#f1f5f9", borderRadius: 20, padding: "6px 14px" }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-3)", borderRadius: 20, padding: "6px 14px" }}>
                 <span>{issue}</span>
-                <button onClick={() => setIssueTypes(issueTypes.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 16 }}>×</button>
+                <button onClick={() => setIssueTypes(issueTypes.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red)", fontSize: 16 }}>×</button>
               </div>
             ))}
           </div>
@@ -728,7 +728,7 @@ export function Settings({ userEmail }: { userEmail: string }) {
         <div className="card">
           <div className="section-top" style={{ marginBottom: 16 }}>
             <h3 className="card-title" style={{ margin: 0 }}>עמלת ניהול ברירת מחדל</h3>
-            {saved && <span style={{ color: "#16a34a", fontWeight: 700 }}>✅ נשמר!</span>}
+            {saved && <span style={{ color: "var(--green)", fontWeight: 700 }}>✅ נשמר!</span>}
           </div>
           <div className="muted" style={{ marginBottom: 16 }}>ערך זה ישמש כברירת מחדל בעת הוספת דירה חדשה</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, maxWidth: 400 }}>
@@ -752,7 +752,7 @@ export function Settings({ userEmail }: { userEmail: string }) {
         <div className="card">
           <div className="section-top" style={{ marginBottom: 16 }}>
             <h3 className="card-title" style={{ margin: 0 }}>התראות באימייל</h3>
-            {saved && <span style={{ color: "#16a34a", fontWeight: 700 }}>✅ נשמר!</span>}
+            {saved && <span style={{ color: "var(--green)", fontWeight: 700 }}>✅ נשמר!</span>}
           </div>
           <div style={{ display: "grid", gap: 16 }}>
             {[
@@ -761,14 +761,14 @@ export function Settings({ userEmail }: { userEmail: string }) {
               { key: "requestClosed", label: "קריאת שירות נסגרה", desc: "שלח התראה כשקריאה מסומנת כהושלם" },
               { key: "newUser", label: "משתמש חדש נרשם", desc: "שלח התראה כשמשתמש חדש מבקש גישה" },
             ].map(item => (
-              <div key={item.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: "1px solid #f1f5f9" }}>
+              <div key={item.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: "1px solid var(--surface-3)" }}>
                 <div>
                   <div style={{ fontWeight: 700 }}>{item.label}</div>
                   <div className="muted" style={{ marginTop: 4 }}>{item.desc}</div>
                 </div>
                 <div style={{ position: "relative", cursor: "pointer" }} onClick={() => setAlerts({...alerts, [item.key]: !alerts[item.key as keyof typeof alerts]})}>
-                  <div style={{ width: 48, height: 26, borderRadius: 13, background: alerts[item.key as keyof typeof alerts] ? "#2563EB" : "#cbd5e1", transition: "background 0.2s" }}>
-                    <div style={{ width: 20, height: 20, borderRadius: "50%", background: "white", position: "absolute", top: 3, left: alerts[item.key as keyof typeof alerts] ? 25 : 3, transition: "left 0.2s" }} />
+                  <div style={{ width: 48, height: 26, borderRadius: 13, background: alerts[item.key as keyof typeof alerts] ? "#2563EB" : "var(--line-strong)", transition: "background 0.2s" }}>
+                    <div style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--card)", position: "absolute", top: 3, left: alerts[item.key as keyof typeof alerts] ? 25 : 3, transition: "left 0.2s" }} />
                   </div>
                 </div>
               </div>
@@ -786,8 +786,8 @@ export function Settings({ userEmail }: { userEmail: string }) {
             <div className="field"><label>סיסמה חדשה</label><input className="input" type="password" value={passwords.newPass} onChange={e => setPasswords({...passwords, newPass: e.target.value})} placeholder="לפחות 6 תווים" /></div>
             <div className="field"><label>אימות סיסמה</label><input className="input" type="password" value={passwords.confirm} onChange={e => setPasswords({...passwords, confirm: e.target.value})} placeholder="הזן שוב את הסיסמה" /></div>
           </div>
-          {passError && <div style={{ color: "#dc2626", marginTop: 10, fontSize: 14 }}>{passError}</div>}
-          {passSaved && <div style={{ color: "#16a34a", marginTop: 10, fontWeight: 700 }}>✅ הסיסמה שונתה בהצלחה!</div>}
+          {passError && <div style={{ color: "var(--red)", marginTop: 10, fontSize: 14 }}>{passError}</div>}
+          {passSaved && <div style={{ color: "var(--green)", marginTop: 10, fontWeight: 700 }}>✅ הסיסמה שונתה בהצלחה!</div>}
           <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={changePassword}>שמור סיסמה חדשה</button>
         </div>
       )}
@@ -827,11 +827,11 @@ export function ActivityLog() {
         {/* סיכום לפי משתמש */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: 20 }}>
           {summary.map(u => (
-            <div key={u.name} style={{ background: "#f8fafc", borderRadius: 14, padding: 14, border: "1px solid #e2e8f0" }}>
+            <div key={u.name} style={{ background: "var(--surface-2)", borderRadius: 14, padding: 14, border: "1px solid var(--line)" }}>
               <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>{u.name}</div>
-              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>{u.role}</div>
-              <div style={{ fontSize: 12, color: "#475569" }}>כניסות: <strong>{u.count}</strong></div>
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{u.role}</div>
+              <div style={{ fontSize: 12, color: "var(--text-3)" }}>כניסות: <strong>{u.count}</strong></div>
+              <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 4 }}>
                 אחרון: {u.lastLogin ? new Date(u.lastLogin).toLocaleString("he-IL") : "-"}
               </div>
             </div>
@@ -844,7 +844,7 @@ export function ActivityLog() {
           {users.map(u => <button key={u} className={`btn ${filter === u ? "btn-dark" : "btn-outline"}`} onClick={() => setFilter(u)}>{u}</button>)}
         </div>
 
-        {loading ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>טוען...</div> : (
+        {loading ? <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>טוען...</div> : (
           <div className="table-wrap">
             <table>
               <thead><tr><th>משתמש</th><th>תפקיד</th><th>פעולה</th><th>תאריך ושעה</th></tr></thead>
@@ -853,7 +853,7 @@ export function ActivityLog() {
                   <tr key={a.id}>
                     <td style={{ fontWeight: 700 }}>{a.user_name || "-"}</td>
                     <td>{a.user_role || "-"}</td>
-                    <td><span style={{ background: "#dcfce7", color: "#16a34a", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>כניסה</span></td>
+                    <td><span style={{ background: "var(--tint-green)", color: "var(--green)", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>כניסה</span></td>
                     <td>{a.session_start ? new Date(a.session_start).toLocaleString("he-IL") : "-"}</td>
                   </tr>
                 ))}
@@ -964,7 +964,7 @@ export function UsersManagement() {
         ].map(item => (
           <div key={item.label} style={{ background: "#1e293b", borderRadius: 16, padding: "16px 20px", textAlign: "center" }}>
             <div style={{ fontSize: 28, fontWeight: 900, color: item.color }}>{item.value}</div>
-            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{item.label}</div>
+            <div style={{ fontSize: 12, color: "var(--muted-2)", marginTop: 4 }}>{item.label}</div>
           </div>
         ))}
       </div>
@@ -977,7 +977,7 @@ export function UsersManagement() {
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 14 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 14 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>👤 משתמש חדש</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="field"><label>שם מלא *</label><input className="input" value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} placeholder="ישראל ישראלי" /></div>
@@ -994,16 +994,16 @@ export function UsersManagement() {
                     { value: "tenant", label: "🔑 דייר", desc: "רואה רק את הדירה שלו" },
                   ].map(opt => (
                     <div key={opt.value} onClick={() => setForm({...form, role: opt.value})}
-                      style={{ border: `2px solid ${form.role === opt.value ? "#2563EB" : "#e2e8f0"}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer", background: form.role === opt.value ? "#EFF4FF" : "#fff" }}>
+                      style={{ border: `2px solid ${form.role === opt.value ? "#2563EB" : "var(--line)"}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer", background: form.role === opt.value ? "var(--tint-blue)" : "#fff" }}>
                       <div style={{ fontWeight: 700, fontSize: 14 }}>{opt.label}</div>
-                      <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{opt.desc}</div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{opt.desc}</div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-            {formError && <div style={{ color: "#dc2626", fontSize: 14 }}>{formError}</div>}
-            {formSuccess && <div style={{ color: "#16a34a", fontSize: 14, fontWeight: 700 }}>{formSuccess}</div>}
+            {formError && <div style={{ color: "var(--red)", fontSize: 14 }}>{formError}</div>}
+            {formSuccess && <div style={{ color: "var(--green)", fontSize: 14, fontWeight: 700 }}>{formSuccess}</div>}
             <div style={{ display: "flex", gap: 10 }}>
               <button className="btn btn-primary" onClick={addUser} disabled={saving}>{saving ? "יוצר..." : "➕ צור משתמש"}</button>
               <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
@@ -1021,13 +1021,13 @@ export function UsersManagement() {
               <thead><tr><th>שם</th><th>תפקיד</th><th>תאריך</th><th>פעולות</th></tr></thead>
               <tbody>
                 {pending.map(u => (
-                  <tr key={u.id} style={{ background: "#fffbeb" }}>
+                  <tr key={u.id} style={{ background: "var(--tint-amber)" }}>
                     <td style={{ fontWeight: 700 }}>{u.full_name}</td>
                     <td><Badge value={roleLabel[u.role] || u.role} /></td>
                     <td>{new Date(u.created_at).toLocaleDateString("he-IL")}</td>
                     <td style={{ display: "flex", gap: 8 }}>
                       <button className="btn btn-primary" style={{ fontSize: 12, padding: "4px 12px" }} onClick={async () => { await supabase.from("profiles").update({ status: "מאושר" }).eq("id", u.id); await load(); }}>✅ אשר</button>
-                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626" }} onClick={() => rejectUser(u.id)}>❌ דחה</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "var(--red)" }} onClick={() => rejectUser(u.id)}>❌ דחה</button>
                     </td>
                   </tr>
                 ))}
@@ -1040,8 +1040,8 @@ export function UsersManagement() {
       {/* משתמשים מאושרים */}
       <div className="card">
         <h3 className="card-title">✅ משתמשים פעילים ({approved.length})</h3>
-        {loading ? <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
-        : approved.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>אין משתמשים עדיין</div>
+        {loading ? <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>טוען...</div>
+        : approved.length === 0 ? <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>אין משתמשים עדיין</div>
         : (
           <div className="table-wrap">
             <table>
@@ -1066,13 +1066,13 @@ export function UsersManagement() {
                       ) : (
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span>{u.full_name}</span>
-                          <button onClick={() => { setEditingNameId(u.id); setEditingNameValue(u.full_name || ""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#94a3b8" }}>✏️</button>
+                          <button onClick={() => { setEditingNameId(u.id); setEditingNameValue(u.full_name || ""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--muted-2)" }}>✏️</button>
                         </div>
                       )}
                     </td>
                     <td>{u.phone || "-"}</td>
                     <td>
-                      <select style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
+                      <select style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
                         value={u.role || "tenant"}
                         onChange={e => supabase.from("profiles").update({ role: e.target.value }).eq("id", u.id).then(() => load())}>
                         <option value="ngs_worker">עובד נג"ש</option>
@@ -1081,19 +1081,19 @@ export function UsersManagement() {
                         <option value="admin">מנהל</option>
                       </select>
                     </td>
-                    <td style={{ fontSize: 12, color: "#64748b" }}>{rolePermissions[u.role] || "-"}</td>
+                    <td style={{ fontSize: 12, color: "var(--muted)" }}>{rolePermissions[u.role] || "-"}</td>
                     <td>
                       {u.role === "tenant" || u.role === "owner" ? (
-                        <select style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
+                        <select style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}
                           value={u.apartment_id || ""}
                           onChange={e => assignApartment(u.id, e.target.value)}>
                           <option value="">לא משויך</option>
                           {apts.map((a: any) => <option key={a.id} value={a.id}>{a.buildings?.name} / {a.apartment_number}</option>)}
                         </select>
-                      ) : <span style={{ color: "#94a3b8", fontSize: 13 }}>לא רלוונטי</span>}
+                      ) : <span style={{ color: "var(--muted-2)", fontSize: 13 }}>לא רלוונטי</span>}
                     </td>
                     <td>
-                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626" }} onClick={() => rejectUser(u.id)}>הסר</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "var(--red)" }} onClick={() => rejectUser(u.id)}>הסר</button>
                     </td>
                   </tr>
                 ))}
@@ -1189,7 +1189,7 @@ export function Leases() {
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>חוזה חדש</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <div className="field">
@@ -1226,9 +1226,9 @@ export function Leases() {
         </div>
 
         {loading ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>טוען...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>אין חוזים עדיין</div>
             <div>לחץ על "חוזה חדש" כדי להוסיף</div>
@@ -1246,7 +1246,7 @@ export function Leases() {
                       <td style={{ fontWeight: 700 }}>{l.tenant_name}</td>
                       <td>{l.start_date ? new Date(l.start_date).toLocaleDateString("he-IL") : "-"}</td>
                       <td>{l.end_date ? new Date(l.end_date).toLocaleDateString("he-IL") : "-"}</td>
-                      <td style={{ color: days !== null && days < 30 ? "#dc2626" : "#16a34a", fontWeight: 700 }}>
+                      <td style={{ color: days !== null && days < 30 ? "var(--red)" : "var(--green)", fontWeight: 700 }}>
                         {days !== null ? (days < 0 ? "פג תוקף" : days + " ימים") : "-"}
                       </td>
                       <td>{currency(l.rent_amount)}</td>
@@ -1256,7 +1256,7 @@ export function Leases() {
                         {l.document_url ? (
                           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                             <a href={l.document_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }}>📄 פתח</a>
-                            <label style={{ cursor: "pointer", fontSize: 12, color: "#64748b" }}>
+                            <label style={{ cursor: "pointer", fontSize: 12, color: "var(--muted)" }}>
                               🔄
                               <input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadDocument(l.id, e.target.files[0])} />
                             </label>
@@ -1379,7 +1379,7 @@ export function ServiceRequests() {
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>קריאת שירות חדשה</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="field">
@@ -1428,7 +1428,7 @@ export function ServiceRequests() {
             ].map(item => (
               <div key={item.label} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 24, fontWeight: 900, color: item.color }}>{item.value}</div>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 2 }}>{item.label}</div>
               </div>
             ))}
           </div>
@@ -1441,9 +1441,9 @@ export function ServiceRequests() {
         </div>
 
         {loading ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>טוען...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🔧</div>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>אין קריאות שירות</div>
             <div>לחץ על "קריאה חדשה" כדי להוסיף</div>
@@ -1462,7 +1462,7 @@ export function ServiceRequests() {
                     <td>{r.vendor || "-"}</td>
                     <td>{r.cost ? currency(r.cost) : "-"}</td>
                     <td>
-                      <select value={r.status} onChange={e => updateStatus(r.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
+                      <select value={r.status} onChange={e => updateStatus(r.id, e.target.value)} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
                         <option>חדשה</option><option>בטיפול</option><option>ממתין לבעל מקצוע</option><option>הושלם</option>
                       </select>
                     </td>
@@ -1483,45 +1483,45 @@ export function ServiceRequests() {
     {/* מודל צפייה בקריאה */}
     {selectedRequest && (
       <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-        <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 560, maxHeight: "85vh", overflow: "auto" }}>
-          <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ background: "var(--card)", borderRadius: 24, width: "100%", maxWidth: 560, maxHeight: "85vh", overflow: "auto" }}>
+          <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--surface-3)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>🔧 {selectedRequest.issue}</h3>
-              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedRequest.apartment_manual || (selectedRequest.apartments?.buildings?.name ? `${selectedRequest.apartments.buildings.name} / ${selectedRequest.apartments.apartment_number}` : "-")}</div>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>{selectedRequest.apartment_manual || (selectedRequest.apartments?.buildings?.name ? `${selectedRequest.apartments.buildings.name} / ${selectedRequest.apartments.apartment_number}` : "-")}</div>
             </div>
-            <button onClick={() => setSelectedRequest(null)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#64748b" }}>×</button>
+            <button onClick={() => setSelectedRequest(null)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "var(--muted)" }}>×</button>
           </div>
           <div style={{ padding: "20px 24px", display: "grid", gap: 14 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>סטטוס</div>
+              <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 4 }}>סטטוס</div>
                 <Badge value={selectedRequest.status} />
               </div>
-              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>דחיפות</div>
+              <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 4 }}>דחיפות</div>
                 <Badge value={selectedRequest.urgency} />
               </div>
-              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>ספק / בעל מקצוע</div>
+              <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 4 }}>ספק / בעל מקצוע</div>
                 <div style={{ fontWeight: 700 }}>{selectedRequest.vendor || "-"}</div>
               </div>
-              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>עלות</div>
+              <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 4 }}>עלות</div>
                 <div style={{ fontWeight: 700 }}>{selectedRequest.cost ? currency(selectedRequest.cost) : "-"}</div>
               </div>
-              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>תאריך פתיחה</div>
+              <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 4 }}>תאריך פתיחה</div>
                 <div style={{ fontWeight: 700 }}>{new Date(selectedRequest.created_at).toLocaleDateString("he-IL")}</div>
               </div>
             </div>
             {selectedRequest.description && (
-              <div style={{ background: "#f8fafc", borderRadius: 12, padding: 14 }}>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 8 }}>תיאור הבעיה</div>
+              <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 11, color: "var(--muted-2)", marginBottom: 8 }}>תיאור הבעיה</div>
                 <div style={{ fontSize: 14, lineHeight: 1.7 }}>{selectedRequest.description}</div>
               </div>
             )}
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-              <select value={selectedRequest.status} onChange={async e => { await updateStatus(selectedRequest.id, e.target.value); setSelectedRequest({...selectedRequest, status: e.target.value}); }} style={{ flex: 1, border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 12px", fontSize: 14 }}>
+              <select value={selectedRequest.status} onChange={async e => { await updateStatus(selectedRequest.id, e.target.value); setSelectedRequest({...selectedRequest, status: e.target.value}); }} style={{ flex: 1, border: "1px solid var(--line)", borderRadius: 10, padding: "8px 12px", fontSize: 14 }}>
                 <option>חדשה</option><option>בטיפול</option><option>ממתין לבעל מקצוע</option><option>הושלם</option>
               </select>
               <button className="btn btn-outline" onClick={() => setSelectedRequest(null)}>סגור</button>
@@ -1595,7 +1595,7 @@ export function Buildings({ openBuilding }: { openBuilding: (id: any) => void })
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>מבנה חדש</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 120px", gap: 12 }}>
               <div className="field"><label>שם המבנה</label><input className="input" value={newName} onChange={e => setNewName(e.target.value)} placeholder="הרצל 10" /></div>
@@ -1610,9 +1610,9 @@ export function Buildings({ openBuilding }: { openBuilding: (id: any) => void })
         )}
 
         {loading ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>טוען...</div>
         ) : dbBuildings.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏢</div>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>אין מבנים עדיין</div>
             <div>לחץ על "הוסף מבנה" כדי להתחיל</div>
@@ -1631,7 +1631,7 @@ export function Buildings({ openBuilding }: { openBuilding: (id: any) => void })
                     <td style={{ display: "flex", gap: 8 }}>
                       <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => openBuilding(b.id)}>👁 צפייה</button>
                       <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => { setEditId(b.id); setEditForm({ name: b.name, city: b.city, floors: String(b.floors) }); }}>✏️ עריכה</button>
-                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626" }} onClick={() => setDeleteId(b.id)}>🗑 מחק</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "var(--red)" }} onClick={() => setDeleteId(b.id)}>🗑 מחק</button>
                     </td>
                   </tr>
                 ))}
@@ -1643,12 +1643,12 @@ export function Buildings({ openBuilding }: { openBuilding: (id: any) => void })
 
       {deleteId && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "white", borderRadius: 20, padding: 32, maxWidth: 380, width: "90%", textAlign: "center" }}>
+          <div style={{ background: "var(--card)", borderRadius: 20, padding: 32, maxWidth: 380, width: "90%", textAlign: "center" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🗑</div>
             <h3 style={{ margin: "0 0 8px" }}>מחיקת מבנה</h3>
-            <p style={{ color: "#64748b", marginBottom: 24 }}>האם אתה בטוח? המחיקה תמחק גם את כל הדירות במבנה.</p>
+            <p style={{ color: "var(--muted)", marginBottom: 24 }}>האם אתה בטוח? המחיקה תמחק גם את כל הדירות במבנה.</p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <button className="btn btn-primary" style={{ background: "#dc2626" }} onClick={() => deleteBuilding(deleteId)}>כן, מחק</button>
+              <button className="btn btn-primary" style={{ background: "var(--red)" }} onClick={() => deleteBuilding(deleteId)}>כן, מחק</button>
               <button className="btn btn-outline" onClick={() => setDeleteId(null)}>ביטול</button>
             </div>
           </div>
@@ -1657,7 +1657,7 @@ export function Buildings({ openBuilding }: { openBuilding: (id: any) => void })
 
       {editId && editForm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "white", borderRadius: 20, padding: 28, maxWidth: 480, width: "95%" }}>
+          <div style={{ background: "var(--card)", borderRadius: 20, padding: 28, maxWidth: 480, width: "95%" }}>
             <h3 style={{ margin: "0 0 20px", fontSize: 20 }}>✏️ עריכת מבנה</h3>
             <div style={{ display: "grid", gap: 14 }}>
               <div className="field"><label>שם המבנה</label><input className="input" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} /></div>
@@ -1751,8 +1751,8 @@ export function BuildingDetails({ buildingId, back, openApartment }: { buildingI
     await load();
   }
 
-  if (loading) return <div style={{ padding: 60, textAlign: "center", color: "#64748b" }}>טוען...</div>;
-  if (!building) return <div style={{ padding: 60, textAlign: "center", color: "#dc2626" }}>לא נמצא מבנה</div>;
+  if (loading) return <div style={{ padding: 60, textAlign: "center", color: "var(--muted)" }}>טוען...</div>;
+  if (!building) return <div style={{ padding: 60, textAlign: "center", color: "var(--red)" }}>לא נמצא מבנה</div>;
 
   const totalIncome = units.reduce((sum, u) => sum + (u.fee_type === "percent" ? (u.rent_amount * (u.fee_value || 8)) / 100 : (u.fee_value || 0)), 0);
   const rentedUnits = units.filter(u => u.status === "מושכר").length;
@@ -1772,7 +1772,7 @@ export function BuildingDetails({ buildingId, back, openApartment }: { buildingI
 
       {/* טופס הוספת דירה */}
       {showAddForm && (
-        <div className="card" style={{ background: "#f8fafc" }}>
+        <div className="card" style={{ background: "var(--surface-2)" }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700 }}>➕ דירה חדשה ב{building.name}</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div className="field"><label>מספר דירה *</label><input className="input" value={addForm.apartment_number} onChange={e => setAddForm({...addForm, apartment_number: e.target.value})} placeholder="1א" /></div>
@@ -1784,16 +1784,16 @@ export function BuildingDetails({ buildingId, back, openApartment }: { buildingI
             <div className="field"><label>דייר</label><input className="input" value={addForm.tenant_name} onChange={e => setAddForm({...addForm, tenant_name: e.target.value})} placeholder="שם הדייר" /></div>
             <div className="field"><label>אמצעי תשלום</label><select className="input" value={addForm.payment_method} onChange={e => setAddForm({...addForm, payment_method: e.target.value})}><option>העברה בנקאית</option><option>מזומן</option><option>צ׳קים</option></select></div>
           </div>
-          <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14, marginTop: 4 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "#475569" }}>🏛️ ארנונה</div>
+          <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14, marginTop: 4 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "var(--text-3)" }}>🏛️ ארנונה</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <div className="field"><label>מספר משלם ארנונה</label><input className="input" value={addForm.arnona_number} onChange={e => setAddForm({...addForm, arnona_number: e.target.value})} placeholder="123456" /></div>
               <div className="field"><label>עלות ארנונה ₪/חודש</label><input className="input" type="number" value={addForm.arnona_cost} onChange={e => setAddForm({...addForm, arnona_cost: e.target.value})} placeholder="500" /></div>
               <div className="field"><label>מי משלם ארנונה</label><select className="input" value={addForm.arnona_payer} onChange={e => setAddForm({...addForm, arnona_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
             </div>
           </div>
-          <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "#475569" }}>⚡ חשמל</div>
+          <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "var(--text-3)" }}>⚡ חשמל</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="field"><label>מספר מונה חשמל</label><input className="input" value={addForm.electric_meter} onChange={e => setAddForm({...addForm, electric_meter: e.target.value})} placeholder="12345678" /></div>
               <div className="field"><label>מי משלם חשמל</label><select className="input" value={addForm.electric_payer} onChange={e => setAddForm({...addForm, electric_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
@@ -1817,7 +1817,7 @@ export function BuildingDetails({ buildingId, back, openApartment }: { buildingI
       <div className="card">
         <h3 className="card-title">יחידות לפי קומה</h3>
         {units.length === 0 ? (
-          <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+          <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ fontSize: 40 }}>🏠</div>
             <div style={{ fontWeight: 700, marginTop: 8 }}>אין יחידות עדיין</div>
             <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setShowAddForm(true)}>+ הוסף דירה ראשונה</button>
@@ -1827,16 +1827,16 @@ export function BuildingDetails({ buildingId, back, openApartment }: { buildingI
             {floors.map((floor: any) => {
               const floorUnits = units.filter(u => u.floor === floor);
               return (
-                <div key={floor} style={{ border: "1px solid #e8eef6", borderRadius: 20, padding: 18, background: "#fff" }}>
+                <div key={floor} style={{ border: "1px solid var(--line)", borderRadius: 20, padding: 18, background: "var(--card)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <div style={{ fontSize: 18, fontWeight: 800 }}>קומה {floor} <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 400 }}>({floorUnits.length} יחידות)</span></div>
+                    <div style={{ fontSize: 18, fontWeight: 800 }}>קומה {floor} <span style={{ fontSize: 13, color: "var(--muted-2)", fontWeight: 400 }}>({floorUnits.length} יחידות)</span></div>
                   </div>
                   <div style={{ display: "grid", gap: 10 }}>
                     {floorUnits.map(unit => (
                       <div key={unit.id}>
                         {editingUnit?.id === unit.id ? (
                           // מצב עריכה
-                          <div style={{ border: "2px solid #2563EB", borderRadius: 16, padding: 16, background: "#EFF4FF" }}>
+                          <div style={{ border: "2px solid #2563EB", borderRadius: 16, padding: 16, background: "var(--tint-blue)" }}>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
                               <div className="field"><label>מספר דירה</label><input className="input" value={editingUnit.apartment_number} onChange={e => setEditingUnit({...editingUnit, apartment_number: e.target.value})} /></div>
                               <div className="field"><label>קומה</label><input className="input" type="number" value={editingUnit.floor} onChange={e => setEditingUnit({...editingUnit, floor: e.target.value})} /></div>
@@ -1847,16 +1847,16 @@ export function BuildingDetails({ buildingId, back, openApartment }: { buildingI
                               <div className="field"><label>דייר</label><input className="input" value={editingUnit.tenant_name || ""} onChange={e => setEditingUnit({...editingUnit, tenant_name: e.target.value})} /></div>
                               <div className="field"><label>אמצעי תשלום</label><select className="input" value={editingUnit.payment_method || "העברה בנקאית"} onChange={e => setEditingUnit({...editingUnit, payment_method: e.target.value})}><option>העברה בנקאית</option><option>מזומן</option><option>צ׳קים</option></select></div>
                             </div>
-                            <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
-                              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "#475569" }}>🏛️ ארנונה</div>
+                            <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginBottom: 12 }}>
+                              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "var(--text-3)" }}>🏛️ ארנונה</div>
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                                 <div className="field"><label>מספר משלם</label><input className="input" value={editingUnit.arnona_number || ""} onChange={e => setEditingUnit({...editingUnit, arnona_number: e.target.value})} /></div>
                                 <div className="field"><label>עלות ₪/חודש</label><input className="input" type="number" value={editingUnit.arnona_cost || ""} onChange={e => setEditingUnit({...editingUnit, arnona_cost: e.target.value})} /></div>
                                 <div className="field"><label>מי משלם</label><select className="input" value={editingUnit.arnona_payer || "דייר"} onChange={e => setEditingUnit({...editingUnit, arnona_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
                               </div>
                             </div>
-                            <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginBottom: 12 }}>
-                              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "#475569" }}>⚡ חשמל</div>
+                            <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginBottom: 12 }}>
+                              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "var(--text-3)" }}>⚡ חשמל</div>
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                                 <div className="field"><label>מספר מונה</label><input className="input" value={editingUnit.electric_meter || ""} onChange={e => setEditingUnit({...editingUnit, electric_meter: e.target.value})} /></div>
                                 <div className="field"><label>מי משלם</label><select className="input" value={editingUnit.electric_payer || "דייר"} onChange={e => setEditingUnit({...editingUnit, electric_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
@@ -1869,21 +1869,21 @@ export function BuildingDetails({ buildingId, back, openApartment }: { buildingI
                           </div>
                         ) : (
                           // מצב תצוגה
-                          <div style={{ border: "1px solid #e8eef6", borderRadius: 16, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, background: "#fbfcfe" }}>
+                          <div style={{ border: "1px solid var(--line)", borderRadius: 16, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, background: "var(--surface-2)" }}>
                             <div style={{ display: "flex", gap: 20, alignItems: "center", flex: 1, flexWrap: "wrap" }}>
-                              <div><div style={{ fontWeight: 800, fontSize: 15 }}>דירה {unit.apartment_number}</div><div style={{ fontSize: 12, color: "#94a3b8" }}>{unit.rooms} חדרים</div></div>
-                              <div><div style={{ fontSize: 12, color: "#64748b" }}>דייר</div><div style={{ fontWeight: 600 }}>{unit.tenant_name || "-"}</div></div>
-                              <div><div style={{ fontSize: 12, color: "#64748b" }}>בעל נכס</div><div style={{ fontWeight: 600 }}>{unit.owner_name || "-"}</div></div>
-                              <div><div style={{ fontSize: 12, color: "#64748b" }}>שכירות</div><div style={{ fontWeight: 600 }}>{unit.rent_amount ? currency(unit.rent_amount) : "-"}</div></div>
-                              {unit.payment_method && <div><div style={{ fontSize: 12, color: "#64748b" }}>תשלום</div><div style={{ fontWeight: 600 }}>{unit.payment_method}</div></div>}
-                              {unit.arnona_number && <div><div style={{ fontSize: 12, color: "#64748b" }}>🏛️ ארנונה</div><div style={{ fontWeight: 600 }}>{unit.arnona_number} · {unit.arnona_cost ? currency(unit.arnona_cost) : ""} · {unit.arnona_payer}</div></div>}
-                              {unit.electric_meter && <div><div style={{ fontSize: 12, color: "#64748b" }}>⚡ מונה</div><div style={{ fontWeight: 600 }}>{unit.electric_meter} · {unit.electric_payer}</div></div>}
+                              <div><div style={{ fontWeight: 800, fontSize: 15 }}>דירה {unit.apartment_number}</div><div style={{ fontSize: 12, color: "var(--muted-2)" }}>{unit.rooms} חדרים</div></div>
+                              <div><div style={{ fontSize: 12, color: "var(--muted)" }}>דייר</div><div style={{ fontWeight: 600 }}>{unit.tenant_name || "-"}</div></div>
+                              <div><div style={{ fontSize: 12, color: "var(--muted)" }}>בעל נכס</div><div style={{ fontWeight: 600 }}>{unit.owner_name || "-"}</div></div>
+                              <div><div style={{ fontSize: 12, color: "var(--muted)" }}>שכירות</div><div style={{ fontWeight: 600 }}>{unit.rent_amount ? currency(unit.rent_amount) : "-"}</div></div>
+                              {unit.payment_method && <div><div style={{ fontSize: 12, color: "var(--muted)" }}>תשלום</div><div style={{ fontWeight: 600 }}>{unit.payment_method}</div></div>}
+                              {unit.arnona_number && <div><div style={{ fontSize: 12, color: "var(--muted)" }}>🏛️ ארנונה</div><div style={{ fontWeight: 600 }}>{unit.arnona_number} · {unit.arnona_cost ? currency(unit.arnona_cost) : ""} · {unit.arnona_payer}</div></div>}
+                              {unit.electric_meter && <div><div style={{ fontSize: 12, color: "var(--muted)" }}>⚡ מונה</div><div style={{ fontWeight: 600 }}>{unit.electric_meter} · {unit.electric_payer}</div></div>}
                               <Badge value={unit.status} />
                             </div>
                             <div style={{ display: "flex", gap: 6 }}>
                               <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => openApartment(unit.id)}>פתח</button>
                               <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => setEditingUnit({...unit, floor: String(unit.floor), rooms: String(unit.rooms), rent_amount: String(unit.rent_amount || "")})}>✏️</button>
-                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteUnit(unit.id)}>🗑</button>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deleteUnit(unit.id)}>🗑</button>
                             </div>
                           </div>
                         )}
@@ -1911,7 +1911,7 @@ export function BuildingDetails({ buildingId, back, openApartment }: { buildingI
                   <div className="building-board-row">
                     {floorUnits.map(unit => (
                       <div key={unit.id} className="building-unit-box" onClick={() => openApartment(unit.id)}
-                        style={{ background: unit.status === "פנוי" ? "#eab308" : "#16a34a" }}>
+                        style={{ background: unit.status === "פנוי" ? "#eab308" : "var(--green)" }}>
                         <div>דירה {unit.apartment_number}</div>
                         <div style={{ fontSize: 12, marginTop: 6 }}>{unit.tenant_name || "פנוי"}</div>
                       </div>
@@ -2071,7 +2071,7 @@ export function Apartments({ openApartment }: { openApartment: (id: any) => void
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 14 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 14 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>דירה חדשה</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <div className="field">
@@ -2127,9 +2127,9 @@ export function Apartments({ openApartment }: { openApartment: (id: any) => void
         </div>
 
         {loading ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>טוען...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>אין דירות עדיין</div>
             <div>לחץ על "הוסף דירה" כדי להתחיל</div>
@@ -2152,7 +2152,7 @@ export function Apartments({ openApartment }: { openApartment: (id: any) => void
                     <td><Badge value={item.status} /></td>
                     <td style={{ display: "flex", gap: 8 }}>
                       <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px" }} onClick={() => openApartment(item.id)}>צפייה</button>
-                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626" }} onClick={() => deleteApartment(item.id)}>מחק</button>
+                      <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 12px", color: "var(--red)" }} onClick={() => deleteApartment(item.id)}>מחק</button>
                     </td>
                   </tr>
                 ))}
@@ -2165,10 +2165,10 @@ export function Apartments({ openApartment }: { openApartment: (id: any) => void
 
     {showReportModal && (
       <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-        <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 580, maxHeight: "90vh", overflow: "auto", padding: 28 }}>
+        <div style={{ background: "var(--card)", borderRadius: 24, width: "100%", maxWidth: 580, maxHeight: "90vh", overflow: "auto", padding: 28 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>📊 הפקת דוח דירות</h2>
-            <button onClick={() => setShowReportModal(false)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#64748b" }}>×</button>
+            <button onClick={() => setShowReportModal(false)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "var(--muted)" }}>×</button>
           </div>
 
           {/* סינון */}
@@ -2213,7 +2213,7 @@ export function Apartments({ openApartment }: { openApartment: (id: any) => void
                 { key: "electric_meter", label: "⚡ מונה חשמל" },
                 { key: "electric_payer", label: "⚡ מי משלם חשמל" },
               ].map(field => (
-                <label key={field.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, cursor: "pointer", background: reportFields.includes(field.key) ? "#EFF4FF" : "#f8fafc", border: `1px solid ${reportFields.includes(field.key) ? "#2563EB" : "#e2e8f0"}` }}>
+                <label key={field.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, cursor: "pointer", background: reportFields.includes(field.key) ? "var(--tint-blue)" : "var(--surface-2)", border: `1px solid ${reportFields.includes(field.key) ? "#2563EB" : "var(--line)"}` }}>
                   <input type="checkbox" checked={reportFields.includes(field.key)}
                     onChange={e => setReportFields(e.target.checked ? [...reportFields, field.key] : reportFields.filter(f => f !== field.key))}
                     style={{ width: 16, height: 16, accentColor: "#2563EB" }} />
@@ -2223,7 +2223,7 @@ export function Apartments({ openApartment }: { openApartment: (id: any) => void
             </div>
           </div>
 
-          <div style={{ background: "#f8fafc", borderRadius: 12, padding: 12, marginBottom: 20, fontSize: 13, color: "#64748b" }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: 12, marginBottom: 20, fontSize: 13, color: "var(--muted)" }}>
             סה״כ דירות בדוח: <strong>{dbApartments.filter(a => (reportFilter === "הכל" || a.status === reportFilter) && (reportBuilding === "הכל" || a.buildings?.name === reportBuilding)).length}</strong>
           </div>
 
@@ -2326,8 +2326,8 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
     setRequests(rs || []);
   }
 
-  if (loading) return <div style={{ padding: 60, textAlign: "center", color: "#64748b" }}>טוען...</div>;
-  if (!apt) return <div style={{ padding: 60, textAlign: "center", color: "#dc2626" }}>לא נמצאה דירה</div>;
+  if (loading) return <div style={{ padding: 60, textAlign: "center", color: "var(--muted)" }}>טוען...</div>;
+  if (!apt) return <div style={{ padding: 60, textAlign: "center", color: "var(--red)" }}>לא נמצאה דירה</div>;
 
   const activeLease = leases.find(l => l.status === "פעיל");
   const pastLeases = leases.filter(l => l.status !== "פעיל");
@@ -2349,12 +2349,12 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
         <div>
           <button className="back-link" onClick={back}>← חזרה לרשימת דירות</button>
           <div style={{ marginTop: 8 }}>
-            <div style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}>{apt.buildings?.city}</div>
+            <div style={{ fontSize: 13, color: "var(--muted-2)", fontWeight: 600, marginBottom: 4 }}>{apt.buildings?.city}</div>
             <h2 style={{ margin: "0 0 4px", fontSize: 36, fontWeight: 900, lineHeight: 1.1 }}>{apt.buildings?.name}</h2>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
-              <span style={{ background: "#EFF4FF", color: "#1D4ED8", borderRadius: 999, padding: "4px 14px", fontSize: 15, fontWeight: 800 }}>קומה {apt.floor}</span>
+              <span style={{ background: "var(--tint-blue)", color: "var(--blue-ink)", borderRadius: 999, padding: "4px 14px", fontSize: 15, fontWeight: 800 }}>קומה {apt.floor}</span>
               <span style={{ background: "#2563EB", color: "#fff", borderRadius: 999, padding: "4px 14px", fontSize: 15, fontWeight: 800 }}>דירה {apt.apartment_number}</span>
-              <span style={{ fontSize: 14, color: "#64748b" }}>{apt.rooms} חדרים</span>
+              <span style={{ fontSize: 14, color: "var(--muted)" }}>{apt.rooms} חדרים</span>
               <Badge value={apt.status} />
             </div>
           </div>
@@ -2363,7 +2363,7 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
       </div>
 
       {editing && (
-        <div className="card" style={{ background: "#f8fafc", borderRadius: 16, padding: 20 }}>
+        <div className="card" style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20 }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700 }}>עריכת פרטי דירה</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div className="field">
@@ -2392,16 +2392,16 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
             <div className="field"><label>{editForm.fee_type === "percent" ? "אחוז %" : "עמלה ₪"}</label><input className="input" type="number" value={editForm.fee_value} onChange={e => setEditForm({...editForm, fee_value: e.target.value})} /></div>
             <div className="field"><label>הערות</label><input className="input" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} /></div>
           </div>
-          <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14, marginTop: 4 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "#475569" }}>🏛️ ארנונה</div>
+          <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14, marginTop: 4 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "var(--text-3)" }}>🏛️ ארנונה</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <div className="field"><label>מספר משלם ארנונה</label><input className="input" value={editForm.arnona_number} onChange={e => setEditForm({...editForm, arnona_number: e.target.value})} placeholder="123456" /></div>
               <div className="field"><label>עלות ₪/חודש</label><input className="input" type="number" value={editForm.arnona_cost} onChange={e => setEditForm({...editForm, arnona_cost: e.target.value})} /></div>
               <div className="field"><label>מי משלם</label><select className="input" value={editForm.arnona_payer} onChange={e => setEditForm({...editForm, arnona_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
             </div>
           </div>
-          <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 14 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "#475569" }}>⚡ חשמל ותשלום</div>
+          <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "var(--text-3)" }}>⚡ חשמל ותשלום</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <div className="field"><label>מספר מונה חשמל</label><input className="input" value={editForm.electric_meter} onChange={e => setEditForm({...editForm, electric_meter: e.target.value})} placeholder="12345678" /></div>
               <div className="field"><label>מי משלם חשמל</label><select className="input" value={editForm.electric_payer} onChange={e => setEditForm({...editForm, electric_payer: e.target.value})}><option>דייר</option><option>בעל נכס</option></select></div>
@@ -2461,16 +2461,16 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
               <InfoBox label="הערות" value={apt.notes || "-"} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
-              <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16 }}>
-                <div style={{ fontWeight: 700, marginBottom: 10, color: "#475569" }}>🏛️ ארנונה</div>
+              <div style={{ background: "var(--surface-2)", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontWeight: 700, marginBottom: 10, color: "var(--text-3)" }}>🏛️ ארנונה</div>
                 <div style={{ display: "grid", gap: 8 }}>
                   <InfoBox label="מספר משלם" value={apt.arnona_number || "-"} />
                   <InfoBox label="עלות חודשית" value={apt.arnona_cost ? currency(apt.arnona_cost) : "-"} />
                   <InfoBox label="מי משלם" value={apt.arnona_payer || "-"} />
                 </div>
               </div>
-              <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16 }}>
-                <div style={{ fontWeight: 700, marginBottom: 10, color: "#475569" }}>⚡ חשמל</div>
+              <div style={{ background: "var(--surface-2)", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontWeight: 700, marginBottom: 10, color: "var(--text-3)" }}>⚡ חשמל</div>
                 <div style={{ display: "grid", gap: 8 }}>
                   <InfoBox label="מספר מונה" value={apt.electric_meter || "-"} />
                   <InfoBox label="מי משלם" value={apt.electric_payer || "-"} />
@@ -2508,7 +2508,7 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
         <div className="card">
           <h3 className="card-title">דייר נוכחי</h3>
           {!apt.tenant_name ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+            <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div>
               <div style={{ fontWeight: 700 }}>הדירה פנויה</div>
             </div>
@@ -2527,7 +2527,7 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
         <div style={{ display: "grid", gap: 14 }}>
           {activeLease && (
             <div className="card">
-              <h3 className="card-title" style={{ color: "#16a34a" }}>✅ חוזה פעיל</h3>
+              <h3 className="card-title" style={{ color: "var(--green)" }}>✅ חוזה פעיל</h3>
               <div className="info-grid">
                 <InfoBox label="דייר" value={activeLease.tenant_name} />
                 <InfoBox label="התחלה" value={activeLease.start_date ? new Date(activeLease.start_date).toLocaleDateString("he-IL") : "-"} />
@@ -2571,7 +2571,7 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
             </div>
           )}
           {!activeLease && pastLeases.length === 0 && (
-            <div className="card"><div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>אין חוזים עדיין</div></div>
+            <div className="card"><div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>אין חוזים עדיין</div></div>
           )}
         </div>
       )}
@@ -2580,7 +2580,7 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
         <div style={{ display: "grid", gap: 14 }}>
           {openRequests.length > 0 && (
             <div className="card">
-              <h3 className="card-title" style={{ color: "#dc2626" }}>🔧 קריאות פתוחות ({openRequests.length})</h3>
+              <h3 className="card-title" style={{ color: "var(--red)" }}>🔧 קריאות פתוחות ({openRequests.length})</h3>
               <div className="table-wrap">
                 <table>
                   <thead><tr><th>תאריך</th><th>תקלה</th><th>דחיפות</th><th>ספק</th><th>עלות</th><th>סטטוס</th></tr></thead>
@@ -2593,7 +2593,7 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
                         <td>{r.vendor || "-"}</td>
                         <td>{r.cost ? currency(r.cost) : "-"}</td>
                         <td>
-                          <select value={r.status} onChange={e => updateRequestStatus(r.id, e.target.value)} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
+                          <select value={r.status} onChange={e => updateRequestStatus(r.id, e.target.value)} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "4px 8px", fontSize: 13 }}>
                             <option>חדשה</option><option>בטיפול</option><option>ממתין לבעל מקצוע</option><option>הושלם</option>
                           </select>
                         </td>
@@ -2625,7 +2625,7 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
             </div>
           )}
           {requests.length === 0 && (
-            <div className="card"><div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>אין קריאות שירות לדירה זו</div></div>
+            <div className="card"><div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>אין קריאות שירות לדירה זו</div></div>
           )}
         </div>
       )}
@@ -2634,7 +2634,7 @@ export function ApartmentDetails({ apartmentId, back }: { apartmentId: string; b
         <div className="card">
           <h3 className="card-title">📄 מסמכים</h3>
           {leases.filter(l => l.document_url).length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>אין מסמכים עדיין</div>
+            <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>אין מסמכים עדיין</div>
           ) : (
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", padding: "8px 0" }}>
               {leases.filter(l => l.document_url).map(l => (
@@ -2758,8 +2758,8 @@ export function PaymentsTracker() {
   const pendingCount = filtered.filter(p => p.status === "לא שולם").length;
   const lateCount = filtered.filter(p => p.status === "באיחור").length;
 
-  const statusColor: Record<string, string> = { "שולם": "#16a34a", "לא שולם": "#dc2626", "באיחור": "#d97706", "שולם חלקית": "#2563eb" };
-  const statusBg: Record<string, string> = { "שולם": "#dcfce7", "לא שולם": "#fee2e2", "באיחור": "#fef3c7", "שולם חלקית": "#dbeafe" };
+  const statusColor: Record<string, string> = { "שולם": "var(--green)", "לא שולם": "var(--red)", "באיחור": "#d97706", "שולם חלקית": "#2563eb" };
+  const statusBg: Record<string, string> = { "שולם": "var(--tint-green)", "לא שולם": "var(--tint-red)", "באיחור": "var(--tint-amber)", "שולם חלקית": "var(--tint-blue)" };
 
   // יצירת תשלומים חודשיים אוטומטית לכל הדירות המושכרות
   async function generateMonthlyPayments() {
@@ -2825,16 +2825,16 @@ export function PaymentsTracker() {
         <div style={{ position: "relative", marginBottom: 16 }}>
           <input className="input" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             placeholder="🔍 חפש דייר, כתובת, מבנה..."
-            style={{ paddingRight: 16, background: searchQuery ? "#EFF4FF" : "#f8fafc", borderColor: searchQuery ? "#2563EB" : "#e2e8f0" }} />
+            style={{ paddingRight: 16, background: searchQuery ? "var(--tint-blue)" : "var(--surface-2)", borderColor: searchQuery ? "#2563EB" : "var(--line)" }} />
           {searchQuery && (
             <button onClick={() => setSearchQuery("")}
-              style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#94a3b8" }}>×</button>
+              style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--muted-2)" }}>×</button>
           )}
         </div>
 
         {/* טופס הוספה */}
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>תשלום חדש</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <div className="field">
@@ -2895,12 +2895,12 @@ export function PaymentsTracker() {
 
       {/* טבלת תשלומים */}
       <div className="card">
-        {loading ? <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        {loading ? <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>טוען...</div>
         : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ fontSize: 40 }}>💰</div>
             <div style={{ fontWeight: 700, marginTop: 8 }}>אין תשלומים לתקופה זו</div>
-            <div style={{ fontSize: 13, marginTop: 6, color: "#94a3b8" }}>לחץ "צור תשלומים חודשיים" כדי ליצור אוטומטית לכל הדירות</div>
+            <div style={{ fontSize: 13, marginTop: 6, color: "var(--muted-2)" }}>לחץ "צור תשלומים חודשיים" כדי ליצור אוטומטית לכל הדירות</div>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
@@ -2908,29 +2908,29 @@ export function PaymentsTracker() {
               const apt = apartments.find(a => a.id === p.apartment_id);
               const monthLabel = months.find(m => m.val === p.month)?.label || p.month;
               return (
-                <div key={p.id} style={{ border: `1px solid ${statusBg[p.status] || "#f1f5f9"}`, borderRight: `4px solid ${statusColor[p.status] || "#94a3b8"}`, borderRadius: 14, padding: "14px 16px", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div key={p.id} style={{ border: `1px solid ${statusBg[p.status] || "var(--surface-3)"}`, borderRight: `4px solid ${statusColor[p.status] || "var(--muted-2)"}`, borderRadius: 14, padding: "14px 16px", background: "var(--card)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <div style={{ flex: 1, minWidth: 200 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
                       <span style={{ fontWeight: 800, fontSize: 15 }}>{p.tenant_name || "-"}</span>
-                      <span style={{ fontSize: 12, color: "#64748b" }}>{apt ? `${apt.buildings?.name} / ${apt.apartment_number}` : "-"}</span>
-                      <span style={{ fontSize: 12, background: "#f1f5f9", borderRadius: 999, padding: "2px 10px", fontWeight: 600 }}>{monthLabel} {p.year}</span>
+                      <span style={{ fontSize: 12, color: "var(--muted)" }}>{apt ? `${apt.buildings?.name} / ${apt.apartment_number}` : "-"}</span>
+                      <span style={{ fontSize: 12, background: "var(--surface-3)", borderRadius: 999, padding: "2px 10px", fontWeight: 600 }}>{monthLabel} {p.year}</span>
                     </div>
                     <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{currency(p.amount)}</span>
-                      {p.payment_method && <span style={{ fontSize: 12, color: "#94a3b8" }}>{p.payment_method}</span>}
-                      {p.payment_date && <span style={{ fontSize: 12, color: "#64748b" }}>שולם: {new Date(p.payment_date).toLocaleDateString("he-IL")}</span>}
-                      {p.notes && <span style={{ fontSize: 12, color: "#94a3b8" }}>{p.notes}</span>}
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{currency(p.amount)}</span>
+                      {p.payment_method && <span style={{ fontSize: 12, color: "var(--muted-2)" }}>{p.payment_method}</span>}
+                      {p.payment_date && <span style={{ fontSize: 12, color: "var(--muted)" }}>שולם: {new Date(p.payment_date).toLocaleDateString("he-IL")}</span>}
+                      {p.notes && <span style={{ fontSize: 12, color: "var(--muted-2)" }}>{p.notes}</span>}
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <select value={p.status} onChange={e => updatePaymentStatus(p.id, e.target.value, e.target.value === "שולם" ? new Date().toISOString().split("T")[0] : undefined)}
-                      style={{ border: `1px solid ${statusColor[p.status] || "#e2e8f0"}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, fontWeight: 700, background: statusBg[p.status] || "#fff", color: statusColor[p.status] || "#334155" }}>
+                      style={{ border: `1px solid ${statusColor[p.status] || "var(--line)"}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, fontWeight: 700, background: statusBg[p.status] || "#fff", color: statusColor[p.status] || "var(--text-2)" }}>
                       <option>לא שולם</option>
                       <option>שולם</option>
                       <option>באיחור</option>
                       <option>שולם חלקית</option>
                     </select>
-                    <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deletePayment(p.id)}>🗑</button>
+                    <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deletePayment(p.id)}>🗑</button>
                   </div>
                 </div>
               );
@@ -3003,7 +3003,7 @@ export function WorkContracts() {
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 18, display: "grid", gap: 12 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>חוזה עבודה חדש</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <div className="field">
@@ -3028,8 +3028,8 @@ export function WorkContracts() {
           </div>
         )}
 
-        {loading ? <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>טוען...</div> : contracts.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40, marginBottom: 12 }}>📝</div><div style={{ fontWeight: 700 }}>אין חוזי עבודה עדיין</div></div>
+        {loading ? <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>טוען...</div> : contracts.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}><div style={{ fontSize: 40, marginBottom: 12 }}>📝</div><div style={{ fontWeight: 700 }}>אין חוזי עבודה עדיין</div></div>
         ) : (
           <div className="table-wrap">
             <table>
@@ -3101,7 +3101,7 @@ export function OwnerDashboard({ userProfile }: { userProfile: any }) {
     load();
   }, []);
 
-  if (loading) return <div style={{ padding: 60, textAlign: "center", color: "#64748b" }}>טוען...</div>;
+  if (loading) return <div style={{ padding: 60, textAlign: "center", color: "var(--muted)" }}>טוען...</div>;
 
   const totalRent = ownerApts.reduce((s, a) => s + (a.rent_amount || 0), 0);
   const thirtyDays = new Date(); thirtyDays.setDate(thirtyDays.getDate() + 30);
@@ -3118,7 +3118,7 @@ export function OwnerDashboard({ userProfile }: { userProfile: any }) {
       <div className="card">
         <h3 className="card-title">💰 הדירות שלי</h3>
         {ownerApts.length === 0 ? (
-          <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>אין דירות משויכות לשמך עדיין</div>
+          <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>אין דירות משויכות לשמך עדיין</div>
         ) : (
           <div className="table-wrap">
             <table>
@@ -3129,13 +3129,13 @@ export function OwnerDashboard({ userProfile }: { userProfile: any }) {
                     <td>{a.buildings?.name}</td>
                     <td>{a.apartment_number}</td>
                     <td>{a.tenant_name || "-"}</td>
-                    <td style={{ fontWeight: 700, color: "#16a34a" }}>{currency(a.rent_amount)}</td>
+                    <td style={{ fontWeight: 700, color: "var(--green)" }}>{currency(a.rent_amount)}</td>
                     <td><Badge value={a.status} /></td>
                   </tr>
                 ))}
-                <tr style={{ borderTop: "2px solid #e2e8f0" }}>
+                <tr style={{ borderTop: "2px solid var(--line)" }}>
                   <td colSpan={3} style={{ fontWeight: 700 }}>סה״כ הכנסות</td>
-                  <td style={{ fontWeight: 800, color: "#16a34a" }}>{currency(totalRent)}</td>
+                  <td style={{ fontWeight: 800, color: "var(--green)" }}>{currency(totalRent)}</td>
                   <td></td>
                 </tr>
               </tbody>
@@ -3147,7 +3147,7 @@ export function OwnerDashboard({ userProfile }: { userProfile: any }) {
       <div className="card">
         <h3 className="card-title">📄 המסמכים שלי</h3>
         {ownerWorkContracts.filter((c: any) => c.document_url).length === 0 && ownerLeases.filter(l => l.document_url).length === 0 ? (
-          <div style={{ padding: 20, textAlign: "center", color: "#64748b" }}>אין מסמכים עדיין</div>
+          <div style={{ padding: 20, textAlign: "center", color: "var(--muted)" }}>אין מסמכים עדיין</div>
         ) : (
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", padding: "8px 0" }}>
             {ownerWorkContracts.filter((c: any) => c.document_url).map((c: any) => (
@@ -3175,7 +3175,7 @@ export function OwnerDashboard({ userProfile }: { userProfile: any }) {
                   <tr key={l.id}>
                     <td>{l.apartments?.buildings?.name} / {l.apartments?.apartment_number}</td>
                     <td>{l.tenant_name}</td>
-                    <td style={{ color: "#dc2626", fontWeight: 800 }}>{new Date(l.end_date).toLocaleDateString("he-IL")}</td>
+                    <td style={{ color: "var(--red)", fontWeight: 800 }}>{new Date(l.end_date).toLocaleDateString("he-IL")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -3247,9 +3247,9 @@ export function TenantPortal({ userProfile }: { userProfile: any }) {
               {tenantPortalData.expenses.map((item) => (
                 <tr key={item.id}><td>{item.date}</td><td>{item.description}</td><td style={{fontWeight:700}}>{currency(item.amount)}</td></tr>
               ))}
-              <tr style={{borderTop:"2px solid #e2e8f0"}}>
+              <tr style={{borderTop:"2px solid var(--line)"}}>
                 <td colSpan={2} style={{fontWeight:700}}>סה״כ</td>
-                <td style={{fontWeight:800, color:"#dc2626"}}>{currency(tenantPortalData.expenses.reduce((s,e) => s + e.amount, 0))}</td>
+                <td style={{fontWeight:800, color:"var(--red)"}}>{currency(tenantPortalData.expenses.reduce((s,e) => s + e.amount, 0))}</td>
               </tr>
             </tbody>
           </table>
@@ -3260,7 +3260,7 @@ export function TenantPortal({ userProfile }: { userProfile: any }) {
         <h3 className="card-title">טופס פתיחת קריאה</h3>
         <div style={{ display: "grid", gap: 12, maxWidth: 620 }}>
           <input className="search" style={{ width: "100%" }} placeholder="נושא התקלה" />
-          <textarea placeholder="תיאור התקלה" style={{ width: "100%", minHeight: 120, border: "1px solid #dbe3ee", borderRadius: 16, padding: 14, resize: "vertical", fontFamily: "inherit" }} />
+          <textarea placeholder="תיאור התקלה" style={{ width: "100%", minHeight: 120, border: "1px solid var(--line)", borderRadius: 16, padding: 14, resize: "vertical", fontFamily: "inherit" }} />
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button className="btn btn-primary">שלח קריאה</button>
             <button className="btn btn-outline">צרף תמונה</button>
@@ -3313,16 +3313,16 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
   const serviceTypes = ["טיפול שמן", "טסט", "גלגלים", "בלמים", "מצבר", "מזגן", "תיקון כללי", "אחר"];
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>🔧 היסטוריית טיפולים</h3><div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>רכב: {licensePlate}</div></div>
+      <div style={{ background: "var(--card)", borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--surface-3)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>🔧 היסטוריית טיפולים</h3><div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>רכב: {licensePlate}</div></div>
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => setShowForm(!showForm)}>+ טיפול חדש</button>
-            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#64748b" }}>×</button>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "var(--muted)" }}>×</button>
           </div>
         </div>
         {showForm && (
-          <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e8eef6" }}>
+          <div style={{ padding: "16px 24px", background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               <div className="field"><label>סוג טיפול *</label><select className="input" value={form.service_type} onChange={e => setForm({...form, service_type: e.target.value})}><option value="">בחר סוג</option>{serviceTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
               <div className="field"><label>תאריך *</label><input className="input" type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
@@ -3336,17 +3336,17 @@ function VehicleServicesModal({ vehicleId, licensePlate, onClose }: { vehicleId:
         )}
         <div style={{ flex: 1, overflow: "auto", padding: "16px 24px" }}>
           {loading ? <div style={{ padding: 30, textAlign: "center" }}>טוען...</div> : services.length === 0 ? (
-            <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין טיפולים עדיין</div></div>
+            <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}><div style={{ fontSize: 40 }}>🔧</div><div style={{ fontWeight: 700, marginTop: 8 }}>אין טיפולים עדיין</div></div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {services.map(s => (
-                <div key={s.id} style={{ border: "1px solid #e8eef6", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div key={s.id} style={{ border: "1px solid var(--line)", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
                     <span style={{ fontWeight: 800 }}>🔧 {s.service_type}</span>
-                    <span style={{ fontSize: 13, color: "#64748b", marginRight: 8 }}>{s.date ? new Date(s.date).toLocaleDateString("he-IL") : "-"}</span>
-                    {s.notes && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{s.notes}</div>}
+                    <span style={{ fontSize: 13, color: "var(--muted)", marginRight: 8 }}>{s.date ? new Date(s.date).toLocaleDateString("he-IL") : "-"}</span>
+                    {s.notes && <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>{s.notes}</div>}
                   </div>
-                  <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "#dc2626" }} onClick={() => deleteService(s.id)}>מחק</button>
+                  <button className="btn btn-outline" style={{ fontSize: 12, padding: "3px 8px", color: "var(--red)" }} onClick={() => deleteService(s.id)}>מחק</button>
                 </div>
               ))}
             </div>
@@ -3410,7 +3410,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
   const received = items.filter(i => i.status === "התקבל").length;
 
   const statusColor: Record<string, string> = {
-    "חסר": "#dc2626", "הוזמן": "#f59e0b", "התקבל": "#16a34a"
+    "חסר": "var(--red)", "הוזמן": "#f59e0b", "התקבל": "var(--green)"
   };
 
   return (
@@ -3418,9 +3418,9 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
       {/* כרטיסי סיכום */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
         {[
-          { label: "פריטים חסרים", value: missing, color: "#dc2626", bg: "#fee2e2" },
-          { label: "הוזמנו", value: ordered, color: "#d97706", bg: "#fef3c7" },
-          { label: "התקבלו", value: received, color: "#16a34a", bg: "#dcfce7" },
+          { label: "פריטים חסרים", value: missing, color: "var(--red)", bg: "var(--tint-red)" },
+          { label: "הוזמנו", value: ordered, color: "#d97706", bg: "var(--tint-amber)" },
+          { label: "התקבלו", value: received, color: "var(--green)", bg: "var(--tint-green)" },
         ].map(s => (
           <div key={s.label} style={{ background: s.bg, borderRadius: 16, padding: "16px 20px", textAlign: "center" }}>
             <div style={{ fontSize: 28, fontWeight: 900, color: s.color }}>{s.value}</div>
@@ -3439,7 +3439,7 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 12 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 16, marginBottom: 16, display: "grid", gap: 12 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               <div className="field"><label>שם הפריט *</label><input className="input" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="למשל: ברגים M6" autoFocus /></div>
               <div className="field"><label>כמות</label><input className="input" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} placeholder="למשל: 100 יח׳" /></div>
@@ -3465,34 +3465,34 @@ function InventoryTab({ isWorker, workerName }: { isWorker: boolean; workerName:
           ))}
         </div>
 
-        {loading ? <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>טוען...</div>
+        {loading ? <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>טוען...</div>
         : filtered.length === 0 ? (
-          <div style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+          <div style={{ padding: 30, textAlign: "center", color: "var(--muted)" }}>
             <div style={{ fontSize: 40 }}>🛒</div>
             <div style={{ fontWeight: 700, marginTop: 8 }}>{filter === "חסר" ? "אין פריטים חסרים כרגע! 🎉" : "אין פריטים"}</div>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
             {filtered.map(item => (
-              <div key={item.id} style={{ border: `2px solid ${statusColor[item.status] || "#e2e8f0"}30`, borderRight: `4px solid ${statusColor[item.status] || "#e2e8f0"}`, borderRadius: 14, padding: 14, background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div key={item.id} style={{ border: `2px solid ${"color-mix(in srgb, " + (statusColor[item.status] || "var(--line)") + " 19%, transparent)"}`, borderRight: `4px solid ${statusColor[item.status] || "var(--line)"}`, borderRadius: 14, padding: 14, background: "var(--card)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
                     <span style={{ fontWeight: 800, fontSize: 15 }}>{item.item}</span>
-                    {item.quantity && <span style={{ background: "#f1f5f9", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>כמות: {item.quantity}</span>}
-                    <span style={{ background: "#f1f5f9", borderRadius: 999, padding: "2px 10px", fontSize: 12, color: "#64748b" }}>{item.category}</span>
-                    <span style={{ background: `${statusColor[item.status]}20`, color: statusColor[item.status], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{item.status}</span>
+                    {item.quantity && <span style={{ background: "var(--surface-3)", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>כמות: {item.quantity}</span>}
+                    <span style={{ background: "var(--surface-3)", borderRadius: 999, padding: "2px 10px", fontSize: 12, color: "var(--muted)" }}>{item.category}</span>
+                    <span style={{ background: `${"color-mix(in srgb, " + (statusColor[item.status]) + " 12%, transparent)"}`, color: statusColor[item.status], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{item.status}</span>
                   </div>
-                  {item.notes && <div style={{ fontSize: 13, color: "#64748b" }}>{item.notes}</div>}
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>נוסף ע"י: {item.added_by || "-"} · {new Date(item.created_at).toLocaleDateString("he-IL")}</div>
+                  {item.notes && <div style={{ fontSize: 13, color: "var(--muted)" }}>{item.notes}</div>}
+                  <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 4 }}>נוסף ע"י: {item.added_by || "-"} · {new Date(item.created_at).toLocaleDateString("he-IL")}</div>
                 </div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <select value={item.status} onChange={e => updateStatus(item.id, e.target.value)}
-                    style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "5px 8px", fontSize: 12, background: `${statusColor[item.status]}10` }}>
+                    style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "5px 8px", fontSize: 12, background: `${"color-mix(in srgb, " + (statusColor[item.status]) + " 6%, transparent)"}` }}>
                     <option value="חסר">❌ חסר</option>
                     <option value="הוזמן">🕐 הוזמן</option>
                     <option value="התקבל">✅ התקבל</option>
                   </select>
-                  {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteItem(item.id)}>מחק</button>}
+                  {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deleteItem(item.id)}>מחק</button>}
                 </div>
               </div>
             ))}
@@ -3544,7 +3544,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
 
   const open = tasks.filter(t => t.status === "פתוח");
   const done = tasks.filter(t => t.status === "הושלם");
-  const priorityColor: Record<string, string> = { "דחופה": "#dc2626", "גבוהה": "#f59e0b", "רגילה": "#3b82f6", "נמוכה": "#94a3b8" };
+  const priorityColor: Record<string, string> = { "דחופה": "var(--red)", "גבוהה": "#f59e0b", "רגילה": "#3b82f6", "נמוכה": "var(--muted-2)" };
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -3558,7 +3558,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
         </div>
 
         {showForm && (
-          <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 12 }}>
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: 20, marginBottom: 16, display: "grid", gap: 12 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="field"><label>כותרת משימה *</label><input className="input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="תאר את המשימה..." /></div>
               {!isWorker && (
@@ -3566,11 +3566,11 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
                   <label>שייך למי?</label>
                   <div style={{ display: "flex", gap: 8, marginBottom: 10, marginTop: 6 }}>
                     <button type="button" onClick={() => { setAssignMode("all"); setSelectedWorkers([]); }}
-                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "all" ? "2px solid #2563EB" : "1px solid #e2e8f0", background: assignMode === "all" ? "#EFF4FF" : "#f8fafc", color: assignMode === "all" ? "#1D4ED8" : "#475569" }}>
+                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "all" ? "2px solid #2563EB" : "1px solid var(--line)", background: assignMode === "all" ? "var(--tint-blue)" : "var(--surface-2)", color: assignMode === "all" ? "var(--blue-ink)" : "var(--text-3)" }}>
                       👥 כל העובדים
                     </button>
                     <button type="button" onClick={() => setAssignMode("specific")}
-                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "specific" ? "2px solid #2563EB" : "1px solid #e2e8f0", background: assignMode === "specific" ? "#EFF4FF" : "#f8fafc", color: assignMode === "specific" ? "#1D4ED8" : "#475569" }}>
+                      style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: assignMode === "specific" ? "2px solid #2563EB" : "1px solid var(--line)", background: assignMode === "specific" ? "var(--tint-blue)" : "var(--surface-2)", color: assignMode === "specific" ? "var(--blue-ink)" : "var(--text-3)" }}>
                       👤 עובדים ספציפיים
                     </button>
                   </div>
@@ -3581,12 +3581,12 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
                         return (
                           <button key={e.id} type="button"
                             onClick={() => setSelectedWorkers(selected ? selectedWorkers.filter(n => n !== e.name) : [...selectedWorkers, e.name])}
-                            style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #3b82f6" : "1px solid #e2e8f0", background: selected ? "#eff6ff" : "#f8fafc", color: selected ? "#1d4ed8" : "#475569" }}>
+                            style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: selected ? "2px solid #3b82f6" : "1px solid var(--line)", background: selected ? "var(--tint-blue)" : "var(--surface-2)", color: selected ? "var(--blue-ink)" : "var(--text-3)" }}>
                             {selected ? "✓ " : ""}{e.name}
                           </button>
                         );
                       })}
-                      {selectedWorkers.length === 0 && <div style={{ fontSize: 12, color: "#94a3b8", padding: "6px 0" }}>בחר עובד אחד או יותר</div>}
+                      {selectedWorkers.length === 0 && <div style={{ fontSize: 12, color: "var(--muted-2)", padding: "6px 0" }}>בחר עובד אחד או יותר</div>}
                     </div>
                   )}
                 </div>
@@ -3600,7 +3600,7 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
               <div className="field"><label>תאריך יעד</label><input className="input" type="date" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})} /></div>
               <div className="field" style={{ gridColumn: "span 2" }}><label>תיאור</label><textarea className="input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{ minHeight: 70, resize: "vertical" }} placeholder="פרטים נוספים..." /></div>
             </div>
-            {isWorker && <div style={{ fontSize: 13, color: "#64748b", background: "#f1f5f9", borderRadius: 10, padding: "8px 12px" }}>💡 המשימה תיווצר על שמך — המנהל יוכל לראות אותה</div>}
+            {isWorker && <div style={{ fontSize: 13, color: "var(--muted)", background: "var(--surface-3)", borderRadius: 10, padding: "8px 12px" }}>💡 המשימה תיווצר על שמך — המנהל יוכל לראות אותה</div>}
             <div style={{ display: "flex", gap: 10 }}>
               <button className="btn btn-primary" onClick={addTask} disabled={saving}>{saving ? "שומר..." : "➕ צור משימה"}</button>
               <button className="btn btn-outline" onClick={() => setShowForm(false)}>ביטול</button>
@@ -3609,26 +3609,26 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
         )}
 
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#0f172a" }}>📋 פתוחות ({open.length})</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "var(--text)" }}>📋 פתוחות ({open.length})</div>
           {open.length === 0 ? (
-            <div style={{ padding: 20, textAlign: "center", color: "#64748b", background: "#f8fafc", borderRadius: 12 }}>אין משימות פתוחות 🎉</div>
+            <div style={{ padding: 20, textAlign: "center", color: "var(--muted)", background: "var(--surface-2)", borderRadius: 12 }}>אין משימות פתוחות 🎉</div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {open.map(t => (
-                <div key={t.id} style={{ borderRight: `4px solid ${priorityColor[t.priority] || "#e2e8f0"}`, borderRadius: 14, padding: 16, background: "#fff", border: `1px solid #e8eef6`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                <div key={t.id} style={{ borderRight: `4px solid ${priorityColor[t.priority] || "var(--line)"}`, borderRadius: 14, padding: 16, background: "var(--card)", border: `1px solid var(--line)`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 800, fontSize: 15 }}>{t.title}</span>
-                      <span style={{ background: `${priorityColor[t.priority]}20`, color: priorityColor[t.priority], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{t.priority}</span>
-                      {t.assigned_to === "all" ? <span style={{ fontSize: 12, color: "#64748b" }}>👥 כולם</span> : <span style={{ fontSize: 12, color: "#64748b" }}>👤 {t.assigned_to?.split(",").map((s: string) => s.trim()).join(", ")}</span>}
-                      {t.created_by && t.created_by !== "מנהל" && <span style={{ fontSize: 11, color: "#94a3b8" }}>נפתח ע"י: {t.created_by}</span>}
+                      <span style={{ background: `${"color-mix(in srgb, " + (priorityColor[t.priority]) + " 12%, transparent)"}`, color: priorityColor[t.priority], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{t.priority}</span>
+                      {t.assigned_to === "all" ? <span style={{ fontSize: 12, color: "var(--muted)" }}>👥 כולם</span> : <span style={{ fontSize: 12, color: "var(--muted)" }}>👤 {t.assigned_to?.split(",").map((s: string) => s.trim()).join(", ")}</span>}
+                      {t.created_by && t.created_by !== "מנהל" && <span style={{ fontSize: 11, color: "var(--muted-2)" }}>נפתח ע"י: {t.created_by}</span>}
                     </div>
-                    {t.description && <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>{t.description}</div>}
-                    {t.due_date && <div style={{ fontSize: 12, color: new Date(t.due_date) < new Date() ? "#dc2626" : "#64748b" }}>📅 יעד: {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
+                    {t.description && <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>{t.description}</div>}
+                    {t.due_date && <div style={{ fontSize: 12, color: new Date(t.due_date) < new Date() ? "var(--red)" : "var(--muted)" }}>📅 יעד: {new Date(t.due_date).toLocaleDateString("he-IL")}</div>}
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <button className="btn btn-primary" style={{ fontSize: 12, padding: "5px 14px" }} onClick={() => updateTaskStatus(t.id, "הושלם")}>✅ סיימתי</button>
-                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "5px 10px", color: "#dc2626" }} onClick={() => deleteTask(t.id)}>מחק</button>}
+                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "5px 10px", color: "var(--red)" }} onClick={() => deleteTask(t.id)}>מחק</button>}
                   </div>
                 </div>
               ))}
@@ -3638,17 +3638,17 @@ function TasksTab({ tasks, employees, isWorker, workerName, onRefresh }: { tasks
 
         {done.length > 0 && (
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#16a34a" }}>✅ הושלמו ({done.length})</div>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "var(--green)" }}>✅ הושלמו ({done.length})</div>
             <div style={{ display: "grid", gap: 8 }}>
               {done.map(t => (
-                <div key={t.id} style={{ border: "1px solid #dcfce7", borderRadius: 14, padding: 14, background: "#f0fdf4", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: 0.8 }}>
+                <div key={t.id} style={{ border: "1px solid var(--tint-green)", borderRadius: 14, padding: 14, background: "var(--tint-green)", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: 0.8 }}>
                   <div>
-                    <span style={{ fontWeight: 700, textDecoration: "line-through", color: "#64748b" }}>{t.title}</span>
-                    {t.assigned_to !== "all" && <span style={{ fontSize: 12, color: "#94a3b8", marginRight: 10 }}>👤 {t.assigned_to}</span>}
+                    <span style={{ fontWeight: 700, textDecoration: "line-through", color: "var(--muted)" }}>{t.title}</span>
+                    {t.assigned_to !== "all" && <span style={{ fontSize: 12, color: "var(--muted-2)", marginRight: 10 }}>👤 {t.assigned_to}</span>}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => updateTaskStatus(t.id, "פתוח")}>פתח מחדש</button>}
-                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "#dc2626" }} onClick={() => deleteTask(t.id)}>מחק</button>}
+                    {!isWorker && <button className="btn btn-outline" style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)" }} onClick={() => deleteTask(t.id)}>מחק</button>}
                   </div>
                 </div>
               ))}
