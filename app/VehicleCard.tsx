@@ -211,7 +211,7 @@ function OverviewTab({ v, setV, isAdmin, status, latestKm, mileage, urea, damage
   function startEdit() {
     setForm({
       lease_company: v.lease_company || "", lease_monthly: v.lease_monthly ?? "", lease_start: v.lease_start || "", lease_end: v.lease_end || "",
-      km_quota_yearly: v.km_quota_yearly ?? "", km_start: v.km_start ?? "", urea_required: !!v.urea_required,
+      km_quota_yearly: v.km_quota_yearly ?? "", km_start: v.km_start ?? "", urea_required: !!v.urea_required, service_interval_km: v.service_interval_km ?? 12000,
     });
     setEdit(true);
   }
@@ -224,6 +224,7 @@ function OverviewTab({ v, setV, isAdmin, status, latestKm, mileage, urea, damage
       km_quota_yearly: form.km_quota_yearly === "" ? null : Number(form.km_quota_yearly),
       km_start: form.km_start === "" ? null : Number(form.km_start),
       urea_required: !!form.urea_required,
+      service_interval_km: Number(form.service_interval_km) || 12000,
     };
     const res = await supabase.from("ngs_vehicles").update(payload).eq("id", v.id);
     if (check(res, "פרטי הליסינג נשמרו")) { setV({ ...v, ...payload }); setEdit(false); onSaved(); }
@@ -250,6 +251,7 @@ function OverviewTab({ v, setV, isAdmin, status, latestKm, mileage, urea, damage
           {status && <Row label="נסע מתחילת הליסינג" value={`${fmtNum(status.driven)} ק"מ`} />}
           {status && <Row label="מותר עד היום" value={`${fmtNum(status.allowedSoFar)} ק"מ`} />}
           {status?.projected != null && <Row label="צפי שנתי" value={`${fmtNum(status.projected)} / ${fmtNum(status.quota)}`} />}
+          {latestKm != null && (() => { const iv = Number(v.service_interval_km) || 12000; const next = (Math.floor(latestKm / iv) + 1) * iv; return <Row label="טיפול הבא" value={`ב-${fmtNum(next)} ק"מ (עוד ${fmtNum(next - latestKm)})`} />; })()}
         </div>
         {status && (
           <div style={{ background: LEVEL_STYLE[status.level].bg, border: `1px solid ${LEVEL_STYLE[status.level].line}`, borderRadius: 12, padding: "10px 12px", fontWeight: 700 }}>
@@ -275,6 +277,7 @@ function OverviewTab({ v, setV, isAdmin, status, latestKm, mileage, urea, damage
               <Row label="מכסה שנתית" value={v.km_quota_yearly ? `${fmtNum(v.km_quota_yearly)} ק"מ` : "-"} />
               <Row label="מד בתחילת הליסינג" value={v.km_start != null ? `${fmtNum(v.km_start)} ק"מ` : "-"} />
               <Row label="דורש אוריאה" value={v.urea_required ? "כן" : "לא"} />
+              <Row label="טיפול כל" value={`${fmtNum(v.service_interval_km || 12000)} ק"מ`} />
             </div>
           ) : (
             <>
@@ -285,6 +288,7 @@ function OverviewTab({ v, setV, isAdmin, status, latestKm, mileage, urea, damage
                 {f("lease_end", "סיום חוזה", "date")}
                 {f("km_quota_yearly", "מכסה שנתית (ק\"מ)", "number")}
                 {f("km_start", "מד בתחילת הליסינג", "number")}
+                {f("service_interval_km", "טיפול כל (ק\"מ)", "number")}
               </div>
               <label style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 700 }}>
                 <input type="checkbox" checked={!!form.urea_required} onChange={e => setForm({ ...form, urea_required: e.target.checked })} />
