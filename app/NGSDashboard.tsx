@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Icon } from "./icons";
+import { VehicleCardModal, VehicleReminders, VehicleMonthBadges } from "./VehicleCard";
 import { SECTION, IconChip, SectionTitle, EmptyState, Toaster, notify, check, PhotoStrip, PendingPhotos, uploadPhotos, exportWorkLogsCSV, loadLastWorkLog, saveLastWorkLog, todayISO, daysUntil } from "./ngs-ui";
 
 const supabase = createClient(
@@ -424,6 +425,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const [uploadingVehicleId, setUploadingVehicleId] = useState<string | null>(null);
   const [editingVehicle, setEditingVehicle] = useState<any>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+  // כרטיס רכב (קילומטראז', אוריאה, נזקים, ליסינג)
+  const [cardVehicle, setCardVehicle] = useState<{ v: any; tab: string } | null>(null);
   const [selectedWorkLog, setSelectedWorkLog] = useState<any>(null);
   const [editingWorkLog, setEditingWorkLog] = useState<any>(null);
   const [savingEdit, setSavingEdit] = useState(false);
@@ -715,6 +718,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   return (
     <div style={{ display: "grid", gap: 18 }}>
       <Toaster />
+      {cardVehicle && <VehicleCardModal vehicle={cardVehicle.v} initialTab={cardVehicle.tab} isAdmin={!isWorker} reporterName={workerName || "מנהל"} onClose={() => setCardVehicle(null)} onOpenServices={() => setSelectedVehicle(cardVehicle.v)} onSaved={load} />}
       {selectedVehicle && <VehicleServicesModal vehicleId={selectedVehicle.id} licensePlate={selectedVehicle.license_plate} onClose={() => setSelectedVehicle(null)} />}
 
       {selectedServiceCall && (
@@ -902,6 +906,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           </div>
         </div>
       </div>
+
+      {isWorker && <VehicleReminders vehicles={vehicles} onOpen={(v, t) => setCardVehicle({ v, tab: t })} />}
 
       <div className="tab-bar">
         {tabs.map(t => {
@@ -1197,8 +1203,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                           {testAlert && <span style={{ background: "var(--red)", color: "#fff", borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>טסט בקרוב!</span>}
                         </div>
                         <div style={{ fontSize: 14, color: "var(--muted)" }}>{v.model || "-"} · {v.year || "-"}{v.driver ? ` · ${v.driver}` : ""}</div>
+                        <div style={{ marginTop: 6 }}><VehicleMonthBadges vehicle={v} /></div>
                       </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => setCardVehicle({ v, tab: "overview" })}><Icon name="vehicles" size={16} />כרטיס רכב</button>
                         <button className="btn btn-secondary" style={{ fontSize: 13 }} onClick={() => setSelectedVehicle(v)}><Icon name="service" size={16} />טיפולים</button>
                         {v.garage_doc_url && <a className="btn btn-outline" style={{ fontSize: 13, textDecoration: "none" }} href={v.garage_doc_url} target="_blank" rel="noreferrer"><Icon name="file" size={16} />מסמך מוסך</a>}
                         <label className="btn btn-outline" style={{ fontSize: 13, cursor: "pointer" }}>
