@@ -797,3 +797,31 @@ html[data-theme="dark"] .btn-dark { background: #E8ECF4; color: #0B1120; }
 html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
 html[data-theme="dark"] input[type="month"]::-webkit-calendar-picker-indicator { filter: invert(1); }
 html[data-theme="dark"] img { opacity: .95; }
+
+/* ════════════════════════════════════════════════════════════
+   טלפון: טבלאות ככרטיסים + כרטיסי סיכום קומפקטיים
+   ════════════════════════════════════════════════════════════ */
+.app > *, .main { min-width: 0; }
+@media (max-width: 640px) {
+  .table-wrap { overflow: visible; border: none; border-radius: 0; }
+  .table-wrap table, .table-wrap tbody { display: block; width: 100%; }
+  .table-wrap thead { display: none; }
+  .table-wrap tr { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+  .table-wrap tr:hover td { background: transparent; }
+  .table-wrap td { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 0; border: none; text-align: right; min-width: 0; white-space: normal; word-break: break-word; font-size: 14px; }
+  .table-wrap td::before { content: attr(data-label); color: var(--muted); font-size: 12px; font-weight: 600; }
+  .table-wrap td[data-label=""]::before { display: none; }
+  .table-wrap td:has(button), .table-wrap td:has(.btn) { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+  .table-wrap td:has(button)::before, .table-wrap td:has(.btn)::before { display: none; }
+  .table-wrap td[data-empty] { display: none; }
+  .table-wrap td:has(select) { grid-column: auto; flex-direction: column; align-items: flex-start; padding-top: 0; border-top: none; }
+
+  .ov-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .ov-card { display: grid !important; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 10px; text-align: right !important; padding: 12px !important; border-radius: 14px !important; }
+  .ov-card > div:nth-child(1) { grid-row: 1 / span 3; margin: 0 !important; }
+  .ov-card > div:nth-child(1) > * { width: 40px !important; height: 40px !important; border-radius: 12px !important; }
+  .ov-card > div:nth-child(1) svg { width: 20px !important; height: 20px !important; }
+  .ov-card > div:nth-child(2) { font-size: 24px !important; line-height: 1.1; }
+  .ov-card > div:nth-child(3) { font-size: 13px !important; margin-top: 0 !important; }
+  .ov-card > div:nth-child(4) { display: none; }
+}
