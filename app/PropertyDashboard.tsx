@@ -174,8 +174,8 @@ function IncomeChart() {
           const height = Math.max(40, (item.amount / max) * 220);
           return (
             <div key={item.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 700 }}>{item.amount.toLocaleString("he-IL")} ₪</div>
-              <div style={{ width: "100%", maxWidth: 56, height, borderRadius: "18px 18px 8px 8px", background: "#2563EB" }} />
+              <div className="inc-val" style={{ fontSize: 12, color: "var(--muted)", fontWeight: 700 }}>{item.amount.toLocaleString("he-IL")} ₪</div>
+              <div className="inc-bar" style={{ width: "100%", maxWidth: 56, height, borderRadius: "18px 18px 8px 8px", background: "#2563EB" }} />
               <div style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 700 }}>{item.month}</div>
             </div>
           );
