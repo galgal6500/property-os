@@ -914,7 +914,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
           const sc = SECTION[t.key] || SECTION.overview;
           const on = tab === t.key;
           return (
-            <button key={t.key} className={`tab-btn ngs-tab ${on ? "active" : ""}`} style={on ? { background: sc.solid, borderColor: sc.solid, color: "#fff" } : undefined} onClick={() => { setTab(t.key); setShowForm(false); }}>
+            <button key={t.key} className={`tab-btn ngs-tab ${on ? "active" : ""}`} style={on ? { background: sc.solid, borderColor: sc.solid, color: "#fff" } : undefined} onClick={(ev) => { setTab(t.key); setShowForm(false); ev.currentTarget.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }); }}>
               <span className="ngs-tab-ic" style={on ? { background: "rgba(255,255,255,0.2)", color: "#fff" } : { background: sc.bg, color: sc.c }}><Icon name={t.key} size={16} /></span>{t.label}
             </button>
           );
@@ -1043,7 +1043,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                     <div style={{ width: 44, height: 44, borderRadius: "50%", background: SECTION.employees.bg, color: SECTION.employees.c, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, flexShrink: 0 }}>{e.name?.[0]}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 800, fontSize: 15 }}>{e.name}</div>
-                      <div style={{ fontSize: 12, color: "var(--muted-2)" }}>{e.role || "עובד"} {e.phone ? `· ${e.phone}` : ""}</div>
+                      <div style={{ fontSize: 12, color: "var(--muted-2)" }}>{e.role || "עובד"} {e.phone ? <>· <span dir="ltr" style={{ whiteSpace: "nowrap" }}>{e.phone}</span></> : ""}</div>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
                       {empCalls > 0 && <span style={{ background: "var(--tint-red)", color: "var(--red)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{empCalls} קריאות</span>}
