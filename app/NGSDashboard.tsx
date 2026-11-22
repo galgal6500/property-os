@@ -927,10 +927,10 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         <div style={{ display: "grid", gap: 16 }}>
 
           {/* 4 כרטיסים גדולים וברורים */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+          <div className="ov-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
 
             {/* קריאות שירות */}
-            <button onClick={() => setTab("service")} style={{ background: "var(--card)", border: `2px solid ${openServiceCalls.filter(s => s.urgency === "דחוף מאוד").length > 0 ? "var(--red)" : "var(--line)"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+            <button className="ov-card" onClick={() => setTab("service")} style={{ background: "var(--card)", border: `2px solid ${openServiceCalls.filter(s => s.urgency === "דחוף מאוד").length > 0 ? "var(--red)" : "var(--line)"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="service" size={52} /></div>
               <div style={{ fontSize: 32, fontWeight: 900, color: openServiceCalls.length > 0 ? "var(--red)" : "var(--green)" }}>{openServiceCalls.length}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-3)", marginTop: 4 }}>קריאות שירות</div>
@@ -938,7 +938,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             </button>
 
             {/* יומני עבודה */}
-            <button onClick={() => setTab("worklogs")} style={{ background: "var(--card)", border: "2px solid var(--line)", borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+            <button className="ov-card" onClick={() => setTab("worklogs")} style={{ background: "var(--card)", border: "2px solid var(--line)", borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="worklogs" size={52} /></div>
               <div style={{ fontSize: 32, fontWeight: 900, color: "var(--text)" }}>{workLogs.filter(w => w.performa !== "יצאה פרפורמה").length}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-3)", marginTop: 4 }}>יומני עבודה</div>
@@ -946,7 +946,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             </button>
 
             {/* משימות */}
-            <button onClick={() => setTab("tasks")} style={{ background: "var(--card)", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#f59e0b" : "var(--line)"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+            <button className="ov-card" onClick={() => setTab("tasks")} style={{ background: "var(--card)", border: `2px solid ${tasks.filter(t => t.status === "פתוח").length > 0 ? "#f59e0b" : "var(--line)"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="tasks" size={52} /></div>
               <div style={{ fontSize: 32, fontWeight: 900, color: tasks.filter(t => t.status === "פתוח").length > 0 ? "#d97706" : "var(--green)" }}>{tasks.filter(t => t.status === "פתוח").length}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-3)", marginTop: 4 }}>משימות</div>
@@ -954,7 +954,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             </button>
 
             {/* ציוד חסר */}
-            <button onClick={() => setTab("inventory")} style={{ background: "var(--card)", border: `2px solid ${inventoryItems.filter((i: any) => i.status === "חסר").length > 0 ? "#a855f7" : "var(--line)"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
+            <button className="ov-card" onClick={() => setTab("inventory")} style={{ background: "var(--card)", border: `2px solid ${inventoryItems.filter((i: any) => i.status === "חסר").length > 0 ? "#a855f7" : "var(--line)"}`, borderRadius: 18, padding: "20px 16px", cursor: "pointer", textAlign: "center", fontFamily: "inherit" }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><IconChip name="inventory" size={52} /></div>
               <div style={{ fontSize: 32, fontWeight: 900, color: "#7c3aed" }}>{inventoryItems.filter((i: any) => i.status === "חסר").length}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-3)", marginTop: 4 }}>ציוד חסר</div>
