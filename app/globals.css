@@ -825,3 +825,67 @@ html[data-theme="dark"] img { opacity: .95; }
   .ov-card > div:nth-child(3) { font-size: 13px !important; margin-top: 0 !important; }
   .ov-card > div:nth-child(4) { display: none; }
 }
+
+/* ════════════════════════════════════════════════════════════
+   שדרוג עיצוב ונוחות
+   ════════════════════════════════════════════════════════════ */
+/* מספרים מיושרים, תנועה עדינה ומשוב בלחיצה */
+.kpi .value, td, .ov-card > div:nth-child(2) { font-variant-numeric: tabular-nums; }
+.btn, .tab-btn, .nav-btn, .ov-card, .kpi, .mobile-nav-btn { transition: transform .12s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease; }
+.btn:active, .tab-btn:active, .ov-card:active, .mobile-nav-btn:active { transform: scale(.97); }
+.kpi:hover, .ov-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(16,24,40,.10); }
+:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.card { box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+html[data-theme="dark"] .card { box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 8px 24px rgba(0,0,0,.18); }
+html[data-theme="dark"] .kpi:hover, html[data-theme="dark"] .ov-card:hover { box-shadow: 0 10px 24px rgba(0,0,0,.35); }
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+
+/* כרטיסי מספרים – נכנסים בשורה אחת במחשב */
+.kpi-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+
+/* גרף הכנסות – עמודות בגרדיאנט */
+.inc-bar { background: linear-gradient(180deg, #60A5FA 0%, #2563EB 100%) !important; box-shadow: 0 6px 16px rgba(37,99,235,.25); }
+.inc-val { white-space: nowrap; }
+
+/* חיפוש מהיר */
+.qs-hide { display: none !important; }
+.qs-clear { border: none; background: var(--surface-3); color: var(--muted); width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px; flex-shrink: 0; display: grid; place-items: center; font-family: inherit; }
+.main.qs-empty .topbar::after { content: "לא נמצאו תוצאות לחיפוש במסך הזה"; grid-column: 1 / -1; width: 100%; order: 9; font-size: 14px; color: var(--muted); background: var(--surface-2); border: 1px dashed var(--line-strong); border-radius: 12px; padding: 10px 14px; text-align: center; }
+.topbar { flex-wrap: wrap; }
+
+/* שורה ריקה בטבלה ("אין נתונים") – בלי כותרת, על כל הרוחב */
+@media (max-width: 640px) {
+  .table-wrap td[colspan] { grid-column: 1 / -1; align-items: center; text-align: center; }
+  .table-wrap td[colspan]::before { display: none; }
+}
+
+/* ── טלפון ── */
+@media (max-width: 640px) {
+  .main { padding-left: 12px; padding-right: 12px; }
+  .card { padding: 14px; }
+
+  /* כותרת עליונה דביקה וקומפקטית – החיפוש תמיד זמין */
+  .topbar { position: sticky; top: 0; z-index: 60; margin: -16px -12px 14px; padding: max(10px, env(safe-area-inset-top)) 12px 10px; background: color-mix(in srgb, var(--bg) 86%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line-soft); gap: 8px; }
+  .topbar h1 { font-size: 19px; line-height: 1.2; }
+  .topbar .sub { font-size: 12px; }
+  .top-actions { gap: 8px; }
+  .search { height: 42px; }
+  .top-actions .btn-icon { min-height: 42px; height: 42px; width: 42px; padding: 0; }
+
+  /* לשוניות – גלילה חלקה עם רמז שיש עוד */
+  .tab-bar { scrollbar-width: none; scroll-snap-type: x proximity; -webkit-mask-image: linear-gradient(to left, #000 88%, transparent); mask-image: linear-gradient(to left, #000 88%, transparent); padding-inline-end: 24px; }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn { scroll-snap-align: center; flex-shrink: 0; }
+
+  /* תפריט תחתון – שקוף-מטושטש עם סימון ברור לעמוד הפעיל */
+  .mobile-bottom-nav { background: color-mix(in srgb, var(--card) 88%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  .mobile-nav-icon { width: 44px; height: 28px; border-radius: 999px; align-items: center; justify-content: center; transition: background-color .15s ease; }
+  .mobile-nav-btn.active .mobile-nav-icon { background: color-mix(in srgb, var(--brand) 18%, transparent); }
+  .mobile-nav-btn.active .mobile-nav-label { font-weight: 800; }
+
+  /* גרף – תוויות קטנות שלא נשברות */
+  .inc-val { font-size: 10px !important; }
+}
+.kpi-grid .kpi { padding: 16px; }
+.kpi-grid .kpi .value { white-space: nowrap; font-size: clamp(20px, 1.8vw, 28px); }
+@media (max-width: 640px) { .kpi-grid .kpi { padding: 14px; } .kpi-grid .kpi .value { font-size: 24px; } }
