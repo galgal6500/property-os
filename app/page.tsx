@@ -114,6 +114,29 @@ export default function Home() {
   const [selectedApartmentId, setSelectedApartmentId] = useState<string>("");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  // חיפוש מהיר: מסנן את השורות והכרטיסים שמוצגים במסך הנוכחי
+  const [quickSearch, setQuickSearch] = useState("");
+  useEffect(() => { setQuickSearch(""); }, [activePage]);
+  useEffect(() => {
+    const q = quickSearch.trim().toLowerCase();
+    const apply = () => {
+      const items = document.querySelectorAll<HTMLElement>(".main tbody tr, .main .request-card");
+      let shown = 0;
+      items.forEach(el => {
+        const hit = !q || (el.textContent || "").toLowerCase().includes(q);
+        el.classList.toggle("qs-hide", !hit);
+        if (hit) shown++;
+      });
+      document.querySelector(".main")?.classList.toggle("qs-empty", !!q && items.length > 0 && shown === 0);
+    };
+    apply();
+    if (!q) return;
+    let raf = 0;
+    const mo = new MutationObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(apply); });
+    const main = document.querySelector(".main");
+    if (main) mo.observe(main, { childList: true, subtree: true });
+    return () => { mo.disconnect(); cancelAnimationFrame(raf); };
+  }, [quickSearch]);
   const [selectedBuildingId, setSelectedBuildingId] = useState<any>("");
   const [selectedOwnerId, setSelectedOwnerId] = useState(1);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -364,7 +387,7 @@ export default function Home() {
         <div className="topbar">
           <div><h1>שלום, {userProfile?.full_name?.split(" ")[0] || email.split("@")[0]}</h1><div className="sub">{getRoleLabel(userRole)}</div></div>
           <div className="top-actions">
-            <label className="search"><Icon name="search" size={18} /><input placeholder="חיפוש מהיר..." aria-label="חיפוש" /></label>
+            <label className="search"><Icon name="search" size={18} /><input placeholder="חיפוש מהיר..." aria-label="חיפוש" value={quickSearch} onChange={e => setQuickSearch(e.target.value)} />{quickSearch && <button type="button" className="qs-clear" onClick={() => setQuickSearch("")} aria-label="ניקוי חיפוש">✕</button>}</label>
             <button className="btn btn-outline btn-icon" onClick={() => setRefreshKey(k => k + 1)} title="רענן נתונים" aria-label="רענן נתונים"><Icon name="refresh" size={18} /></button>
             <button className="btn btn-outline desktop-only" onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); setEmail(""); setPassword(""); setUserProfile(null); setUserRole("admin"); }} style={{ color: "var(--red-ink)", borderColor: "var(--tint-red-line)" }}><Icon name="logout" size={18} />התנתק</button>
           </div>
