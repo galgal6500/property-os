@@ -118,7 +118,13 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, o
   }
 
   async function save(finish: boolean): Promise<boolean> {
+    (document.activeElement as HTMLElement | null)?.blur?.();
     setSaving(true);
+    try { return await doSave(finish); }
+    catch (e: any) { notify("שגיאה בשמירה: " + (e?.message || "בדוק חיבור לאינטרנט"), "error"); setSaving(false); return false; }
+  }
+
+  async function doSave(finish: boolean): Promise<boolean> {
     const del = await supabase.from("ngs_work_log_lines").delete().eq("work_log_id", workLog.id);
     if (!check(del)) { setSaving(false); return false; }
     if (lines.length) {
@@ -135,12 +141,21 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, o
     onChanged(patch); setDirty(false); setSaving(false); return true;
   }
 
-  // נעילת גלילה של הדף מאחור כשמסך התמחור פתוח
+  // נעילת גלילה של הדף מאחור + התאמת גובה המסך לאזור הנראה (מעל המקלדת בטלפון)
+  const pzRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    const vv = window.visualViewport;
+    const fit = () => {
+      const el = pzRef.current; if (!el || !vv) return;
+      el.style.top = vv.offsetTop + "px";
+      el.style.height = vv.height + "px";
+    };
+    fit();
+    vv?.addEventListener("resize", fit); vv?.addEventListener("scroll", fit);
+    return () => { document.body.style.overflow = prev; vv?.removeEventListener("resize", fit); vv?.removeEventListener("scroll", fit); };
   }, [open]);
 
   const workerLines: string[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => workLog[`line${n}`]).filter(Boolean);
@@ -185,7 +200,7 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, o
     <>
       {PRICING_CSS}
       {summary}
-      {createPortal(<div className="ngs-pz" role="dialog" aria-label="תמחור יומן">
+      {createPortal(<div className="ngs-pz" ref={pzRef} role="dialog" aria-label="תמחור יומן">
         <div className="ngs-pz-head">
           <button type="button" className="btn btn-outline" style={{ minHeight: 40 }} onClick={() => { if (!dirty || confirmClose()) setOpen(false); }}>✕ סגור</button>
           <div style={{ fontWeight: 800, fontSize: 15, flex: 1, textAlign: "center", whiteSpace: "nowrap" }}>תמחור {title}</div>
@@ -247,8 +262,8 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, o
         <div className="ngs-pz-foot">
           <div style={{ flex: "1 1 220px" }}>{totals || <span style={{ color: "var(--muted)", fontSize: 13 }}>עוד לא נבחרו סעיפים</span>}</div>
           <div style={{ display: "flex", gap: 8, flex: "1 1 260px" }}>
-            <button type="button" className="btn btn-outline" style={{ flex: 1, minHeight: 46 }} disabled={saving || !dirty} onClick={() => save(false)}>{saving ? "שומר..." : "שמור טיוטה"}</button>
-            <button type="button" className="btn btn-primary" style={{ flex: 1, minHeight: 46 }} disabled={saving || lines.length === 0} onClick={async () => { if (await save(true)) setOpen(false); }}>סיום תמחור</button>
+            <button type="button" className="btn btn-outline" style={{ flex: 1, minHeight: 48 }} disabled={saving} onPointerDown={e => e.preventDefault()} onClick={() => save(false)}>{saving ? "שומר..." : dirty ? "שמור טיוטה" : "נשמר ✓"}</button>
+            <button type="button" className="btn btn-primary" style={{ flex: 1, minHeight: 48 }} disabled={saving} onPointerDown={e => e.preventDefault()} onClick={async () => { if (lines.length === 0) { notify("עוד לא נבחרו סעיפים", "error"); return; } if (await save(true)) setOpen(false); }}>{saving ? "שומר..." : "סיום תמחור"}</button>
           </div>
         </div>
       </div>, document.body)}
@@ -262,7 +277,7 @@ const PRICING_CSS = (
   <style>{`
     .ngs-clamp1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
     .ngs-clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-    .ngs-pz{position:fixed;inset:0;z-index:2000;background:var(--bg, #F5F7FA);display:flex;flex-direction:column;direction:rtl}
+    .ngs-pz{position:fixed;top:0;left:0;right:0;height:100%;z-index:2100;background:var(--bg, #F5F7FA);display:flex;flex-direction:column;direction:rtl}
     .ngs-pz-head{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line)}
     .ngs-pz-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,38%) 1fr}
     .ngs-pz-work{overflow:auto;padding:14px 16px;border-inline-end:1px solid var(--line);background:var(--tint-amber)}
