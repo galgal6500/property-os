@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Icon } from "./icons";
+import { WorkLogPricing, PriceListTab, printWorkLog, PRICED_STATUS } from "./ngs-pricing";
 import { VehicleCardModal, VehicleReminders, VehicleMonthBadges } from "./VehicleCard";
 import { SECTION, IconChip, SectionTitle, EmptyState, Toaster, notify, check, PhotoStrip, PendingPhotos, uploadPhotos, exportWorkLogsCSV, loadLastWorkLog, saveLastWorkLog, todayISO, daysUntil } from "./ngs-ui";
 
@@ -21,6 +22,13 @@ function badgeClass(value: string) {
   if (["גבוהה"].includes(value)) return "badge badge-danger";
   if (["דחוף מאוד"].includes(value)) return "badge" + " " + "badge-urgent";
   return "badge badge-default";
+}
+
+// צבעי סטטוס חיוב ליומן
+function perfStyle(p?: string) {
+  if (p === "יצאה פרפורמה") return { bg: "var(--tint-green)", fg: "var(--green)", label: "יצאה פרפורמה" };
+  if (p === "מתומחר") return { bg: "var(--tint-blue)", fg: "var(--blue-ink)", label: "מתומחר" };
+  return { bg: "var(--tint-red)", fg: "var(--red)", label: "לא טופל" };
 }
 
 function Badge({ value }: { value: string }) { return <span className={badgeClass(value)}>{value}</span>; }
@@ -411,6 +419,9 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const workerName = userProfile?.full_name || "";
 
   const [tab, setTab] = useState(isWorker ? "worklogs" : "overview");
+  // הרשאת תמחור (רק גל ונסים – נבדק גם במסד הנתונים)
+  const [canPrice, setCanPrice] = useState(false);
+  useEffect(() => { if (!isWorker) supabase.rpc("app_can_price").then(({ data }: any) => setCanPrice(!!data)); }, [isWorker]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -679,6 +690,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     { key: "service", label: "קריאות שירות" },
     { key: "worklogs", label: "יומני עבודה" },
     { key: "hours", label: "הסכמי שעות" },
+    { key: "pricelist", label: "מחירון" },
     { key: "tasks", label: "משימות" },
     { key: "inventory", label: "ציוד חסר" },
   ];
@@ -697,7 +709,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
   const filteredWorkLogs = workLogs.filter(w => {
     // סטטוס פרפורמה: רק למנהל
     if (!isWorker) {
-      if (workLogFilter === "לא טופל" && w.performa === "יצאה פרפורמה") return false;
+      if (workLogFilter === "לא טופל" && (w.performa === "יצאה פרפורמה" || w.performa === PRICED_STATUS)) return false;
+      if (workLogFilter === PRICED_STATUS && w.performa !== PRICED_STATUS) return false;
       if (workLogFilter === "יצאה פרפורמה" && w.performa !== "יצאה פרפורמה") return false;
     }
     // לקוח
@@ -848,7 +861,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
       {selectedWorkLog && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div style={{ background: "var(--card)", borderRadius: 20, width: "100%", maxWidth: 660, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ background: "var(--card)", borderRadius: 20, width: "100%", maxWidth: 760, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--surface-3)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
                 <div style={{ fontSize: 22, fontWeight: 900 }}>#{formatSerial(selectedWorkLog.serial_number)} · {selectedWorkLog.date ? new Date(selectedWorkLog.date).toLocaleDateString("he-IL") : "-"}</div>
@@ -880,10 +893,14 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                   return <div key={n} style={{ display: "flex", gap: 10, padding: "8px 12px", background: "var(--surface-2)", borderRadius: 10 }}><span style={{ color: "var(--muted-2)", fontWeight: 700, minWidth: 22 }}>{n}.</span><span style={{ fontSize: 14 }}>{line}</span></div>;
                 })}
               </div>
+              {!isWorker && (
+                <WorkLogPricing key={selectedWorkLog.id} supabase={supabase} workLog={selectedWorkLog} canPrice={canPrice} userName={workerName}
+                  onChanged={patch => { setSelectedWorkLog({ ...selectedWorkLog, ...patch }); setWorkLogs(list => list.map(x => x.id === selectedWorkLog.id ? { ...x, ...patch } : x)); }} />
+              )}
             </div>
             <div style={{ padding: "14px 24px", borderTop: "1px solid var(--surface-3)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ background: selectedWorkLog.performa === "יצאה פרפורמה" ? "var(--tint-green)" : "var(--tint-red)", color: selectedWorkLog.performa === "יצאה פרפורמה" ? "var(--green)" : "var(--red)", borderRadius: 999, padding: "4px 16px", fontSize: 13, fontWeight: 700 }}>
-                {selectedWorkLog.performa === "יצאה פרפורמה" ? "יצאה פרפורמה" : "לא טופל"}
+              <span style={{ background: perfStyle(selectedWorkLog.performa).bg, color: perfStyle(selectedWorkLog.performa).fg, borderRadius: 999, padding: "4px 16px", fontSize: 13, fontWeight: 700 }}>
+                {perfStyle(selectedWorkLog.performa).label}
               </span>
               <button className="btn btn-outline" onClick={() => setSelectedWorkLog(null)}>סגור</button>
             </div>
@@ -1565,6 +1582,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
         <TasksTab tasks={tasks} employees={employees} isWorker={isWorker} workerName={workerName} onRefresh={load} />
       )}
 
+      {tab === "pricelist" && !isWorker && <PriceListTab supabase={supabase} canPrice={canPrice} />}
+
       {tab === "inventory" && (
         <InventoryTab isWorker={isWorker} workerName={workerName} />
       )}
@@ -1579,7 +1598,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
             </div>
           </div>
           <div className="chips" style={{ marginBottom: 12, marginTop: 8 }}>
-            {!isWorker && ["הכל", "לא טופל", "יצאה פרפורמה"].map(f => (<button key={f} className={`btn ${workLogFilter === f ? "btn-primary" : "btn-outline"}`} onClick={() => setWorkLogFilter(f)}>{f}</button>))}
+            {!isWorker && ["הכל", "לא טופל", PRICED_STATUS, "יצאה פרפורמה"].map(f => (<button key={f} className={`btn ${workLogFilter === f ? "btn-primary" : "btn-outline"}`} onClick={() => setWorkLogFilter(f)}>{f}</button>))}
           </div>
 
           {/* חיפוש יומנים */}
@@ -1707,8 +1726,8 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                       })()}
                     </div>
                     {!isWorker && (
-                      <span style={{ background: w.performa === "יצאה פרפורמה" ? "var(--tint-green)" : "var(--tint-red)", color: w.performa === "יצאה פרפורמה" ? "var(--green)" : "var(--red)", borderRadius: 999, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>
-                        {w.performa === "יצאה פרפורמה" ? "פרפורמה" : "לא טופל"}
+                      <span style={{ background: perfStyle(w.performa).bg, color: perfStyle(w.performa).fg, borderRadius: 999, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>
+                        {w.performa === "יצאה פרפורמה" ? "פרפורמה" : perfStyle(w.performa).label}
                       </span>
                     )}
                   </div>
@@ -1717,26 +1736,11 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                     {(isWorker ? (w.filled_by === workerName || w.employee_name?.includes(workerName)) : true) && (
                       <button className="btn btn-outline" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => setEditingWorkLog({...w})}>עריכה</button>
                     )}
-                    <button className="btn btn-outline" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => {
-                      const lines = [1,2,3,4,5,6,7,8,9,10].map(n => w[`line${n}`]).filter(Boolean);
-                      const workers = [w.employee_name, w.workers].filter(Boolean).join(", ");
-                      const win = window.open("", "_blank");
-                      if (win) {
-                        win.document.write(`<html dir="rtl"><head><title>יומן עבודה #${formatSerial(w.serial_number)}</title><style>body{font-family:Arial,sans-serif;padding:32px;direction:rtl}h2{font-size:22px;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px}td,th{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f1f5f9}@media print{button{display:none}}</style></head><body>`);
-                        win.document.write(`<h2>יומן עבודה #${formatSerial(w.serial_number)}</h2>`);
-                        win.document.write(`<p>תאריך: ${w.date ? new Date(w.date).toLocaleDateString("he-IL") : "-"} | לקוח: ${w.project_name || "-"} | סניף: ${w.branch || "-"}</p>`);
-                        win.document.write(`<p>עובדים: ${workers || "-"} | שעות: ${w.hours || "-"} | ממלא: ${w.filled_by || "-"}</p>`);
-                        win.document.write(`<table><thead><tr><th>#</th><th>פירוט עבודה</th></tr></thead><tbody>`);
-                        lines.forEach((l, i) => win.document.write(`<tr><td>${i+1}</td><td>${l}</td></tr>`));
-                        win.document.write(`</tbody></table>`);
-                        if (w.client_notes) win.document.write(`<p><strong>הערות ללקוח:</strong> ${w.client_notes}</p>`);
-                        win.document.write(`<br/><button onclick="window.print()">הדפס</button></body></html>`);
-                        win.document.close();
-                      }
-                    }}>הדפס</button>
+                    <button className="btn btn-outline" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => printWorkLog(supabase, w, formatSerial(w.serial_number))}>הדפס</button>
                     {!isWorker && (
-                      <select value={w.performa || "לא טופל"} onChange={async e => { if (check(await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id))) await load(); }} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: w.performa === "יצאה פרפורמה" ? "var(--tint-green)" : "var(--tint-red)" }}>
+                      <select value={w.performa || "לא טופל"} onChange={async e => { if (check(await supabase.from("ngs_work_logs").update({ performa: e.target.value }).eq("id", w.id))) await load(); }} style={{ border: "1px solid var(--line)", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: perfStyle(w.performa).bg }}>
                         <option value="לא טופל">לא טופל</option>
+                        <option value={PRICED_STATUS}>{PRICED_STATUS}</option>
                         <option value="יצאה פרפורמה">יצאה פרפורמה</option>
                       </select>
                     )}
