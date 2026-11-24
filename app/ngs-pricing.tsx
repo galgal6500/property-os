@@ -52,7 +52,7 @@ function ItemSearch({ items, onPick, autoFocus, inputRef }: { items: PriceItem[]
     <div style={{ position: "relative" }}>
       <input className="input" ref={inputRef} autoFocus={autoFocus} enterKeyHint="search" value={q} onKeyDown={e => { if (e.key === "Enter" && results[0]) { e.preventDefault(); onPick(results[0]); setQ(""); setOpen(false); } }} placeholder="חיפוש סעיף: למשל שקע, דלת, 08.01" onChange={e => { setQ(e.target.value); setOpen(true); }} onFocus={e => { setOpen(true); const el = e.currentTarget; setTimeout(() => el.scrollIntoView({ block: "start", behavior: "smooth" }), 250); }} onBlur={() => setTimeout(() => setOpen(false), 200)} />
       {open && results.length > 0 && (
-        <div style={{ position: "absolute", insetInline: 0, top: "100%", zIndex: 30, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,.15)", maxHeight: 300, overflow: "auto", marginTop: 4 }}>
+        <div className="ngs-results" style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,.15)", marginTop: 4 }}>
           {results.map(i => (
             <button key={i.id} type="button" onMouseDown={e => e.preventDefault()} onClick={() => { onPick(i); setQ(""); setOpen(false); }}
               style={{ display: "block", width: "100%", textAlign: "right", padding: "10px 12px", border: "none", borderBottom: "1px solid var(--line)", background: "none", cursor: "pointer", fontSize: 14 }}>
@@ -287,8 +287,10 @@ const PRICING_CSS = (
     .ngs-pz-foot{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.06)}
     @media (max-width: 800px){
       .ngs-pz-body{display:flex;flex-direction:column}
-      .ngs-pz-work{flex:0 0 auto;max-height:26vh;border-inline-end:none;border-bottom:1px solid var(--line);padding:10px 12px}
-      .ngs-pz-items{flex:1;padding:10px 12px 60vh}
+      .ngs-pz-work{flex:0 0 auto;max-height:142px;border-inline-end:none;border-bottom:1px solid var(--line);padding:6px 10px}
+      .ngs-pz-work > div:first-child{font-size:11px !important;margin-bottom:4px !important}
+      .ngs-pz-wline{padding:5px 8px;margin-bottom:4px;font-size:13px;line-height:1.3;border-radius:8px}
+      .ngs-pz-items{flex:1;min-height:0;padding:10px 12px 60vh}
       .ngs-pz-head{padding:8px 10px}
       .ngs-pz-foot{padding:8px 12px calc(8px + env(safe-area-inset-bottom))}
     }
