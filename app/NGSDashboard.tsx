@@ -894,7 +894,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
                 })}
               </div>
               {!isWorker && (
-                <WorkLogPricing key={selectedWorkLog.id} supabase={supabase} workLog={selectedWorkLog} canPrice={canPrice} userName={workerName}
+                <WorkLogPricing key={selectedWorkLog.id} supabase={supabase} workLog={selectedWorkLog} canPrice={canPrice} userName={workerName} title={`#${formatSerial(selectedWorkLog.serial_number)}`}
                   onChanged={patch => { setSelectedWorkLog({ ...selectedWorkLog, ...patch }); setWorkLogs(list => list.map(x => x.id === selectedWorkLog.id ? { ...x, ...patch } : x)); }} />
               )}
             </div>

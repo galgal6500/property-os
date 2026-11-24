@@ -1,6 +1,7 @@
 "use client";
 // תמחור יומני עבודה לפי מחירון (נ.ג.ש מור)
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { check, notify } from "./ngs-ui";
 
 export const VAT_PCT = 18;
@@ -43,13 +44,13 @@ function matches(item: PriceItem, q: string) {
 }
 
 // ---- חיפוש סעיף במחירון ----
-function ItemSearch({ items, onPick, autoFocus }: { items: PriceItem[]; onPick: (i: PriceItem) => void; autoFocus?: boolean }) {
+function ItemSearch({ items, onPick, autoFocus, inputRef }: { items: PriceItem[]; onPick: (i: PriceItem) => void; autoFocus?: boolean; inputRef?: React.Ref<HTMLInputElement> }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const results = useMemo(() => (q.trim().length < 2 ? [] : items.filter(i => matches(i, q)).slice(0, 40)), [q, items]);
   return (
     <div style={{ position: "relative" }}>
-      <input className="input" autoFocus={autoFocus} value={q} placeholder="חיפוש סעיף: למשל שקע, דלת, 08.01" onChange={e => { setQ(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 200)} />
+      <input className="input" ref={inputRef} autoFocus={autoFocus} enterKeyHint="search" value={q} onKeyDown={e => { if (e.key === "Enter" && results[0]) { e.preventDefault(); onPick(results[0]); setQ(""); setOpen(false); } }} placeholder="חיפוש סעיף: למשל שקע, דלת, 08.01" onChange={e => { setQ(e.target.value); setOpen(true); }} onFocus={e => { setOpen(true); const el = e.currentTarget; setTimeout(() => el.scrollIntoView({ block: "start", behavior: "smooth" }), 250); }} onBlur={() => setTimeout(() => setOpen(false), 200)} />
       {open && results.length > 0 && (
         <div style={{ position: "absolute", insetInline: 0, top: "100%", zIndex: 30, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,.15)", maxHeight: 300, overflow: "auto", marginTop: 4 }}>
           {results.map(i => (
@@ -59,7 +60,7 @@ function ItemSearch({ items, onPick, autoFocus }: { items: PriceItem[]; onPick: 
                 <span style={{ color: "var(--muted)", fontSize: 12 }}>{i.code}</span>
                 <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{money(Number(i.price))} / {i.unit}</span>
               </div>
-              <div style={{ lineHeight: 1.35 }}>{i.description}</div>
+              <div className="ngs-clamp2" style={{ lineHeight: 1.35 }}>{i.description}</div>
             </button>
           ))}
         </div>
@@ -72,8 +73,8 @@ function ItemSearch({ items, onPick, autoFocus }: { items: PriceItem[]; onPick: 
 }
 
 // ---- פאנל תמחור בתוך חלון היומן ----
-export function WorkLogPricing({ supabase, workLog, canPrice, userName, onChanged }: {
-  supabase: any; workLog: any; canPrice: boolean; userName: string; onChanged: (patch: any) => void;
+export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, onChanged }: {
+  supabase: any; workLog: any; canPrice: boolean; userName: string; title?: string; onChanged: (patch: any) => void;
 }) {
   const [data, setData] = useState<{ lists: PriceList[]; items: PriceItem[] } | null>(null);
   const [listId, setListId] = useState<string>(workLog.price_list_id || "");
@@ -81,8 +82,12 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, onChange
   const [loaded, setLoaded] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const lastLog = useRef(workLog.id);
+  const [open, setOpen] = useState(false);
+  const [done, setDone] = useState<Record<number, boolean>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [searchKey, setSearchKey] = useState(0);
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -97,7 +102,6 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, onChange
       setLines((res.data || []).map((l: any) => ({ key: l.id, price_item_id: l.price_item_id, code: l.code, description: l.description, unit: l.unit, qty: Number(l.qty), base_price: Number(l.base_price), line_pct: Number(l.line_pct) })));
       setLoaded(true);
     })();
-    lastLog.current = workLog.id;
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workLog.id]);
@@ -107,91 +111,174 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, onChange
   const edit = (key: string, patch: Partial<PricedLine>) => { setLines(ls => ls.map(l => l.key === key ? { ...l, ...patch } : l)); setDirty(true); };
 
   function addItem(i: PriceItem) {
-    setLines(ls => [...ls, { key: newKey(), price_item_id: i.id, code: i.code, description: i.description, unit: i.unit, qty: 1, base_price: Number(i.price), line_pct: 0 }]);
-    setDirty(true); setAdding(false);
+    const k = newKey();
+    setFocusKey(k);
+    setLines(ls => [...ls, { key: k, price_item_id: i.id, code: i.code, description: i.description, unit: i.unit, qty: 1, base_price: Number(i.price), line_pct: 0 }]);
+    setDirty(true); setSearchKey(n => n + 1); // שורת חיפוש חדשה; הפוקוס עובר לכמות של הסעיף שנוסף
   }
 
-  async function save(finish: boolean) {
+  async function save(finish: boolean): Promise<boolean> {
     setSaving(true);
     const del = await supabase.from("ngs_work_log_lines").delete().eq("work_log_id", workLog.id);
-    if (!check(del)) { setSaving(false); return; }
+    if (!check(del)) { setSaving(false); return false; }
     if (lines.length) {
       const ins = await supabase.from("ngs_work_log_lines").insert(lines.map((l, idx) => ({
         work_log_id: workLog.id, price_item_id: l.price_item_id, code: l.code, description: l.description, unit: l.unit,
         qty: Number(l.qty) || 0, base_price: Number(l.base_price) || 0, line_pct: Number(l.line_pct) || 0, sort_order: idx,
       })));
-      if (!check(ins)) { setSaving(false); return; }
+      if (!check(ins)) { setSaving(false); return false; }
     }
     const patch: any = { price_list_id: listId || null };
     if (finish) { patch.performa = PRICED_STATUS; patch.priced_at = new Date().toISOString(); patch.priced_by = userName; }
     const up = await supabase.from("ngs_work_logs").update(patch).eq("id", workLog.id);
-    if (!check(up, finish ? "היומן תומחר" : "התמחור נשמר")) { setSaving(false); return; }
-    onChanged(patch); setDirty(false); setSaving(false);
+    if (!check(up, finish ? "היומן תומחר" : "התמחור נשמר")) { setSaving(false); return false; }
+    onChanged(patch); setDirty(false); setSaving(false); return true;
   }
+
+  // נעילת גלילה של הדף מאחור כשמסך התמחור פתוח
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
+  const workerLines: string[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => workLog[`line${n}`]).filter(Boolean);
 
   if (!loaded) return <div style={{ padding: 12, color: "var(--muted)" }}>טוען מחירון...</div>;
   if (!canPrice && lines.length === 0) return null;
 
-  return (
+  const totals = lines.length > 0 && (
+    <div style={{ display: "grid", gap: 2, fontSize: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between" }}><span>סה״כ לפני מע״מ</span><b>{money(subtotal)}</b></div>
+      <div style={{ display: "flex", justifyContent: "space-between", color: "var(--muted)", fontSize: 13 }}><span>מע״מ {VAT_PCT}%</span><span>{money(r2(subtotal * VAT_PCT / 100))}</span></div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16 }}><span>סה״כ כולל מע״מ</span><b>{money(r2(subtotal * (1 + VAT_PCT / 100)))}</b></div>
+    </div>
+  );
+
+  // תצוגה מקוצרת בתוך חלון היומן
+  const summary = (
     <div style={{ marginTop: 18, borderTop: "2px solid var(--line)", paddingTop: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-        <div style={{ fontWeight: 800, fontSize: 16 }}>תמחור לפי מחירון</div>
-        {canPrice && data && data.lists.length > 1 && (
-          <select className="input" style={{ width: "auto", minWidth: 180, height: 40 }} value={listId} onChange={e => { setListId(e.target.value); setDirty(true); }}>
-            {data.lists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-          </select>
-        )}
+        <div style={{ fontWeight: 800, fontSize: 16 }}>תמחור לפי מחירון{lines.length > 0 && <span style={{ fontWeight: 400, color: "var(--muted)", fontSize: 13 }}> · {lines.length} סעיפים</span>}</div>
+        {canPrice && <button type="button" className="btn btn-primary" style={{ minHeight: 44, paddingInline: 20 }} onClick={() => setOpen(true)}>{lines.length ? "עריכת תמחור" : "תמחר יומן"}</button>}
       </div>
-      {canPrice && data && data.lists.length === 0 && <div style={{ color: "var(--red)", fontSize: 13 }}>אין עדיין מחירון במערכת.</div>}
-
-      <div style={{ display: "grid", gap: 8 }}>
-        {lines.map((l, idx) => (
-          <div key={l.key} style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 10, background: "var(--surface-2)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <div style={{ fontSize: 13, lineHeight: 1.35 }}><span style={{ color: "var(--muted)" }}>{idx + 1}. {l.code} · </span>{l.description}</div>
-              {canPrice && <button type="button" aria-label="הסר שורה" onClick={() => { setLines(ls => ls.filter(x => x.key !== l.key)); setDirty(true); }} style={{ border: "none", background: "none", color: "var(--red)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>}
-            </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap", marginTop: 8 }}>
-              <label style={{ display: "grid", gap: 2, fontSize: 11, color: "var(--muted)" }}>כמות ({l.unit})
-                {canPrice ? <input className="input" dir="ltr" type="number" inputMode="decimal" min="0" step="any" value={l.qty} onChange={e => edit(l.key, { qty: e.target.value as any })} style={{ width: 80, height: 38 }} /> : <b style={{ fontSize: 14, color: "var(--text)" }}>{l.qty}</b>}
-              </label>
-              {canPrice && (
-                <label style={{ display: "grid", gap: 2, fontSize: 11, color: "var(--muted)" }}>% תוספת / הנחה
-                  <input className="input" dir="ltr" type="number" inputMode="decimal" step="any" value={l.line_pct} onChange={e => edit(l.key, { line_pct: e.target.value as any })} style={{ width: 80, height: 38, color: Number(l.line_pct) < 0 ? "var(--red)" : Number(l.line_pct) > 0 ? "var(--green)" : undefined }} />
-                </label>
-              )}
-              <div style={{ fontSize: 12, color: "var(--muted)", paddingBottom: 8 }}>
-                {canPrice && Number(l.line_pct) !== 0 && <><span style={{ textDecoration: "line-through" }}>{money(l.base_price)}</span>{" → "}</>}
-                {money(unitFinal(l))} ליח׳
-              </div>
-              <div style={{ marginInlineStart: "auto", fontWeight: 800, fontSize: 15, paddingBottom: 8 }}>{money(lineTotal(l))}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {canPrice && (adding || lines.length === 0
-        ? <div style={{ marginTop: 10 }}><ItemSearch items={listItems} onPick={addItem} autoFocus={adding} /></div>
-        : <button type="button" className="btn btn-outline" style={{ marginTop: 10, width: "100%", minHeight: 46, fontSize: 15 }} onClick={() => setAdding(true)}>+ הוסף סעיף</button>)}
-
       {lines.length > 0 && (
-        <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "var(--tint-blue)", display: "grid", gap: 4, fontSize: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}><span>סה״כ לפני מע״מ</span><b>{money(subtotal)}</b></div>
-          <div style={{ display: "flex", justifyContent: "space-between", color: "var(--muted)" }}><span>מע״מ {VAT_PCT}%</span><span>{money(r2(subtotal * VAT_PCT / 100))}</span></div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16 }}><span>סה״כ כולל מע״מ</span><b>{money(r2(subtotal * (1 + VAT_PCT / 100)))}</b></div>
+        <div style={{ display: "grid", gap: 4, fontSize: 13, marginBottom: 10 }}>
+          {lines.map((l, idx) => (
+            <div key={l.key} style={{ display: "flex", gap: 8, justifyContent: "space-between", padding: "6px 10px", background: "var(--surface-2)", borderRadius: 8 }}>
+              <span className="ngs-clamp1">{idx + 1}. {l.description}</span>
+              <span style={{ whiteSpace: "nowrap", color: "var(--muted)" }}>{l.qty} × {money(unitFinal(l))} = <b style={{ color: "var(--text)" }}>{money(lineTotal(l))}</b></span>
+            </div>
+          ))}
         </div>
       )}
-
-      {canPrice && (
-        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-          <button type="button" className="btn btn-outline" style={{ flex: 1, minHeight: 46 }} disabled={saving || !dirty} onClick={() => save(false)}>{saving ? "שומר..." : "שמור טיוטה"}</button>
-          <button type="button" className="btn btn-primary" style={{ flex: 1, minHeight: 46 }} disabled={saving || lines.length === 0} onClick={() => save(true)}>סיום תמחור</button>
-        </div>
-      )}
+      {totals && <div style={{ padding: 12, borderRadius: 12, background: "var(--tint-blue)" }}>{totals}</div>}
       {workLog.priced_at && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>תומחר ע״י {workLog.priced_by || "-"} · {new Date(workLog.priced_at).toLocaleDateString("he-IL")}</div>}
     </div>
   );
+
+  if (!open) return <>{PRICING_CSS}{summary}</>;
+
+  // מסך תמחור מלא: מה שהעובדים כתבו + סעיפים מהמחירון
+  return (
+    <>
+      {PRICING_CSS}
+      {summary}
+      {createPortal(<div className="ngs-pz" role="dialog" aria-label="תמחור יומן">
+        <div className="ngs-pz-head">
+          <button type="button" className="btn btn-outline" style={{ minHeight: 40 }} onClick={() => { if (!dirty || confirmClose()) setOpen(false); }}>✕ סגור</button>
+          <div style={{ fontWeight: 800, fontSize: 15, flex: 1, textAlign: "center", whiteSpace: "nowrap" }}>תמחור {title}</div>
+          {data && data.lists.length > 1 ? (
+            <select className="input" style={{ width: "auto", maxWidth: 190, height: 40 }} value={listId} onChange={e => { setListId(e.target.value); setDirty(true); }}>
+              {data.lists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
+          ) : <span />}
+        </div>
+
+        <div className="ngs-pz-body">
+          {/* מה שהעובדים כתבו */}
+          <aside className="ngs-pz-work">
+            <div style={{ fontWeight: 700, fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>מה שהעובדים כתבו · לחץ על שורה כדי לסמן שטופלה</div>
+            {workerLines.length === 0 && <div style={{ fontSize: 13, color: "var(--muted)" }}>אין פירוט ביומן</div>}
+            {workerLines.map((t, i) => (
+              <button key={i} type="button" onClick={() => setDone(d => ({ ...d, [i]: !d[i] }))} className="ngs-pz-wline" style={{ opacity: done[i] ? 0.5 : 1 }}>
+                <span style={{ fontWeight: 800, color: done[i] ? "var(--green)" : "var(--muted)", minWidth: 18 }}>{done[i] ? "✓" : `${i + 1}.`}</span>
+                <span style={{ textDecoration: done[i] ? "line-through" : "none" }}>{t}</span>
+              </button>
+            ))}
+          </aside>
+
+          {/* סעיפים מהמחירון */}
+          <section className="ngs-pz-items">
+            {data && data.lists.length === 0 && <div style={{ color: "var(--red)", fontSize: 13 }}>אין עדיין מחירון במערכת.</div>}
+            {lines.map((l, idx) => (
+              <div key={l.key} className="ngs-pz-line">
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                  <button type="button" onClick={() => setExpanded(e => ({ ...e, [l.key]: !e[l.key] }))} style={{ all: "unset", cursor: "pointer", fontSize: 13, lineHeight: 1.35, flex: 1 }}>
+                    <span style={{ color: "var(--muted)" }}>{idx + 1}. {l.code} · </span>
+                    <span className={expanded[l.key] ? "" : "ngs-clamp2"}>{l.description}</span>
+                  </button>
+                  <button type="button" aria-label="הסר שורה" onClick={() => { setLines(ls => ls.filter(x => x.key !== l.key)); setDirty(true); }} style={{ border: "none", background: "none", color: "var(--red)", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: "0 4px" }}>×</button>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap", marginTop: 6 }}>
+                  <label style={{ display: "grid", gap: 2, fontSize: 11, color: "var(--muted)" }}>כמות ({l.unit || "יח׳"})
+                    <input className="input" dir="ltr" type="number" inputMode="decimal" min="0" step="any" enterKeyHint="next" autoFocus={focusKey === l.key} value={l.qty} onFocus={e => e.target.select()} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); setFocusKey(null); searchRef.current?.focus(); } }} onChange={e => edit(l.key, { qty: e.target.value as any })} style={{ width: 76, height: 38 }} />
+                  </label>
+                  <label style={{ display: "grid", gap: 2, fontSize: 11, color: "var(--muted)" }}>% תוספת/הנחה
+                    <input className="input" dir="ltr" type="number" inputMode="decimal" step="any" value={l.line_pct} onFocus={e => e.target.select()} onChange={e => edit(l.key, { line_pct: e.target.value as any })} style={{ width: 76, height: 38, color: Number(l.line_pct) < 0 ? "var(--red)" : Number(l.line_pct) > 0 ? "var(--green)" : undefined }} />
+                  </label>
+                  <div style={{ fontSize: 12, color: "var(--muted)", paddingBottom: 9 }}>
+                    {Number(l.line_pct) !== 0 && <><span style={{ textDecoration: "line-through" }}>{money(l.base_price)}</span>{" → "}</>}
+                    {money(unitFinal(l))} ליח׳
+                  </div>
+                  <div style={{ marginInlineStart: "auto", fontWeight: 800, fontSize: 15, paddingBottom: 9 }}>{money(lineTotal(l))}</div>
+                </div>
+              </div>
+            ))}
+            {/* שורת חיפוש פתוחה תמיד */}
+            <div className="ngs-pz-line" style={{ borderStyle: "dashed", background: "var(--card)" }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>סעיף {lines.length + 1} · הקלד לחיפוש, Enter בוחר את הראשון</div>
+              <ItemSearch key={searchKey} items={listItems} onPick={addItem} autoFocus={lines.length === 0} inputRef={searchRef} />
+            </div>
+          </section>
+        </div>
+
+        <div className="ngs-pz-foot">
+          <div style={{ flex: "1 1 220px" }}>{totals || <span style={{ color: "var(--muted)", fontSize: 13 }}>עוד לא נבחרו סעיפים</span>}</div>
+          <div style={{ display: "flex", gap: 8, flex: "1 1 260px" }}>
+            <button type="button" className="btn btn-outline" style={{ flex: 1, minHeight: 46 }} disabled={saving || !dirty} onClick={() => save(false)}>{saving ? "שומר..." : "שמור טיוטה"}</button>
+            <button type="button" className="btn btn-primary" style={{ flex: 1, minHeight: 46 }} disabled={saving || lines.length === 0} onClick={async () => { if (await save(true)) setOpen(false); }}>סיום תמחור</button>
+          </div>
+        </div>
+      </div>, document.body)}
+    </>
+  );
 }
+
+const confirmClose = () => window.confirm("יש שינויים שלא נשמרו. לסגור בלי לשמור?");
+
+const PRICING_CSS = (
+  <style>{`
+    .ngs-clamp1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .ngs-clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .ngs-pz{position:fixed;inset:0;z-index:2000;background:var(--bg, #F5F7FA);display:flex;flex-direction:column;direction:rtl}
+    .ngs-pz-head{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+    .ngs-pz-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,38%) 1fr}
+    .ngs-pz-work{overflow:auto;padding:14px 16px;border-inline-end:1px solid var(--line);background:var(--tint-amber)}
+    .ngs-pz-items{overflow:auto;padding:14px 16px 120px;display:grid;gap:8px;align-content:start}
+    .ngs-pz-wline{display:flex;gap:8px;width:100%;text-align:right;padding:9px 10px;margin-bottom:6px;border:1px solid var(--tint-amber-line);border-radius:10px;background:var(--card);font-size:14px;line-height:1.4;cursor:pointer;color:var(--text)}
+    .ngs-pz-line{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface-2)}
+    .ngs-pz-foot{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.06)}
+    @media (max-width: 800px){
+      .ngs-pz-body{display:flex;flex-direction:column}
+      .ngs-pz-work{flex:0 0 auto;max-height:26vh;border-inline-end:none;border-bottom:1px solid var(--line);padding:10px 12px}
+      .ngs-pz-items{flex:1;padding:10px 12px 60vh}
+      .ngs-pz-head{padding:8px 10px}
+      .ngs-pz-foot{padding:8px 12px calc(8px + env(safe-area-inset-bottom))}
+    }
+  `}</style>
+);
 
 // ---- הדפסת יומן (כולל תמחור, אם קיים) ----
 export async function printWorkLog(supabase: any, w: any, serial: string) {
