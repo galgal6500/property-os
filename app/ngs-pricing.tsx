@@ -14,11 +14,11 @@ export type PricedLine = {
   qty: number; base_price: number; line_pct: number;
 };
 
-const r2 = (n: number) => Math.round(n * 100) / 100;
+export const r2 = (n: number) => Math.round(n * 100) / 100;
 export const unitFinal = (l: { base_price: number; line_pct: number }) => r2(Number(l.base_price) * (1 + (Number(l.line_pct) || 0) / 100));
 export const lineTotal = (l: { qty: number; base_price: number; line_pct: number }) => r2(unitFinal(l) * (Number(l.qty) || 0));
 export const money = (n: number) => "₪" + n.toLocaleString("he-IL", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-const esc = (s: any) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+export const esc = (s: any) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 let keySeq = 0;
 const newKey = () => `l${Date.now()}_${keySeq++}`;
 
@@ -72,6 +72,54 @@ function ItemSearch({ items, onPick, autoFocus, inputRef }: { items: PriceItem[]
   );
 }
 
+// ---- עורך שורות מהמחירון (משותף ליומנים ולהצעות מחיר) ----
+export function PricedLinesEditor({ lines, setLines, items }: { lines: PricedLine[]; setLines: (fn: (ls: PricedLine[]) => PricedLine[]) => void; items: PriceItem[] }) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [searchKey, setSearchKey] = useState(0);
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const edit = (key: string, patch: Partial<PricedLine>) => setLines(ls => ls.map(l => l.key === key ? { ...l, ...patch } : l));
+  function addItem(i: PriceItem) {
+    const k = newKey();
+    setFocusKey(k);
+    setLines(ls => [...ls, { key: k, price_item_id: i.id, code: i.code, description: i.description, unit: i.unit, qty: 1, base_price: Number(i.price), line_pct: 0 }]);
+    setSearchKey(n => n + 1); // שורת חיפוש חדשה; הפוקוס עובר לכמות של הסעיף שנוסף
+  }
+  return (
+    <>
+            {lines.map((l, idx) => (
+              <div key={l.key} className="ngs-pz-line">
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                  <button type="button" onClick={() => setExpanded(e => ({ ...e, [l.key]: !e[l.key] }))} style={{ all: "unset", cursor: "pointer", fontSize: 13, lineHeight: 1.35, flex: 1 }}>
+                    <span style={{ color: "var(--muted)" }}>{idx + 1}. {l.code} · </span>
+                    <span className={expanded[l.key] ? "" : "ngs-clamp2"}>{l.description}</span>
+                  </button>
+                  <button type="button" aria-label="הסר שורה" onClick={() => { setLines(ls => ls.filter(x => x.key !== l.key)); }} style={{ border: "none", background: "none", color: "var(--red)", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: "0 4px" }}>×</button>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap", marginTop: 6 }}>
+                  <label style={{ display: "grid", gap: 2, fontSize: 11, color: "var(--muted)" }}>כמות ({l.unit || "יח׳"})
+                    <input className="input" dir="ltr" type="number" inputMode="decimal" min="0" step="any" enterKeyHint="next" autoFocus={focusKey === l.key} value={l.qty} onFocus={e => e.target.select()} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); setFocusKey(null); searchRef.current?.focus(); } }} onChange={e => edit(l.key, { qty: e.target.value as any })} style={{ width: 76, height: 38 }} />
+                  </label>
+                  <label style={{ display: "grid", gap: 2, fontSize: 11, color: "var(--muted)" }}>% תוספת/הנחה
+                    <input className="input" dir="ltr" type="number" inputMode="decimal" step="any" value={l.line_pct} onFocus={e => e.target.select()} onChange={e => edit(l.key, { line_pct: e.target.value as any })} style={{ width: 76, height: 38, color: Number(l.line_pct) < 0 ? "var(--red)" : Number(l.line_pct) > 0 ? "var(--green)" : undefined }} />
+                  </label>
+                  <div style={{ fontSize: 12, color: "var(--muted)", paddingBottom: 9 }}>
+                    {Number(l.line_pct) !== 0 && <><span style={{ textDecoration: "line-through" }}>{money(l.base_price)}</span>{" → "}</>}
+                    {money(unitFinal(l))} ליח׳
+                  </div>
+                  <div style={{ marginInlineStart: "auto", fontWeight: 800, fontSize: 15, paddingBottom: 9 }}>{money(lineTotal(l))}</div>
+                </div>
+              </div>
+            ))}
+            {/* שורת חיפוש פתוחה תמיד */}
+            <div className="ngs-pz-line" style={{ borderStyle: "dashed", background: "var(--card)" }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>סעיף {lines.length + 1} · הקלד לחיפוש, Enter בוחר את הראשון</div>
+              <ItemSearch key={searchKey} items={items} onPick={addItem} autoFocus={lines.length === 0} inputRef={searchRef} />
+            </div>
+    </>
+  );
+}
+
 // ---- פאנל תמחור בתוך חלון היומן ----
 export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, onChanged }: {
   supabase: any; workLog: any; canPrice: boolean; userName: string; title?: string; onChanged: (patch: any) => void;
@@ -84,10 +132,6 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, o
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState<Record<number, boolean>>({});
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [searchKey, setSearchKey] = useState(0);
-  const [focusKey, setFocusKey] = useState<string | null>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -108,14 +152,7 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, o
 
   const listItems = useMemo(() => (data?.items || []).filter(i => i.price_list_id === listId), [data, listId]);
   const subtotal = r2(lines.reduce((s, l) => s + lineTotal(l), 0));
-  const edit = (key: string, patch: Partial<PricedLine>) => { setLines(ls => ls.map(l => l.key === key ? { ...l, ...patch } : l)); setDirty(true); };
-
-  function addItem(i: PriceItem) {
-    const k = newKey();
-    setFocusKey(k);
-    setLines(ls => [...ls, { key: k, price_item_id: i.id, code: i.code, description: i.description, unit: i.unit, qty: 1, base_price: Number(i.price), line_pct: 0 }]);
-    setDirty(true); setSearchKey(n => n + 1); // שורת חיפוש חדשה; הפוקוס עובר לכמות של הסעיף שנוסף
-  }
+  const setLinesDirty = (fn: (ls: PricedLine[]) => PricedLine[]) => { setLines(fn); setDirty(true); };
 
   async function save(finish: boolean): Promise<boolean> {
     (document.activeElement as HTMLElement | null)?.blur?.();
@@ -227,35 +264,7 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, o
           {/* סעיפים מהמחירון */}
           <section className="ngs-pz-items">
             {data && data.lists.length === 0 && <div style={{ color: "var(--red)", fontSize: 13 }}>אין עדיין מחירון במערכת.</div>}
-            {lines.map((l, idx) => (
-              <div key={l.key} className="ngs-pz-line">
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                  <button type="button" onClick={() => setExpanded(e => ({ ...e, [l.key]: !e[l.key] }))} style={{ all: "unset", cursor: "pointer", fontSize: 13, lineHeight: 1.35, flex: 1 }}>
-                    <span style={{ color: "var(--muted)" }}>{idx + 1}. {l.code} · </span>
-                    <span className={expanded[l.key] ? "" : "ngs-clamp2"}>{l.description}</span>
-                  </button>
-                  <button type="button" aria-label="הסר שורה" onClick={() => { setLines(ls => ls.filter(x => x.key !== l.key)); setDirty(true); }} style={{ border: "none", background: "none", color: "var(--red)", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: "0 4px" }}>×</button>
-                </div>
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap", marginTop: 6 }}>
-                  <label style={{ display: "grid", gap: 2, fontSize: 11, color: "var(--muted)" }}>כמות ({l.unit || "יח׳"})
-                    <input className="input" dir="ltr" type="number" inputMode="decimal" min="0" step="any" enterKeyHint="next" autoFocus={focusKey === l.key} value={l.qty} onFocus={e => e.target.select()} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); setFocusKey(null); searchRef.current?.focus(); } }} onChange={e => edit(l.key, { qty: e.target.value as any })} style={{ width: 76, height: 38 }} />
-                  </label>
-                  <label style={{ display: "grid", gap: 2, fontSize: 11, color: "var(--muted)" }}>% תוספת/הנחה
-                    <input className="input" dir="ltr" type="number" inputMode="decimal" step="any" value={l.line_pct} onFocus={e => e.target.select()} onChange={e => edit(l.key, { line_pct: e.target.value as any })} style={{ width: 76, height: 38, color: Number(l.line_pct) < 0 ? "var(--red)" : Number(l.line_pct) > 0 ? "var(--green)" : undefined }} />
-                  </label>
-                  <div style={{ fontSize: 12, color: "var(--muted)", paddingBottom: 9 }}>
-                    {Number(l.line_pct) !== 0 && <><span style={{ textDecoration: "line-through" }}>{money(l.base_price)}</span>{" → "}</>}
-                    {money(unitFinal(l))} ליח׳
-                  </div>
-                  <div style={{ marginInlineStart: "auto", fontWeight: 800, fontSize: 15, paddingBottom: 9 }}>{money(lineTotal(l))}</div>
-                </div>
-              </div>
-            ))}
-            {/* שורת חיפוש פתוחה תמיד */}
-            <div className="ngs-pz-line" style={{ borderStyle: "dashed", background: "var(--card)" }}>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>סעיף {lines.length + 1} · הקלד לחיפוש, Enter בוחר את הראשון</div>
-              <ItemSearch key={searchKey} items={listItems} onPick={addItem} autoFocus={lines.length === 0} inputRef={searchRef} />
-            </div>
+            <PricedLinesEditor lines={lines} setLines={setLinesDirty} items={listItems} />
           </section>
         </div>
 
@@ -273,7 +282,7 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, o
 
 const confirmClose = () => window.confirm("יש שינויים שלא נשמרו. לסגור בלי לשמור?");
 
-const PRICING_CSS = (
+export const PRICING_CSS = (
   <style>{`
     .ngs-clamp1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
     .ngs-clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Icon } from "./icons";
 import { WorkLogPricing, PriceListTab, printWorkLog, PRICED_STATUS } from "./ngs-pricing";
+import { QuotesTab } from "./ngs-quotes";
 import { VehicleCardModal, VehicleReminders, VehicleMonthBadges } from "./VehicleCard";
 import { SECTION, IconChip, SectionTitle, EmptyState, Toaster, notify, check, PhotoStrip, PendingPhotos, uploadPhotos, exportWorkLogsCSV, loadLastWorkLog, saveLastWorkLog, todayISO, daysUntil } from "./ngs-ui";
 
@@ -691,6 +692,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     { key: "worklogs", label: "יומני עבודה" },
     { key: "hours", label: "הסכמי שעות" },
     { key: "pricelist", label: "מחירון" },
+    ...(canPrice ? [{ key: "quotes", label: "הצעות מחיר" }] : []),
     { key: "tasks", label: "משימות" },
     { key: "inventory", label: "ציוד חסר" },
   ];
@@ -1583,6 +1585,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
       )}
 
       {tab === "pricelist" && !isWorker && <PriceListTab supabase={supabase} canPrice={canPrice} />}
+      {tab === "quotes" && !isWorker && canPrice && <QuotesTab supabase={supabase} clients={clients} userName={workerName} />}
 
       {tab === "inventory" && (
         <InventoryTab isWorker={isWorker} workerName={workerName} />
