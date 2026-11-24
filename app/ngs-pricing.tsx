@@ -181,9 +181,9 @@ export function WorkLogPricing({ supabase, workLog, canPrice, userName, title, o
       {lines.length > 0 && (
         <div style={{ display: "grid", gap: 4, fontSize: 13, marginBottom: 10 }}>
           {lines.map((l, idx) => (
-            <div key={l.key} style={{ display: "flex", gap: 8, justifyContent: "space-between", padding: "6px 10px", background: "var(--surface-2)", borderRadius: 8 }}>
-              <span className="ngs-clamp1">{idx + 1}. {l.description}</span>
-              <span style={{ whiteSpace: "nowrap", color: "var(--muted)" }}>{l.qty} × {money(unitFinal(l))} = <b style={{ color: "var(--text)" }}>{money(lineTotal(l))}</b></span>
+            <div key={l.key} style={{ display: "flex", flexWrap: "wrap", gap: "2px 8px", justifyContent: "space-between", padding: "6px 10px", background: "var(--surface-2)", borderRadius: 8, minWidth: 0 }}>
+              <span className="ngs-clamp2" style={{ flex: "1 1 220px", minWidth: 0, lineHeight: 1.35 }}>{idx + 1}. {l.code && <b dir="ltr" style={{ color: "var(--blue-ink, var(--muted))" }}>{l.code}</b>}{l.code ? " · " : ""}{l.description}</span>
+              <span style={{ whiteSpace: "nowrap", color: "var(--muted)", marginInlineStart: "auto" }}>{l.qty} × {money(unitFinal(l))} = <b style={{ color: "var(--text)" }}>{money(lineTotal(l))}</b></span>
             </div>
           ))}
         </div>
