@@ -182,6 +182,14 @@ function QuoteEditor({ supabase, initial, clients, userName, onClose, onSaved }:
     onSaved(); onClose();
   }
 
+  function duplicate() {
+    if (dirty && !window.confirm("יש שינויים שלא נשמרו בהצעה הנוכחית. לשכפל בכל זאת?")) return;
+    setQuote(qq => ({ ...qq, id: undefined, serial_number: undefined, quote_date: todayISO() }));
+    setLines(ls => ls.map((l, i) => ({ ...l, key: `dup${Date.now()}_${i}` })));
+    setDirty(true);
+    notify("נוצר עותק – בחר לקוח, ערוך ושמור");
+  }
+
   async function saveTermsAsDefault() {
     if (!window.confirm("לשמור את הנוסח הזה כברירת מחדל לכל ההצעות החדשות?")) return;
     check(await supabase.from("ngs_settings").upsert({ key: "quote_terms", value: quote.terms, updated_at: new Date().toISOString() }), "נשמר כברירת מחדל");
@@ -251,7 +259,12 @@ function QuoteEditor({ supabase, initial, clients, userName, onClose, onSaved }:
             </div>
             <textarea className="input" rows={5} value={quote.terms} onChange={e => set({ terms: e.target.value })} style={{ height: "auto", lineHeight: 1.5, resize: "vertical" }} />
           </div>
-          {quote.id && <button type="button" className="btn btn-outline" style={{ color: "var(--red)", justifySelf: "start" }} onClick={remove}>מחק הצעה</button>}
+          {quote.id && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button type="button" className="btn btn-outline" onClick={duplicate}>שכפל להצעה חדשה</button>
+              <button type="button" className="btn btn-outline" style={{ color: "var(--red)" }} onClick={remove}>מחק הצעה</button>
+            </div>
+          )}
         </section>
       </div>
 

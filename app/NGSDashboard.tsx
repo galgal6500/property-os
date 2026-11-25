@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Icon } from "./icons";
 import { WorkLogPricing, PriceListTab, printWorkLog, PRICED_STATUS } from "./ngs-pricing";
 import { QuotesTab } from "./ngs-quotes";
+import { BillingTab } from "./ngs-billing";
 import { VehicleCardModal, VehicleReminders, VehicleMonthBadges } from "./VehicleCard";
 import { SECTION, IconChip, SectionTitle, EmptyState, Toaster, notify, check, PhotoStrip, PendingPhotos, uploadPhotos, exportWorkLogsCSV, loadLastWorkLog, saveLastWorkLog, todayISO, daysUntil } from "./ngs-ui";
 
@@ -690,6 +691,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
     { key: "projects", label: "פרויקטים" },
     { key: "service", label: "קריאות שירות" },
     { key: "worklogs", label: "יומני עבודה" },
+    { key: "billing", label: "לחיוב" },
     { key: "hours", label: "הסכמי שעות" },
     { key: "pricelist", label: "מחירון" },
     ...(canPrice ? [{ key: "quotes", label: "הצעות מחיר" }] : []),
@@ -1586,6 +1588,7 @@ function NGSDashboard({ userProfile, userRole }: { userProfile?: any; userRole?:
 
       {tab === "pricelist" && !isWorker && <PriceListTab supabase={supabase} canPrice={canPrice} />}
       {tab === "quotes" && !isWorker && canPrice && <QuotesTab supabase={supabase} clients={clients} userName={workerName} />}
+      {tab === "billing" && !isWorker && <BillingTab supabase={supabase} workLogs={workLogs} onChanged={load} formatSerial={formatSerial} />}
 
       {tab === "inventory" && (
         <InventoryTab isWorker={isWorker} workerName={workerName} />
